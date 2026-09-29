@@ -1,0 +1,1924 @@
+{
+ "featureSpecVersion": 1,
+ "weightsHash": "0x26e44e1fda9e81d86e28d4842902c0dded925ff6823e16d8d70e765b889fb9b4",
+ "modelVectors": [
+  {
+   "features": {
+    "spotBpsOfInitial": 12000,
+    "distToKnockInBps": 6000,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 16329600,
+    "timeToNextObsSecs": 604800,
+    "observationsRemaining": 26,
+    "flags": 1
+   },
+   "expectedPriceBps": 10009
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 5000,
+    "distToKnockInBps": -1000,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 6833327,
+    "timeToNextObsSecs": 180527,
+    "observationsRemaining": 11,
+    "flags": 1
+   },
+   "expectedPriceBps": 5272
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 12000,
+    "distToKnockInBps": 6000,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 13668541,
+    "timeToNextObsSecs": 362941,
+    "observationsRemaining": 22,
+    "flags": 1
+   },
+   "expectedPriceBps": 10003
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 5253,
+    "distToKnockInBps": -747,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 7531885,
+    "timeToNextObsSecs": 274285,
+    "observationsRemaining": 12,
+    "flags": 1
+   },
+   "expectedPriceBps": 5549
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 10940,
+    "distToKnockInBps": 4940,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 11268880,
+    "timeToNextObsSecs": 382480,
+    "observationsRemaining": 18,
+    "flags": 0
+   },
+   "expectedPriceBps": 9997
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6851,
+    "distToKnockInBps": 851,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 10751204,
+    "timeToNextObsSecs": 469604,
+    "observationsRemaining": 17,
+    "flags": 0
+   },
+   "expectedPriceBps": 7765
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 7626,
+    "distToKnockInBps": 1626,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 16279751,
+    "timeToNextObsSecs": 554951,
+    "observationsRemaining": 26,
+    "flags": 1
+   },
+   "expectedPriceBps": 7972
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6342,
+    "distToKnockInBps": 342,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 7480111,
+    "timeToNextObsSecs": 222511,
+    "observationsRemaining": 12,
+    "flags": 0
+   },
+   "expectedPriceBps": 7202
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 10448,
+    "distToKnockInBps": 4448,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 9357503,
+    "timeToNextObsSecs": 285503,
+    "observationsRemaining": 15,
+    "flags": 1
+   },
+   "expectedPriceBps": 9910
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 7373,
+    "distToKnockInBps": 1373,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 11286898,
+    "timeToNextObsSecs": 400498,
+    "observationsRemaining": 18,
+    "flags": 1
+   },
+   "expectedPriceBps": 7657
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 5140,
+    "distToKnockInBps": -860,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 9207072,
+    "timeToNextObsSecs": 135072,
+    "observationsRemaining": 15,
+    "flags": 1
+   },
+   "expectedPriceBps": 5503
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 9370,
+    "distToKnockInBps": 3370,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 4838400,
+    "timeToNextObsSecs": 0,
+    "observationsRemaining": 8,
+    "flags": 1
+   },
+   "expectedPriceBps": 9202
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 7364,
+    "distToKnockInBps": 1364,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 9676800,
+    "timeToNextObsSecs": 604800,
+    "observationsRemaining": 15,
+    "flags": 0
+   },
+   "expectedPriceBps": 8439
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 10520,
+    "distToKnockInBps": 4520,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 864032,
+    "timeToNextObsSecs": 259232,
+    "observationsRemaining": 1,
+    "flags": 0
+   },
+   "expectedPriceBps": 10009
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 11518,
+    "distToKnockInBps": 5518,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 15816455,
+    "timeToNextObsSecs": 91655,
+    "observationsRemaining": 26,
+    "flags": 1
+   },
+   "expectedPriceBps": 10000
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6584,
+    "distToKnockInBps": 584,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 5075804,
+    "timeToNextObsSecs": 237404,
+    "observationsRemaining": 8,
+    "flags": 0
+   },
+   "expectedPriceBps": 7902
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 9520,
+    "distToKnockInBps": 3520,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 15855740,
+    "timeToNextObsSecs": 130940,
+    "observationsRemaining": 26,
+    "flags": 1
+   },
+   "expectedPriceBps": 9378
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 9715,
+    "distToKnockInBps": 3715,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 1900801,
+    "timeToNextObsSecs": 86401,
+    "observationsRemaining": 3,
+    "flags": 0
+   },
+   "expectedPriceBps": 10035
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 9499,
+    "distToKnockInBps": 3499,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 7340448,
+    "timeToNextObsSecs": 82848,
+    "observationsRemaining": 12,
+    "flags": 1
+   },
+   "expectedPriceBps": 9308
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 10501,
+    "distToKnockInBps": 4501,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 6099773,
+    "timeToNextObsSecs": 51773,
+    "observationsRemaining": 10,
+    "flags": 0
+   },
+   "expectedPriceBps": 9997
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 5826,
+    "distToKnockInBps": -174,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 691201,
+    "timeToNextObsSecs": 86401,
+    "observationsRemaining": 1,
+    "flags": 0
+   },
+   "expectedPriceBps": 6200
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 7001,
+    "distToKnockInBps": 1001,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 7337113,
+    "timeToNextObsSecs": 79513,
+    "observationsRemaining": 12,
+    "flags": 0
+   },
+   "expectedPriceBps": 8255
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6256,
+    "distToKnockInBps": 256,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 4308776,
+    "timeToNextObsSecs": 75176,
+    "observationsRemaining": 7,
+    "flags": 1
+   },
+   "expectedPriceBps": 6423
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 5212,
+    "distToKnockInBps": -788,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 11710090,
+    "timeToNextObsSecs": 218890,
+    "observationsRemaining": 19,
+    "flags": 1
+   },
+   "expectedPriceBps": 5665
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 11070,
+    "distToKnockInBps": 5070,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 14611826,
+    "timeToNextObsSecs": 96626,
+    "observationsRemaining": 24,
+    "flags": 1
+   },
+   "expectedPriceBps": 9997
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6701,
+    "distToKnockInBps": 701,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 11343551,
+    "timeToNextObsSecs": 457151,
+    "observationsRemaining": 18,
+    "flags": 1
+   },
+   "expectedPriceBps": 7061
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 11802,
+    "distToKnockInBps": 5802,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 13041245,
+    "timeToNextObsSecs": 340445,
+    "observationsRemaining": 21,
+    "flags": 0
+   },
+   "expectedPriceBps": 10007
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 9975,
+    "distToKnockInBps": 3975,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 789745,
+    "timeToNextObsSecs": 184945,
+    "observationsRemaining": 1,
+    "flags": 1
+   },
+   "expectedPriceBps": 9760
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 10418,
+    "distToKnockInBps": 4418,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 12947868,
+    "timeToNextObsSecs": 247068,
+    "observationsRemaining": 21,
+    "flags": 0
+   },
+   "expectedPriceBps": 9960
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6767,
+    "distToKnockInBps": 767,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 10162511,
+    "timeToNextObsSecs": 485711,
+    "observationsRemaining": 16,
+    "flags": 1
+   },
+   "expectedPriceBps": 7089
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6680,
+    "distToKnockInBps": 680,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 2147242,
+    "timeToNextObsSecs": 332842,
+    "observationsRemaining": 3,
+    "flags": 0
+   },
+   "expectedPriceBps": 9078
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 9021,
+    "distToKnockInBps": 3021,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 15994214,
+    "timeToNextObsSecs": 269414,
+    "observationsRemaining": 26,
+    "flags": 1
+   },
+   "expectedPriceBps": 9030
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6704,
+    "distToKnockInBps": 704,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 2755193,
+    "timeToNextObsSecs": 335993,
+    "observationsRemaining": 4,
+    "flags": 1
+   },
+   "expectedPriceBps": 6809
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 10469,
+    "distToKnockInBps": 4469,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 14323725,
+    "timeToNextObsSecs": 413325,
+    "observationsRemaining": 23,
+    "flags": 1
+   },
+   "expectedPriceBps": 9888
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 5340,
+    "distToKnockInBps": -660,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 4393231,
+    "timeToNextObsSecs": 159631,
+    "observationsRemaining": 7,
+    "flags": 0
+   },
+   "expectedPriceBps": 5525
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 5780,
+    "distToKnockInBps": -220,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 4260981,
+    "timeToNextObsSecs": 27381,
+    "observationsRemaining": 7,
+    "flags": 1
+   },
+   "expectedPriceBps": 5947
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6316,
+    "distToKnockInBps": 316,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 3846176,
+    "timeToNextObsSecs": 217376,
+    "observationsRemaining": 6,
+    "flags": 1
+   },
+   "expectedPriceBps": 6467
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6885,
+    "distToKnockInBps": 885,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 13234606,
+    "timeToNextObsSecs": 533806,
+    "observationsRemaining": 21,
+    "flags": 1
+   },
+   "expectedPriceBps": 7273
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6005,
+    "distToKnockInBps": 5,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 11749846,
+    "timeToNextObsSecs": 258646,
+    "observationsRemaining": 19,
+    "flags": 0
+   },
+   "expectedPriceBps": 6569
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6550,
+    "distToKnockInBps": 550,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 10156711,
+    "timeToNextObsSecs": 479911,
+    "observationsRemaining": 16,
+    "flags": 1
+   },
+   "expectedPriceBps": 6891
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 5941,
+    "distToKnockInBps": -59,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 11803325,
+    "timeToNextObsSecs": 312125,
+    "observationsRemaining": 19,
+    "flags": 1
+   },
+   "expectedPriceBps": 6370
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 5578,
+    "distToKnockInBps": -422,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 9591198,
+    "timeToNextObsSecs": 519198,
+    "observationsRemaining": 15,
+    "flags": 0
+   },
+   "expectedPriceBps": 6000
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 10446,
+    "distToKnockInBps": 4446,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 5099469,
+    "timeToNextObsSecs": 261069,
+    "observationsRemaining": 8,
+    "flags": 1
+   },
+   "expectedPriceBps": 9914
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 11651,
+    "distToKnockInBps": 5651,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 11122796,
+    "timeToNextObsSecs": 236396,
+    "observationsRemaining": 18,
+    "flags": 0
+   },
+   "expectedPriceBps": 10004
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 10327,
+    "distToKnockInBps": 4327,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 4761394,
+    "timeToNextObsSecs": 527794,
+    "observationsRemaining": 7,
+    "flags": 0
+   },
+   "expectedPriceBps": 10022
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 7358,
+    "distToKnockInBps": 1358,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 14956331,
+    "timeToNextObsSecs": 441131,
+    "observationsRemaining": 24,
+    "flags": 0
+   },
+   "expectedPriceBps": 8137
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6629,
+    "distToKnockInBps": 629,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 6954319,
+    "timeToNextObsSecs": 301519,
+    "observationsRemaining": 11,
+    "flags": 0
+   },
+   "expectedPriceBps": 7725
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 10478,
+    "distToKnockInBps": 4478,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 9968230,
+    "timeToNextObsSecs": 291430,
+    "observationsRemaining": 16,
+    "flags": 0
+   },
+   "expectedPriceBps": 9976
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 9742,
+    "distToKnockInBps": 3742,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 9620277,
+    "timeToNextObsSecs": 548277,
+    "observationsRemaining": 15,
+    "flags": 1
+   },
+   "expectedPriceBps": 9482
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 10794,
+    "distToKnockInBps": 4794,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 6551493,
+    "timeToNextObsSecs": 503493,
+    "observationsRemaining": 10,
+    "flags": 1
+   },
+   "expectedPriceBps": 9933
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 5863,
+    "distToKnockInBps": -137,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 13891308,
+    "timeToNextObsSecs": 585708,
+    "observationsRemaining": 22,
+    "flags": 0
+   },
+   "expectedPriceBps": 6452
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 11354,
+    "distToKnockInBps": 5354,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 5681998,
+    "timeToNextObsSecs": 238798,
+    "observationsRemaining": 9,
+    "flags": 1
+   },
+   "expectedPriceBps": 9999
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 7213,
+    "distToKnockInBps": 1213,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 2536968,
+    "timeToNextObsSecs": 117768,
+    "observationsRemaining": 4,
+    "flags": 1
+   },
+   "expectedPriceBps": 7305
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 10810,
+    "distToKnockInBps": 4810,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 1850758,
+    "timeToNextObsSecs": 36358,
+    "observationsRemaining": 3,
+    "flags": 0
+   },
+   "expectedPriceBps": 10003
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 7644,
+    "distToKnockInBps": 1644,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 10489581,
+    "timeToNextObsSecs": 207981,
+    "observationsRemaining": 17,
+    "flags": 0
+   },
+   "expectedPriceBps": 8645
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 5531,
+    "distToKnockInBps": -469,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 7022841,
+    "timeToNextObsSecs": 370041,
+    "observationsRemaining": 11,
+    "flags": 0
+   },
+   "expectedPriceBps": 5845
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6798,
+    "distToKnockInBps": 798,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 2498317,
+    "timeToNextObsSecs": 79117,
+    "observationsRemaining": 4,
+    "flags": 1
+   },
+   "expectedPriceBps": 6895
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 7163,
+    "distToKnockInBps": 1163,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 3756452,
+    "timeToNextObsSecs": 127652,
+    "observationsRemaining": 6,
+    "flags": 1
+   },
+   "expectedPriceBps": 7290
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6954,
+    "distToKnockInBps": 954,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 15770126,
+    "timeToNextObsSecs": 45326,
+    "observationsRemaining": 26,
+    "flags": 1
+   },
+   "expectedPriceBps": 7399
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 7876,
+    "distToKnockInBps": 1876,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 14974893,
+    "timeToNextObsSecs": 459693,
+    "observationsRemaining": 24,
+    "flags": 1
+   },
+   "expectedPriceBps": 8149
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 11594,
+    "distToKnockInBps": 5594,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 4361886,
+    "timeToNextObsSecs": 128286,
+    "observationsRemaining": 7,
+    "flags": 0
+   },
+   "expectedPriceBps": 10003
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 7407,
+    "distToKnockInBps": 1407,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 12676943,
+    "timeToNextObsSecs": 580943,
+    "observationsRemaining": 20,
+    "flags": 1
+   },
+   "expectedPriceBps": 7714
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 9342,
+    "distToKnockInBps": 3342,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 1210355,
+    "timeToNextObsSecs": 755,
+    "observationsRemaining": 2,
+    "flags": 0
+   },
+   "expectedPriceBps": 10034
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 11679,
+    "distToKnockInBps": 5679,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 8024902,
+    "timeToNextObsSecs": 162502,
+    "observationsRemaining": 13,
+    "flags": 1
+   },
+   "expectedPriceBps": 10002
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6212,
+    "distToKnockInBps": 212,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 5238975,
+    "timeToNextObsSecs": 400575,
+    "observationsRemaining": 8,
+    "flags": 1
+   },
+   "expectedPriceBps": 6413
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 8906,
+    "distToKnockInBps": 2906,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 11591659,
+    "timeToNextObsSecs": 100459,
+    "observationsRemaining": 19,
+    "flags": 0
+   },
+   "expectedPriceBps": 9430
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6553,
+    "distToKnockInBps": 553,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 14153507,
+    "timeToNextObsSecs": 243107,
+    "observationsRemaining": 23,
+    "flags": 1
+   },
+   "expectedPriceBps": 7001
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 9093,
+    "distToKnockInBps": 3093,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 4219657,
+    "timeToNextObsSecs": 590857,
+    "observationsRemaining": 6,
+    "flags": 1
+   },
+   "expectedPriceBps": 8995
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 10249,
+    "distToKnockInBps": 4249,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 15839926,
+    "timeToNextObsSecs": 115126,
+    "observationsRemaining": 26,
+    "flags": 1
+   },
+   "expectedPriceBps": 9920
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 9053,
+    "distToKnockInBps": 3053,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 13378287,
+    "timeToNextObsSecs": 72687,
+    "observationsRemaining": 22,
+    "flags": 1
+   },
+   "expectedPriceBps": 9026
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 10283,
+    "distToKnockInBps": 4283,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 896008,
+    "timeToNextObsSecs": 291208,
+    "observationsRemaining": 1,
+    "flags": 1
+   },
+   "expectedPriceBps": 9873
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 9786,
+    "distToKnockInBps": 3786,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 12665291,
+    "timeToNextObsSecs": 569291,
+    "observationsRemaining": 20,
+    "flags": 0
+   },
+   "expectedPriceBps": 9752
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6698,
+    "distToKnockInBps": 698,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 9793604,
+    "timeToNextObsSecs": 116804,
+    "observationsRemaining": 16,
+    "flags": 0
+   },
+   "expectedPriceBps": 7626
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 9178,
+    "distToKnockInBps": 3178,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 7212313,
+    "timeToNextObsSecs": 559513,
+    "observationsRemaining": 11,
+    "flags": 1
+   },
+   "expectedPriceBps": 9072
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6446,
+    "distToKnockInBps": 446,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 11336532,
+    "timeToNextObsSecs": 450132,
+    "observationsRemaining": 18,
+    "flags": 0
+   },
+   "expectedPriceBps": 7209
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 5896,
+    "distToKnockInBps": -104,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 995703,
+    "timeToNextObsSecs": 390903,
+    "observationsRemaining": 1,
+    "flags": 1
+   },
+   "expectedPriceBps": 5931
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 10613,
+    "distToKnockInBps": 4613,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 11250517,
+    "timeToNextObsSecs": 364117,
+    "observationsRemaining": 18,
+    "flags": 0
+   },
+   "expectedPriceBps": 9976
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 8110,
+    "distToKnockInBps": 2110,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 15187629,
+    "timeToNextObsSecs": 67629,
+    "observationsRemaining": 25,
+    "flags": 1
+   },
+   "expectedPriceBps": 8337
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 11413,
+    "distToKnockInBps": 5413,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 8914121,
+    "timeToNextObsSecs": 446921,
+    "observationsRemaining": 14,
+    "flags": 1
+   },
+   "expectedPriceBps": 9992
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 9511,
+    "distToKnockInBps": 3511,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 8725594,
+    "timeToNextObsSecs": 258394,
+    "observationsRemaining": 14,
+    "flags": 0
+   },
+   "expectedPriceBps": 9816
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6380,
+    "distToKnockInBps": 380,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 14676022,
+    "timeToNextObsSecs": 160822,
+    "observationsRemaining": 24,
+    "flags": 1
+   },
+   "expectedPriceBps": 6860
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 5753,
+    "distToKnockInBps": -247,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 6476141,
+    "timeToNextObsSecs": 428141,
+    "observationsRemaining": 10,
+    "flags": 1
+   },
+   "expectedPriceBps": 6003
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 10197,
+    "distToKnockInBps": 4197,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 2413756,
+    "timeToNextObsSecs": 599356,
+    "observationsRemaining": 3,
+    "flags": 1
+   },
+   "expectedPriceBps": 9738
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 9296,
+    "distToKnockInBps": 3296,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 611712,
+    "timeToNextObsSecs": 6912,
+    "observationsRemaining": 1,
+    "flags": 1
+   },
+   "expectedPriceBps": 9251
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6183,
+    "distToKnockInBps": 183,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 7466965,
+    "timeToNextObsSecs": 209365,
+    "observationsRemaining": 12,
+    "flags": 0
+   },
+   "expectedPriceBps": 6892
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6953,
+    "distToKnockInBps": 953,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 4340622,
+    "timeToNextObsSecs": 107022,
+    "observationsRemaining": 7,
+    "flags": 0
+   },
+   "expectedPriceBps": 8717
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6715,
+    "distToKnockInBps": 715,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 4136900,
+    "timeToNextObsSecs": 508100,
+    "observationsRemaining": 6,
+    "flags": 0
+   },
+   "expectedPriceBps": 8350
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 9969,
+    "distToKnockInBps": 3969,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 11596842,
+    "timeToNextObsSecs": 105642,
+    "observationsRemaining": 19,
+    "flags": 1
+   },
+   "expectedPriceBps": 9725
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6920,
+    "distToKnockInBps": 920,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 12762600,
+    "timeToNextObsSecs": 61800,
+    "observationsRemaining": 21,
+    "flags": 1
+   },
+   "expectedPriceBps": 7293
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 7681,
+    "distToKnockInBps": 1681,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 13872366,
+    "timeToNextObsSecs": 566766,
+    "observationsRemaining": 22,
+    "flags": 1
+   },
+   "expectedPriceBps": 7970
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 11478,
+    "distToKnockInBps": 5478,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 10832496,
+    "timeToNextObsSecs": 550896,
+    "observationsRemaining": 17,
+    "flags": 0
+   },
+   "expectedPriceBps": 10004
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 7532,
+    "distToKnockInBps": 1532,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 15937560,
+    "timeToNextObsSecs": 212760,
+    "observationsRemaining": 26,
+    "flags": 0
+   },
+   "expectedPriceBps": 8263
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 7012,
+    "distToKnockInBps": 1012,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 11696257,
+    "timeToNextObsSecs": 205057,
+    "observationsRemaining": 19,
+    "flags": 0
+   },
+   "expectedPriceBps": 7917
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 7885,
+    "distToKnockInBps": 1885,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 3454615,
+    "timeToNextObsSecs": 430615,
+    "observationsRemaining": 5,
+    "flags": 1
+   },
+   "expectedPriceBps": 7970
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6978,
+    "distToKnockInBps": 978,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 15270570,
+    "timeToNextObsSecs": 150570,
+    "observationsRemaining": 25,
+    "flags": 0
+   },
+   "expectedPriceBps": 7749
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 5821,
+    "distToKnockInBps": -179,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 7410821,
+    "timeToNextObsSecs": 153221,
+    "observationsRemaining": 12,
+    "flags": 1
+   },
+   "expectedPriceBps": 6105
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 9966,
+    "distToKnockInBps": 3966,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 7963022,
+    "timeToNextObsSecs": 100622,
+    "observationsRemaining": 13,
+    "flags": 1
+   },
+   "expectedPriceBps": 9712
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 7686,
+    "distToKnockInBps": 1686,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 14860543,
+    "timeToNextObsSecs": 345343,
+    "observationsRemaining": 24,
+    "flags": 0
+   },
+   "expectedPriceBps": 8431
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 7231,
+    "distToKnockInBps": 1231,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 13405962,
+    "timeToNextObsSecs": 100362,
+    "observationsRemaining": 22,
+    "flags": 0
+   },
+   "expectedPriceBps": 8065
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 7449,
+    "distToKnockInBps": 1449,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 14681565,
+    "timeToNextObsSecs": 166365,
+    "observationsRemaining": 24,
+    "flags": 1
+   },
+   "expectedPriceBps": 7792
+  }
+ ],
+ "rejectVectors": [
+  {
+   "features": {
+    "spotBpsOfInitial": 4999,
+    "distToKnockInBps": 731,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 9226161,
+    "timeToNextObsSecs": 154161,
+    "observationsRemaining": 15,
+    "flags": 1
+   },
+   "error": "OutOfRange",
+   "index": 0
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 12001,
+    "distToKnockInBps": 2206,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 5607681,
+    "timeToNextObsSecs": 164481,
+    "observationsRemaining": 9,
+    "flags": 1
+   },
+   "error": "OutOfRange",
+   "index": 0
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 10826,
+    "distToKnockInBps": -1001,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 10697763,
+    "timeToNextObsSecs": 416163,
+    "observationsRemaining": 17,
+    "flags": 1
+   },
+   "error": "OutOfRange",
+   "index": 1
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 7068,
+    "distToKnockInBps": 6001,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 15377259,
+    "timeToNextObsSecs": 257259,
+    "observationsRemaining": 25,
+    "flags": 0
+   },
+   "error": "OutOfRange",
+   "index": 1
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6220,
+    "distToKnockInBps": 220,
+    "volBpsAnnual": 5499,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 2845161,
+    "timeToNextObsSecs": 425961,
+    "observationsRemaining": 4,
+    "flags": 0
+   },
+   "error": "OutOfRange",
+   "index": 2
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 7936,
+    "distToKnockInBps": 1936,
+    "volBpsAnnual": 5501,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 1672534,
+    "timeToNextObsSecs": 462934,
+    "observationsRemaining": 2,
+    "flags": 0
+   },
+   "error": "OutOfRange",
+   "index": 2
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 8305,
+    "distToKnockInBps": 2305,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 5999,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 3284258,
+    "timeToNextObsSecs": 260258,
+    "observationsRemaining": 5,
+    "flags": 0
+   },
+   "error": "OutOfRange",
+   "index": 3
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 9373,
+    "distToKnockInBps": 3373,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6001,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 4272752,
+    "timeToNextObsSecs": 39152,
+    "observationsRemaining": 7,
+    "flags": 0
+   },
+   "error": "OutOfRange",
+   "index": 3
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 9145,
+    "distToKnockInBps": 3145,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 9999,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 7695492,
+    "timeToNextObsSecs": 437892,
+    "observationsRemaining": 12,
+    "flags": 1
+   },
+   "error": "OutOfRange",
+   "index": 4
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 10960,
+    "distToKnockInBps": 4960,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10001,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 8451048,
+    "timeToNextObsSecs": 588648,
+    "observationsRemaining": 13,
+    "flags": 0
+   },
+   "error": "OutOfRange",
+   "index": 4
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6458,
+    "distToKnockInBps": 458,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 24,
+    "timeToMaturitySecs": 2688400,
+    "timeToNextObsSecs": 269200,
+    "observationsRemaining": 4,
+    "flags": 0
+   },
+   "error": "OutOfRange",
+   "index": 5
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6309,
+    "distToKnockInBps": 309,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 26,
+    "timeToMaturitySecs": 15689483,
+    "timeToNextObsSecs": 569483,
+    "observationsRemaining": 25,
+    "flags": 1
+   },
+   "error": "OutOfRange",
+   "index": 5
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 11747,
+    "distToKnockInBps": 5747,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 604799,
+    "timeToNextObsSecs": 181115,
+    "observationsRemaining": 2,
+    "flags": 1
+   },
+   "error": "OutOfRange",
+   "index": 6
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 7386,
+    "distToKnockInBps": 1386,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 16329601,
+    "timeToNextObsSecs": 235529,
+    "observationsRemaining": 9,
+    "flags": 1
+   },
+   "error": "OutOfRange",
+   "index": 6
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 7540,
+    "distToKnockInBps": 1540,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 13334781,
+    "timeToNextObsSecs": 604801,
+    "observationsRemaining": 22,
+    "flags": 1
+   },
+   "error": "OutOfRange",
+   "index": 7
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 11418,
+    "distToKnockInBps": 5418,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 639325,
+    "timeToNextObsSecs": 34525,
+    "observationsRemaining": 0,
+    "flags": 1
+   },
+   "error": "OutOfRange",
+   "index": 8
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 7467,
+    "distToKnockInBps": 1467,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 889199,
+    "timeToNextObsSecs": 284399,
+    "observationsRemaining": 27,
+    "flags": 1
+   },
+   "error": "OutOfRange",
+   "index": 8
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 10118,
+    "distToKnockInBps": 4118,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 13732689,
+    "timeToNextObsSecs": 427089,
+    "observationsRemaining": 22,
+    "flags": 2
+   },
+   "error": "OutOfRange",
+   "index": 9
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 11836,
+    "distToKnockInBps": 5837,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 9571579,
+    "timeToNextObsSecs": 499579,
+    "observationsRemaining": 15,
+    "flags": 0
+   },
+   "error": "Inconsistent",
+   "index": 1
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 9218,
+    "distToKnockInBps": 3218,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 8052435,
+    "timeToNextObsSecs": 190034,
+    "observationsRemaining": 13,
+    "flags": 1
+   },
+   "error": "Inconsistent",
+   "index": 6
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 9500,
+    "distToKnockInBps": 3500,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 15724800,
+    "timeToNextObsSecs": 0,
+    "observationsRemaining": 26,
+    "flags": 0
+   },
+   "error": "Uncertified",
+   "index": 0
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 10500,
+    "distToKnockInBps": 4500,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 15811200,
+    "timeToNextObsSecs": 86400,
+    "observationsRemaining": 26,
+    "flags": 1
+   },
+   "error": "Uncertified",
+   "index": 0
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 10000,
+    "distToKnockInBps": 4000,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 6091200,
+    "timeToNextObsSecs": 43200,
+    "observationsRemaining": 10,
+    "flags": 0
+   },
+   "error": "Uncertified",
+   "index": 0
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 5000,
+    "distToKnockInBps": -1000,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 9072000,
+    "timeToNextObsSecs": 0,
+    "observationsRemaining": 15,
+    "flags": 0
+   },
+   "error": "Uncertified",
+   "index": 1
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 7000,
+    "distToKnockInBps": 1000,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 12182400,
+    "timeToNextObsSecs": 86400,
+    "observationsRemaining": 20,
+    "flags": 0
+   },
+   "error": "Uncertified",
+   "index": 1
+  },
+  {
+   "features": {
+    "spotBpsOfInitial": 6000,
+    "distToKnockInBps": 0,
+    "volBpsAnnual": 5500,
+    "kiBarrierBps": 6000,
+    "acBarrierBps": 10000,
+    "couponBpsPerPeriod": 25,
+    "timeToMaturitySecs": 2462400,
+    "timeToNextObsSecs": 43200,
+    "observationsRemaining": 4,
+    "flags": 0
+   },
+   "error": "Uncertified",
+   "index": 1
+  }
+ ]
+}
