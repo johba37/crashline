@@ -1,6 +1,30 @@
 [
   {
     "type": "function",
+    "name": "certifiedRange",
+    "inputs": [
+      {
+        "name": "field",
+        "type": "uint8",
+        "internalType": "uint8"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "min",
+        "type": "int64",
+        "internalType": "int64"
+      },
+      {
+        "name": "max",
+        "type": "int64",
+        "internalType": "int64"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "featureSpecVersion",
     "inputs": [],
     "outputs": [
@@ -98,6 +122,17 @@
   },
   {
     "type": "error",
+    "name": "Inconsistent",
+    "inputs": [
+      {
+        "name": "field",
+        "type": "uint8",
+        "internalType": "uint8"
+      }
+    ]
+  },
+  {
+    "type": "error",
     "name": "OutOfRange",
     "inputs": [
       {
@@ -109,6 +144,17 @@
         "name": "value",
         "type": "int64",
         "internalType": "int64"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "Uncertified",
+    "inputs": [
+      {
+        "name": "region",
+        "type": "uint8",
+        "internalType": "uint8"
       }
     ]
   }

@@ -1,10 +1,16 @@
-# Model export format — `student_export.json` v1 (pricer)
+# Model export format — `student_export.json` v2 (pricer)
 
 The boundary between the distillation lane (Monte Carlo teacher → float student)
 and the contracts lane (Stylus). If it's not in this document, it doesn't cross
 the boundary. Reference implementation: [`tools/pricer_quant.py`](../tools/pricer_quant.py)
-(`quantize()` produces this file from a float MLP; `forward()` is the bit-exact
-twin of the contract).
+(`quantize()` produces this file from a float MLP; `certify()` attaches the
+certified domain; `forward()` is the bit-exact twin of the contract).
+
+**v2 (2026-09-29): every export carries a `certifiedDomain`**, the region where
+fidelity was measured. The contract refuses everything else. Reason: the K1
+round-1 student was trained with note terms pinned, but a v1 export accepted
+any terms and extrapolated silently (e.g. coupon 10%/week → 7445 bps, far
+below par).
 
 Derived from GapGuard's `student-export-format.md`, with the changes listed at
 the end. Those changes are deliberate and backed by measurements.
@@ -17,20 +23,24 @@ the end. Those changes are deliberate and backed by measurements.
    Target: `(priceBps − offsetBps) / priceScaleBps`.
 2. Relu hidden layers, one linear output. Weights as numpy arrays with shape `(out, in)`.
 3. `pq.quantize(weights, biases, calib_x, price_scale_bps, offset_bps)` → export dict.
-   Write it as JSON. Then generate golden vectors with `pq.forward()` (see
-   `tools/make_synthetic.py` for the exact layout).
 4. Report fidelity for the **integer** student (`pq.forward`) against the teacher.
    That's the number the chain reproduces, not the float model.
-5. Build the contract with `PRICER_MODEL_DIR=<dir> cargo build`. The build
-   recomputes the hash and proves no overflow is possible, or it fails.
+5. Write the certified domain as JSON (example: `tools/domains/k1-r1.json`):
+   exactly the region your adversarial eval covered. Then
+   `python tools/certify.py --export <export> --domain <domain> --out model/<name>`
+   writes the v2 export (keccak hash recomputed) and its golden + reject vectors.
+6. Build the contract with `PRICER_MODEL_DIR=model/<name> cargo test`. The build
+   recomputes the hash, checks the domain against the normalization ranges and
+   proves no overflow is possible, or it fails.
 
 ## Inputs — featureSpecVersion 1
 
-The field order is the `PricerInputs` struct order in `NoteQuoter.sol`. The
-ranges equal the teacher spec §4 and the NoteQuoter bounds. **Out of range →
-the model reverts `OutOfRange(uint8 field, int64 value)`.** It never clamps,
-so the pricer fails closed even when called directly rather than through
-NoteQuoter (it's meant as a shared building block).
+The field order is the `PricerInputs` struct order. The ranges below are the
+**normalization convention** (teacher spec §4), fixed for featureSpecVersion 1.
+What a model accepts is its certified domain, always inside these.
+
+The price is **clean**: it covers coupon accruing from now on. The quoter adds
+coupon accrued since strike (`INoteQuoter`).
 
 | # | Field | Min | Max |
 |---|---|---|---|
@@ -48,11 +58,35 @@ NoteQuoter (it's meant as a shared building block).
 Normalization (binding, integer floor division, non-negative operands):
 `x = ((v − min)·2·qmax + range//2) // range − qmax`, with `qmax = 2^(activationBits−1) − 1`.
 
+## Certified domain (binding)
+
+```jsonc
+"certifiedDomain": {
+  "ranges": [ {"name": "spotBpsOfInitial", "min": 5000, "max": 12000}, … ],  // all 10, in order;
+                                          // min == max pins a note term
+  "consistency": { "distToKnockIn": true,              // dist == spot − ki exactly
+                   "observationIntervalSecs": 604800 }, // ttm == tNext + obsRemaining·interval (0 = off)
+  "exclusions": [ { "name": "acObservationDay",        // refused if ALL bounds hold
+                    "bounds": [ {"field": "timeToNextObsSecs", "min": 0, "max": 86400},
+                                {"field": "spotBpsOfInitial", "min": 9500, "max": 10500} ] } ]
+}
+```
+
+Checks run in this order, and the first failure is the revert:
+1. ranges by field index → `OutOfRange(uint8 field, int64 value)`
+2. derived fields, dist then ttm → `Inconsistent(uint8 field)` (1 or 6)
+3. exclusions in order → `Uncertified(uint8 region)`
+
+The consistency rules keep inputs on the manifold the teacher was trained on:
+off it, a network returns numbers nobody measured. `certifiedRange(field)`
+exposes the ranges on-chain. The domain is inside the hash, so `weightsHash`
+pins both what the model computes and where it may answer.
+
 ## Schema
 
 ```jsonc
 {
-  "exportFormatVersion": 1,
+  "exportFormatVersion": 2,
   "featureSpecVersion": 1,
   "weightsHash": "0x…",                  // keccak256 of canonical form, see below
   "architecture": {
@@ -63,6 +97,7 @@ Normalization (binding, integer floor division, non-negative operands):
   },
   "quantization": { "weightBits": 16, "activationBits": 16 },
   "featureNormalization": [ {"name": "spotBpsOfInitial", "min": 2000, "max": 30000}, … ],
+  "certifiedDomain": { … },            // see above
   "layers": [
     { "weightsHex": "0x…",               // int8 or int16 LE two's complement, row-major (out, in)
       "bias": [ … ],                     // int64, scale = s_in·s_w[i]; |b| < 2^53
@@ -99,11 +134,13 @@ contract returns the recomputed hash from `weightsHash()`.
 
 - `weightsHash`: must equal the compiled model's hash (CI checks this).
 - `modelVectors`: exactly 100 rows of `{features, expectedPriceBps}` from
-  `pq.forward()`. Included: all-min, all-max, all-mid, each field at both
-  bounds with the rest at mid, and the remainder sampled consistently.
-  CI requires **exact** equality.
-- `rejectVectors`: `{features, fieldIndex}`. One per bound the ABI type can
-  express. CI requires the revert with that field index.
+  `pq.forward()`, all inside the domain: domain corners, every range bound,
+  points just outside each exclusion, the rest sampled. CI requires **exact**
+  equality.
+- `rejectVectors`: `{features, error, index}` with `error` one of
+  `OutOfRange` / `Inconsistent` / `Uncertified`: every range bound the ABI type
+  can express, each consistency rule, each exclusion. CI requires exactly that
+  revert.
 
 ## Changes from GapGuard's format, and why
 
@@ -116,3 +153,4 @@ contract returns the recomputed hash from `weightsHash()`.
 | **Sign-magnitude rounding** (was `(p + copysign(half, p)) >> S`) | With an arithmetic shift, the old formula floors −0.25 to −1. The head can go negative, so this matters. |
 | **int64 bias, integer-only JSON, `exportFormatVersion`** | int32 overflows at 16×16-bit scales. Floats make the canonical hash library-dependent. |
 | **Out-of-range → revert** (was clamp on the student side) | Callers other than NoteQuoter get the same fail-closed guarantee. In-range behavior is unchanged. |
+| **v2: certified domain** (pinned terms, consistency, exclusions) | A model trained on one term sheet accepted any terms under v1. The autocall observation-day jump (~229 bps in the teacher itself) can't be fitted by any continuous student, so it's an exclusion rather than an error budget. |

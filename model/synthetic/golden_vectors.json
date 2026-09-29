@@ -1,6 +1,6 @@
 {
  "featureSpecVersion": 1,
- "weightsHash": "0x786c2f5ffe9229c1e3df202cdb0c30bcfb99013a969b3c7c65de8bb7fa28eca9",
+ "weightsHash": "0xa4bdf1c25407d241bfc22bbb59971f6bd8e30b874423fdfd3862cc65aaecff37",
  "modelVectors": [
   {
    "features": {
@@ -1517,7 +1517,8 @@
     "observationsRemaining": 52,
     "flags": 0
    },
-   "fieldIndex": 0
+   "error": "OutOfRange",
+   "index": 0
   },
   {
    "features": {
@@ -1532,7 +1533,8 @@
     "observationsRemaining": 52,
     "flags": 0
    },
-   "fieldIndex": 0
+   "error": "OutOfRange",
+   "index": 0
   },
   {
    "features": {
@@ -1547,7 +1549,8 @@
     "observationsRemaining": 52,
     "flags": 0
    },
-   "fieldIndex": 1
+   "error": "OutOfRange",
+   "index": 1
   },
   {
    "features": {
@@ -1562,7 +1565,8 @@
     "observationsRemaining": 52,
     "flags": 0
    },
-   "fieldIndex": 1
+   "error": "OutOfRange",
+   "index": 1
   },
   {
    "features": {
@@ -1577,7 +1581,8 @@
     "observationsRemaining": 52,
     "flags": 0
    },
-   "fieldIndex": 2
+   "error": "OutOfRange",
+   "index": 2
   },
   {
    "features": {
@@ -1592,7 +1597,8 @@
     "observationsRemaining": 52,
     "flags": 0
    },
-   "fieldIndex": 2
+   "error": "OutOfRange",
+   "index": 2
   },
   {
    "features": {
@@ -1607,7 +1613,8 @@
     "observationsRemaining": 52,
     "flags": 0
    },
-   "fieldIndex": 3
+   "error": "OutOfRange",
+   "index": 3
   },
   {
    "features": {
@@ -1622,7 +1629,8 @@
     "observationsRemaining": 52,
     "flags": 0
    },
-   "fieldIndex": 3
+   "error": "OutOfRange",
+   "index": 3
   },
   {
    "features": {
@@ -1637,7 +1645,8 @@
     "observationsRemaining": 52,
     "flags": 0
    },
-   "fieldIndex": 4
+   "error": "OutOfRange",
+   "index": 4
   },
   {
    "features": {
@@ -1652,7 +1661,8 @@
     "observationsRemaining": 52,
     "flags": 0
    },
-   "fieldIndex": 4
+   "error": "OutOfRange",
+   "index": 4
   },
   {
    "features": {
@@ -1667,7 +1677,8 @@
     "observationsRemaining": 52,
     "flags": 0
    },
-   "fieldIndex": 5
+   "error": "OutOfRange",
+   "index": 5
   },
   {
    "features": {
@@ -1682,7 +1693,8 @@
     "observationsRemaining": 52,
     "flags": 0
    },
-   "fieldIndex": 6
+   "error": "OutOfRange",
+   "index": 6
   },
   {
    "features": {
@@ -1697,7 +1709,8 @@
     "observationsRemaining": 52,
     "flags": 0
    },
-   "fieldIndex": 6
+   "error": "OutOfRange",
+   "index": 6
   },
   {
    "features": {
@@ -1712,7 +1725,8 @@
     "observationsRemaining": 52,
     "flags": 0
    },
-   "fieldIndex": 7
+   "error": "OutOfRange",
+   "index": 7
   },
   {
    "features": {
@@ -1727,7 +1741,8 @@
     "observationsRemaining": 0,
     "flags": 0
    },
-   "fieldIndex": 8
+   "error": "OutOfRange",
+   "index": 8
   },
   {
    "features": {
@@ -1742,7 +1757,8 @@
     "observationsRemaining": 105,
     "flags": 0
    },
-   "fieldIndex": 8
+   "error": "OutOfRange",
+   "index": 8
   },
   {
    "features": {
@@ -1757,7 +1773,8 @@
     "observationsRemaining": 52,
     "flags": 2
    },
-   "fieldIndex": 9
+   "error": "OutOfRange",
+   "index": 9
   }
  ]
 }

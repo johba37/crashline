@@ -1,0 +1,418 @@
+{
+ "exportFormatVersion": 2,
+ "featureSpecVersion": 1,
+ "weightsHash": "0x7d76382feb1aec4f76905047529f08ae2fe96e3ec80e703f0262c96f3435bb7c",
+ "architecture": {
+  "inputDim": 10,
+  "layers": [
+   {
+    "in": 10,
+    "out": 24,
+    "activation": "relu"
+   },
+   {
+    "in": 24,
+    "out": 24,
+    "activation": "relu"
+   },
+   {
+    "in": 24,
+    "out": 24,
+    "activation": "relu"
+   },
+   {
+    "in": 24,
+    "out": 1,
+    "activation": "linear"
+   }
+  ],
+  "parameterCount": 1489
+ },
+ "quantization": {
+  "weightBits": 16,
+  "activationBits": 16
+ },
+ "featureNormalization": [
+  {
+   "name": "spotBpsOfInitial",
+   "min": 2000,
+   "max": 30000
+  },
+  {
+   "name": "distToKnockInBps",
+   "min": -8000,
+   "max": 20000
+  },
+  {
+   "name": "volBpsAnnual",
+   "min": 1500,
+   "max": 15000
+  },
+  {
+   "name": "kiBarrierBps",
+   "min": 4000,
+   "max": 9000
+  },
+  {
+   "name": "acBarrierBps",
+   "min": 9000,
+   "max": 11000
+  },
+  {
+   "name": "couponBpsPerPeriod",
+   "min": 0,
+   "max": 1500
+  },
+  {
+   "name": "timeToMaturitySecs",
+   "min": 604800,
+   "max": 63072000
+  },
+  {
+   "name": "timeToNextObsSecs",
+   "min": 0,
+   "max": 604800
+  },
+  {
+   "name": "observationsRemaining",
+   "min": 1,
+   "max": 104
+  },
+  {
+   "name": "flags",
+   "min": 0,
+   "max": 1
+  }
+ ],
+ "layers": [
+  {
+   "weightsHex": "0x3ec7018084f405e93de2d70143fef91f1cab7bea39dd01800833e2e75b0716376de19cfdc6148723cccd75397db8045ffc6bff7feb569fa722a8b0ecd38c0180221c91239b1f1143d80acbdba7bb4dff67ad01802cdec1fc8bec36d3d9c985ec72cc6442f0f6338cff7f5fe8d423610ae6a7fc023d1a511606df01807e1317560437d90e81b416f9f5032efa4454b450c95989eb5b2ff7e301806a10c280d33d3de7a3165821d30c5a377ff10bbd400028dfff7fd96fff7fdce7670ae5eb211935bd7b0cf3afc9b6018029ab23f7613ef7cc70e189e041ed52230afa09a30eafff7ff20fef169a34d4285bf6ac55b7f0fec61219193aff7f48093c59459f469265e2d7db1e66633573e129017601018094e965db77090fd85ac401805b54f3b07027ffdd361a5d3a11ed8cf6b37fff7ffde7c102600109f26ee4e0feeb9504746105ee3f60f8523d6528952da9ce8af40180ebaecf570997bb9ce53d4af4717c6ab46cf7ff7ff0985b61baa2940dcacccc1747dd151eebf70b570180018080f2f6ff1f4a2b686541dfbc81da0a038f1915a1018068c066b23fd9a14e01994403bc55359de4c87a236d9e909335c053c70d579d0aff7fa9f7ff09ff7fa8b4f0f9f5144acd9503cd0d28c7e3f50180f9e6f1109f49430d5cde0d33a6f666cd740d",
+   "bias": [
+    -322274984,
+    122383661,
+    -516407359,
+    161060170,
+    418195492,
+    -567107941,
+    -37640975,
+    -628878775,
+    174710396,
+    68950685,
+    309961963,
+    452855535,
+    -1466274026,
+    523422428,
+    157314010,
+    927577787,
+    -257786945,
+    -711438433,
+    -920257716,
+    318751490,
+    580089047,
+    776394834,
+    80559907,
+    -509839731
+   ],
+   "requantMultiplierQ16": [
+    35243,
+    47541,
+    42017,
+    33221,
+    58713,
+    47825,
+    60725,
+    51339,
+    35249,
+    39014,
+    58811,
+    51478,
+    46397,
+    63843,
+    48903,
+    55794,
+    59482,
+    36090,
+    36910,
+    47097,
+    46583,
+    35361,
+    38478,
+    57631
+   ],
+   "requantShift": [
+    17,
+    17,
+    18,
+    17,
+    18,
+    18,
+    18,
+    18,
+    17,
+    17,
+    18,
+    18,
+    19,
+    18,
+    18,
+    18,
+    18,
+    18,
+    18,
+    18,
+    18,
+    17,
+    17,
+    18
+   ]
+  },
+  {
+   "weightsHex": "0x6d11aeb949a2328b573935c465110180c5ba67d3ce1670db848235b080a7b8d8811d550e1e25a6b0b2d987900ac64a1b325b477cf4c25c109746a607d41fef1901ef6bf7ff4bb0c5af60b3cecc06018058f33b30be39926046ccf9f30a9790e562ed018040ef66e966f4870617fb1e233df1fc2da5f5eff52cf1f70f82eef01d762ddc03cff711fca4ed57f46f0778fa9e380066140ea65c34f88a406c39662cdfed0180d2409149a6f880a9c8f1458f2dda601abe2c3e116ffda89da79e8734986b4b24800d9e5aa238c04d2e78a7c8bd26c8e32443152f3122018031030bbc410c3cfeadcf430dc0f46bc3a5d56f441afd01803003660284fc7e0245027a3c5cec6f16a5f94f0108fd66083af451fcc8131e04cefbedffaefed2c4a30da2fbe18e814d21c821bc45873ce3370eef840180bad43f4dfdc9c06cf9eaaebb2ff77a02c23f6c2348ca0a943e0470ac975a9603ff7fed13a600c70e1836ce22772b44115cd4310bf5f466f9f837f02f41f07ed5862e5af0a716880f56ea47d86d0d59d14335a610c5480180ce92e32f3d997d893b24f08d14beee10e6b9d7a7d992181cc43e8627ffd7de5f67c65cd07ed84e977d45ff7fdfe480a728b070cb9dd96a8524da097e7908edc84e5cbe9098af531ea30efa3b69a64e304adec7a9e8fb35e6e384a701ce3801803dae28b36073bd3ba4b051cb5b26d575d4ca9a3ef4d6a85a3d59595a6c0d4b0a0ebf041ce90ff411070bd93d3ee64122264d1444ff7ff7e6bc29fb0a9b6d31e206020713c6acfde3f514800fffea6d3656ef2edcf5ca21200573c4f1d212d64709120453d8b024e7962e1c284a319cf9fd2356f207ab6c2a87bf47cf1bd8ff7f97d2caf7536992aed1c2c0e9db2984b6ed383eb830c65a85b150141901807eb92ca46d5d43d43d0219dc23b87d1220fc10b9c806211e1576ed0b58cb4708b24ab55b1f27b6fa212d7f20ce2a317fdf2478b5ff7f7f9b69f616e5822fdc4d2e4ef1ee47c40f56b2ef01801b18fddca41a830157e2943a2eeee3628ad24d0537f1632b34e0052ce81558e1baef8b148afb9e19fb2963d78752b9dbcbfa46491d0b208447b25f4967fcd258d8812007495249d7494fb1b20180c4d79aec20e4f9bc2d8cbfe088ad92543c41dce62a53d0167046ea31e9b3d21a42b36625c009cb2c10b2c35193d0b5a2d3dcb2dc3b35f133fbbf0180ac5fc247abef39309d6c16171246484df6d92ede55d050471b4f98e51ad25361a0b010fb44d7fd050a19ff7f80195c90626511816e3b8df9492b018050dbe0bdef98bac0090dabdf61e0294d22f34d2515941822e10c74af333f58f884fa2f17d4518ee4e3d7a177908ca697d889e54fb815e49226a3e78ae5b9321c1d0677271b3ae2a22044b010018067f4907386f9598178146c3744dcc227403b4c0da73fd7f0ce2b93aa7430874718f60180f146cbbd2daaa126230d5318080032da76c0e9f9dd2ca89cfee62ee537b10c208f3a3a85afbf701fd5b239acbd577c217894e8fa68952e44f74994f6018014f3b2178d22ec0047fea7f573fe9b0804d4e4fed1ecfff1daf6c710d804aaf48ae325ff0180a8050bfc28fafc02d61431fd86dc3b05",
+   "bias": [
+    2751330,
+    34609834,
+    40034595,
+    -3214671,
+    10446729,
+    -22950980,
+    95232085,
+    22166876,
+    98126999,
+    -84723920,
+    -259291922,
+    122064831,
+    -32265745,
+    -85196801,
+    -42284500,
+    -39070404,
+    -151052601,
+    -167732236,
+    69896009,
+    -26316975,
+    25428137,
+    29949193,
+    -253797593,
+    -423610
+   ],
+   "requantMultiplierQ16": [
+    64471,
+    50806,
+    56484,
+    36155,
+    56386,
+    34406,
+    63995,
+    34377,
+    51597,
+    57816,
+    55110,
+    53127,
+    43048,
+    65200,
+    56618,
+    52528,
+    33702,
+    34530,
+    49887,
+    62789,
+    53236,
+    34404,
+    34232,
+    61547
+   ],
+   "requantShift": [
+    18,
+    17,
+    15,
+    16,
+    17,
+    13,
+    18,
+    16,
+    18,
+    18,
+    18,
+    17,
+    17,
+    18,
+    17,
+    16,
+    17,
+    16,
+    17,
+    18,
+    18,
+    16,
+    17,
+    15
+   ]
+  },
+  {
+   "weightsHex": "0x5ffae7fe60dc08f5c30701809bf8cd073e077700eb016cff90096502f80662f46ff82e04880149f9d7006c09adfde70414d9e3fe03e6141f16e013902b976ec2fdbe43b7043dab4819faeadcacc70180e190dbc2a5345103a3f89534dc3a2c2003021a0329e5a2ffadf401807f017607cdf75ef6d8081c0732070e021e0996f1440588019b05ac0bd2f70203b6f8040c710600fad60b01804e15f102cc03c7fcfcfa370178f86e03d3030dfd2ff72f05cffa42c54103520389f6bed44502bcc6ab2b9bd61e09604c67ec1dd110224717cd443129cdbf3503994aff7f230348cb3c365e8bb1a9676c55481c909e5d4fac9368085020ffd427a3a69de4c2ead8356e01f3d3b0dc501dff7f975589057e423c026564d1e430ee13b6d5198e32fb7e09e58add33c04949063d638599f12a3a70e54ed45acd8f28d63ae71b795d8a853e03ff7f1437eabd8be4070f360a633165f096ef0180a3efb5f5ab41382a0afd5215b0f95bf13f0ccb204815a83242d6ede91cf73137860e3ddf581ac6f494049263b921a0c556ea16b90180cc08fe098dbbbef52fe5f9cd1ddc579179bebc4e6abe82ff465099adbefd9ef29b05502c76f60c2fff7fc6da42c15b53c2fc73d0db04f5eadc06e6f16426b40d4ffa0f42ee0cc2b8b5ec0c13ad0504148006e0cc370e352435f9f01e63da01809213b0d79628ac074ded3ae9b83e47e67c35fc87f7e30211242b49e066da7b33aece972b45bbfb1f5d0cec38d8239bc750e5bea3cbf61d233cfa8d71e7681d51f574a045b0014a3cff7f3bf334d8c30b782077fe6ecb0d24ff7f12f43c87f03b13f99a995c17ef0f0b1e7309cf45e218281bc3300a1681d38bdcf00ec2218ccbf62340d69d01b413c7ae5211451901803d05f8f35007d4110affbbfc64003c06270970c96a0d1020530c1211490c1afd11f5fd04d508720be5cccd082b06018074f169fdb20f7eff87f7cdf6450ad1fe5ef82bdbaff51902290e1df20d0fc105c3f71614330833f034fa8dfc13f2ed013e01d7fdfc0522f822fc57f60180190193fe9502230675f360bd42fc62088a0a37fc2d08fefe88034efa63062108018057fdd1074f05550301fece04510803f9990413f37bf848041303f40638fcf00bca01730a73f73df409070180a00a1406b9f756f4bafa3ffa8f073406a304cd019f08ae07c00037c3ef0385fccd0454f13604fcd5a10f4a0201d9180e03f6018054fc9d0ae30e06fba6f66811a2faaf0e1efe15ed8300f6011b10f2fcbb079c0b06075f11d960ae3ecea53cce3583f0bb8ee41e1daefb1c87241adc94ff7f14989da8a38833fe0700d4ebc6fec4f46fc64e8ace6f5f495ec7d341f347dfb68af6cfaad1a6d1cc091e50acdaada2f9dc51f99001805d0d3e5cf73365c0f1320b6ba1b9091e1bd3a1df472c25ea655facabd154018033c2ebd442f56162e6ae2aaba6f9c085715cb0b7bcf8b9f49c0d9c01b0c0849263febf0693c390ff0c120180a10bbc0f56fa4705d207ff0385ff600ce00069e130fe05046f1273ef6bff740ae30da81364ffaaf70180e5055e1341b71508d5f782f902f28ff7d0f9f815840fb814b5a17c0bef06120e4b0d1bf876107706af13",
+   "bias": [
+    3897206,
+    -152539732,
+    8148949,
+    996469,
+    -31124974,
+    119043082,
+    68031360,
+    35771161,
+    -38180243,
+    7723734,
+    28794629,
+    111701657,
+    17514533,
+    -7308756,
+    10017376,
+    6254377,
+    508163,
+    -1383116,
+    11770171,
+    -15156224,
+    -43859324,
+    -114209565,
+    -9008623,
+    -21539210
+   ],
+   "requantMultiplierQ16": [
+    55378,
+    51413,
+    38025,
+    42348,
+    59041,
+    37095,
+    46044,
+    45107,
+    52964,
+    36144,
+    37979,
+    33606,
+    34598,
+    45079,
+    53959,
+    39507,
+    42814,
+    51551,
+    52396,
+    51598,
+    56586,
+    54605,
+    58093,
+    54454
+   ],
+   "requantShift": [
+    14,
+    18,
+    14,
+    14,
+    18,
+    17,
+    17,
+    16,
+    18,
+    15,
+    16,
+    17,
+    16,
+    15,
+    15,
+    14,
+    14,
+    14,
+    15,
+    18,
+    18,
+    18,
+    15,
+    15
+   ]
+  },
+  {
+   "weightsHex": "0xefb43908cae6ff7f72fc36f5cce8a2e3ca0dcee254e7cade86e703cc5fd2363531dc7859d1edd3083b0e650813d0cab5",
+   "bias": [
+    5302157
+   ]
+  }
+ ],
+ "output": {
+  "multiplierQ16": 64558,
+  "shift": 15,
+  "offsetBps": 10000
+ },
+ "certifiedDomain": {
+  "ranges": [
+   {
+    "name": "spotBpsOfInitial",
+    "min": 5000,
+    "max": 12000
+   },
+   {
+    "name": "distToKnockInBps",
+    "min": -1000,
+    "max": 6000
+   },
+   {
+    "name": "volBpsAnnual",
+    "min": 5500,
+    "max": 5500
+   },
+   {
+    "name": "kiBarrierBps",
+    "min": 6000,
+    "max": 6000
+   },
+   {
+    "name": "acBarrierBps",
+    "min": 10000,
+    "max": 10000
+   },
+   {
+    "name": "couponBpsPerPeriod",
+    "min": 25,
+    "max": 25
+   },
+   {
+    "name": "timeToMaturitySecs",
+    "min": 15724800,
+    "max": 16329600
+   },
+   {
+    "name": "timeToNextObsSecs",
+    "min": 0,
+    "max": 604800
+   },
+   {
+    "name": "observationsRemaining",
+    "min": 26,
+    "max": 26
+   },
+   {
+    "name": "flags",
+    "min": 0,
+    "max": 1
+   }
+  ],
+  "consistency": {
+   "distToKnockIn": true,
+   "observationIntervalSecs": 604800
+  },
+  "exclusions": [
+   {
+    "name": "acObservationDay",
+    "bounds": [
+     {
+      "field": "timeToNextObsSecs",
+      "min": 0,
+      "max": 86400
+     },
+     {
+      "field": "spotBpsOfInitial",
+      "min": 9500,
+      "max": 10500
+     }
+    ]
+   }
+  ]
+ }
+}

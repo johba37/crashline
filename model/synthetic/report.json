@@ -3,7 +3,7 @@
  "weightBits": 16,
  "activationBits": 16,
  "parameterCount": 3873,
- "weightsHash": "0x786c2f5ffe9229c1e3df202cdb0c30bcfb99013a969b3c7c65de8bb7fa28eca9",
+ "weightsHash": "0xa4bdf1c25407d241bfc22bbb59971f6bd8e30b874423fdfd3862cc65aaecff37",
  "quantizationErrorBps": {
   "p50": 0.2948132774054102,
   "p99": 1.1890823381989335,

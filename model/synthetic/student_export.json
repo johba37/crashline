@@ -1,7 +1,7 @@
 {
- "exportFormatVersion": 1,
+ "exportFormatVersion": 2,
  "featureSpecVersion": 1,
- "weightsHash": "0x786c2f5ffe9229c1e3df202cdb0c30bcfb99013a969b3c7c65de8bb7fa28eca9",
+ "weightsHash": "0xa4bdf1c25407d241bfc22bbb59971f6bd8e30b874423fdfd3862cc65aaecff37",
  "architecture": {
   "inputDim": 10,
   "layers": [
@@ -79,6 +79,65 @@
    "max": 1
   }
  ],
+ "certifiedDomain": {
+  "ranges": [
+   {
+    "name": "spotBpsOfInitial",
+    "min": 2000,
+    "max": 30000
+   },
+   {
+    "name": "distToKnockInBps",
+    "min": -8000,
+    "max": 20000
+   },
+   {
+    "name": "volBpsAnnual",
+    "min": 1500,
+    "max": 15000
+   },
+   {
+    "name": "kiBarrierBps",
+    "min": 4000,
+    "max": 9000
+   },
+   {
+    "name": "acBarrierBps",
+    "min": 9000,
+    "max": 11000
+   },
+   {
+    "name": "couponBpsPerPeriod",
+    "min": 0,
+    "max": 1500
+   },
+   {
+    "name": "timeToMaturitySecs",
+    "min": 604800,
+    "max": 63072000
+   },
+   {
+    "name": "timeToNextObsSecs",
+    "min": 0,
+    "max": 604800
+   },
+   {
+    "name": "observationsRemaining",
+    "min": 1,
+    "max": 104
+   },
+   {
+    "name": "flags",
+    "min": 0,
+    "max": 1
+   }
+  ],
+  "consistency": {
+   "distToKnockIn": false,
+   "observationIntervalSecs": 0
+  },
+  "exclusions": []
+ },
  "layers": [
   {
    "weightsHex": "0xac0c1637018023ef36fc3f2d7b0ee4fed108a1e81fa401808496c2e017091b25972506fad08236eed822ba633ee29044bc042c24ff7fd1fee3bc88e1f4f98a747ee58cfdb3fd0180aea49203c61e06dbc0cc0180e7e082cee5f07cd1652b16fec9cc8fed3b48ff7fa8286ed44321e0cad557e7ff77d95f95ac403b2e0180212252f86e14b4f1a5002f357c6828b3fcf33d19121a7303ff7f392541fc0b1cddb474bb6150fa0da993e913a0ec93eb63fd461401807776ff7f19ed860302efdfb43f3ce1fe6d84dab9ff7f515d3ec2990c9ce2981280c3b1fda90e300194d6a22c2615a60755000180a8006aff49281a016055d013c7021e11a2de61d5d3dbb7fbf5c201800dda781880e2b510050b9e21cb216b02fa3cff7f6548f03eb77129fd05fa0180927e0b0096fbc70382860180b1e7c2ed3924f1fc01265fff68dc4500bf3e30c24c0157f50500ab0e5da54a000180bbff53409ec37cfb14f57cff0459b211cdfeff7f99bfb42fabfdd1299ef6fefc4c5fc7ce84ff01804d34ff7f055ba9cc181140f0d9cfdceddefe47e79e046bf9324630d54ae304075a4e4418a504ff7f720f9b0c2ff6790adef9f502d91916e68600ff7f3b88e6dcff7f8a30ff2de4e9f67fe2e08dfc751f88ffb5f1466a2133ff7f940e04acff395fef69bdf26bf1f8f33ac704020bb3ff0180036f79ff8129d50b3ddafa1d825be7fb7dfcffe12d86370361bd018050aa925b0c540c11c5fbb0bdfedeeefbff7f645d7bebc8f328e9a5fe4c00a7a1ff7fa9005020bf0ecd17e1dd0180331bccfb682c59fc0501880224e22a93a35a4605350ec400eceaff7f47fe035e4dfc01800bbc6a066ee95505bfa7229c9c02bbc8b3820180d2a1e708990a67fd29fe0cdd9200d62ad115e740ff7f9b8a24181d07e545bb712601025aed8fd2940180531c3408effcec00f7062f015e0f11285ccdc5c90c5ce93c710c7a38ff7f77fc52f7d95329d7ff7f27d2611363ffbb79bf042a0089d7ec55e9b9018012b171ece010ec15963cc80106bd8efcf5bdff7f6fd84e23b3f3cfd440353d04a127d57a987e6504fb36be08bdf3876fff7f8804530806394d1566ed5dfd9aff04fea625176f62fd8bfbff7f2e5df20ac5cea72044f6acb1e163fdf88caeff7f018091aad231eaf67ef511ee5ebee5fb88e2595bbb3611c71809e9f571000d88c7aa9a020180d5ffa4bb1b574b314910d30003ae484936014f6e0180c2860180b7d99e37a6cad84df5b481fcc8f569868062f8440332eb02bbedff7fe33632fc16b816e5018040a5520ed9e64111f213292cc2ffffdbcafcae0489fa04002dff6a00e6000180e3004b88a1ff4ab415e17ca93408fdfb1063ff7fba08eb2869af1ea565c8db58d6be06080e1a0180cbf82e4ce86631bcff7f9b3817168a0162a01a44cdfd79f7500466999c3071def0d563126061018080f06f3b60ece235a5eb7d289cc986fe74dfff7f0f04b2058a84ff7f777e04be9ecd25fa1efc6cfeca01bcf5fb1a8bc37b1610d1e904b0071c650180a802959bde76808d01805bff29e9a801f6ffd2e3d5ff661db10269b02edd38d0baf600ed6f61800411ffff7fa042235d95385df46baa66117641e6df92fedf4cff7f95c3468723afb3e85c03d0d8b53a2800ff7fe64fa3fedab4f6b10ffdba122f5df3ba03fdff7ff45a0180a69663fc4a0a37fd27ffa52ca1ffcece0f2ebc29b3d87bfe38f22e01eb761f418bfdff7f85515cddad42e60262fe79010180d13c98fff6abfdfc6f3f16ff409dd9036d3145fe89f8e5f9aeaeff7f",

@@ -1,0 +1,75 @@
+{
+ "ranges": [
+  {
+   "name": "spotBpsOfInitial",
+   "min": 5000,
+   "max": 12000
+  },
+  {
+   "name": "distToKnockInBps",
+   "min": -1000,
+   "max": 6000
+  },
+  {
+   "name": "volBpsAnnual",
+   "min": 5500,
+   "max": 5500
+  },
+  {
+   "name": "kiBarrierBps",
+   "min": 6000,
+   "max": 6000
+  },
+  {
+   "name": "acBarrierBps",
+   "min": 10000,
+   "max": 10000
+  },
+  {
+   "name": "couponBpsPerPeriod",
+   "min": 25,
+   "max": 25
+  },
+  {
+   "name": "timeToMaturitySecs",
+   "min": 15724800,
+   "max": 16329600
+  },
+  {
+   "name": "timeToNextObsSecs",
+   "min": 0,
+   "max": 604800
+  },
+  {
+   "name": "observationsRemaining",
+   "min": 26,
+   "max": 26
+  },
+  {
+   "name": "flags",
+   "min": 0,
+   "max": 1
+  }
+ ],
+ "consistency": {
+  "distToKnockIn": true,
+  "observationIntervalSecs": 604800
+ },
+ "exclusions": [
+  {
+   "name": "acObservationDay",
+   "bounds": [
+    {
+     "field": "timeToNextObsSecs",
+     "min": 0,
+     "max": 86400
+    },
+    {
+     "field": "spotBpsOfInitial",
+     "min": 9500,
+     "max": 10500
+    }
+   ]
+  }
+ ]
+}

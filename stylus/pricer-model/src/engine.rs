@@ -1,5 +1,6 @@
-//! Integer forward pass. Bit-exact twin of `tools/pricer_quant.py::forward`;
-//! the golden vectors are the contract between the two.
+//! Certified-domain check + integer forward pass. Bit-exact twin of
+//! `tools/pricer_quant.py::forward`; the golden vectors are the contract
+//! between the two.
 //!
 //! No floats, no allocation, no storage: every constant is compiled in from
 //! the export by build.rs, and i64 overflow is ruled out there for all
@@ -22,12 +23,45 @@ include!(concat!(env!("OUT_DIR"), "/model.rs"));
 pub const NUM_FEATURES: usize = 10;
 pub const PRICE_MAX_BPS: i64 = u16::MAX as i64;
 
-/// An input outside the published training range. Never clamped: the model
-/// only speaks where it was certified against the teacher.
+/// Why the model refuses. Never clamped: the model only speaks where it was
+/// certified against the teacher.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct OutOfRange {
-    pub field: u8,
-    pub value: i64,
+pub enum Refusal {
+    /// `field` outside its certified range.
+    OutOfRange { field: u8, value: i64 },
+    /// Inside excluded region `region` (e.g. the autocall observation-day band).
+    Uncertified(u8),
+    /// A derived field doesn't match the others (1 = dist, 6 = ttm).
+    Inconsistent(u8),
+}
+
+const SPOT: usize = 0;
+const DIST: usize = 1;
+const KI: usize = 3;
+const TTM: usize = 6;
+const TNEXT: usize = 7;
+const OBS: usize = 8;
+
+/// Order is binding (mirrors `pq.check_domain`): ranges by field index, then
+/// derived fields (dist, then ttm), then exclusions in order.
+pub fn check_domain(raw: &[i64; NUM_FEATURES]) -> Result<(), Refusal> {
+    for i in 0..NUM_FEATURES {
+        if raw[i] < DOMAIN_MIN[i] || raw[i] > DOMAIN_MAX[i] {
+            return Err(Refusal::OutOfRange { field: i as u8, value: raw[i] });
+        }
+    }
+    if CHECK_DIST && raw[DIST] != raw[SPOT] - raw[KI] {
+        return Err(Refusal::Inconsistent(DIST as u8));
+    }
+    if OBS_INTERVAL != 0 && raw[TTM] != raw[TNEXT] + raw[OBS] * OBS_INTERVAL {
+        return Err(Refusal::Inconsistent(TTM as u8));
+    }
+    for (k, bounds) in EXCLUSIONS.iter().enumerate() {
+        if bounds.iter().all(|&(f, lo, hi)| raw[f] >= lo && raw[f] <= hi) {
+            return Err(Refusal::Uncertified(k as u8));
+        }
+    }
+    Ok(())
 }
 
 /// `p / 2^s`, rounded half away from zero (sign-magnitude, so negatives round
@@ -38,13 +72,15 @@ pub fn round_shift(p: i64, s: u32) -> i64 {
     if p >= 0 { (p + half) >> s } else { -((-p + half) >> s) }
 }
 
-/// Raw units -> [-QMAX, QMAX], or the first out-of-range field.
-pub fn normalize(raw: &[i64; NUM_FEATURES]) -> Result<[i64; NUM_FEATURES], OutOfRange> {
+/// Raw units -> [-QMAX, QMAX]. The certified domain is inside the
+/// normalization ranges (build.rs), so after `check_domain` this can't fail;
+/// the check stays as defense in depth.
+pub fn normalize(raw: &[i64; NUM_FEATURES]) -> Result<[i64; NUM_FEATURES], Refusal> {
     let mut x = [0i64; NUM_FEATURES];
     for i in 0..NUM_FEATURES {
         let (lo, hi, v) = (FIELD_MIN[i], FIELD_MAX[i], raw[i]);
         if v < lo || v > hi {
-            return Err(OutOfRange { field: i as u8, value: v });
+            return Err(Refusal::OutOfRange { field: i as u8, value: v });
         }
         let range = hi - lo;
         x[i] = ((v - lo) * 2 * QMAX + range / 2) / range - QMAX;
@@ -52,8 +88,9 @@ pub fn normalize(raw: &[i64; NUM_FEATURES]) -> Result<[i64; NUM_FEATURES], OutOf
     Ok(x)
 }
 
-/// Fair value in bps of notional, clamped to [0, 65535].
-pub fn price_bps(raw: &[i64; NUM_FEATURES]) -> Result<u16, OutOfRange> {
+/// Clean fair value in bps of notional, clamped to [0, 65535].
+pub fn price_bps(raw: &[i64; NUM_FEATURES]) -> Result<u16, Refusal> {
+    check_domain(raw)?;
     let x0 = normalize(raw)?;
     let mut a = [0i64; MAX_WIDTH];
     let mut b = [0i64; MAX_WIDTH];

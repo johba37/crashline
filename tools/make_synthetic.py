@@ -119,7 +119,7 @@ def reject_rows() -> list[dict]:
                 continue
             r = list(mid)
             r[i] = v
-            out.append({"features": dict(zip(pq.FIELD_NAMES, r)), "fieldIndex": i})
+            out.append({"features": dict(zip(pq.FIELD_NAMES, r)), "error": "OutOfRange", "index": i})
     return out
 
 
@@ -161,12 +161,7 @@ def main() -> None:
         ],
         "rejectVectors": reject_rows(),
     }
-    for rv in vectors["rejectVectors"]:
-        try:
-            pq.forward(export, rv["features"])
-            raise AssertionError(f"reject vector accepted: {rv}")
-        except pq.OutOfRange as e:
-            assert e.index == rv["fieldIndex"]
+    pq.check_reject_vectors(export, vectors["rejectVectors"])
 
     out = pathlib.Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
