@@ -13,6 +13,7 @@ research on Opyn, Pendle, Gnosis CTF, Siren and Cega (2026-09-29).
 ┌─ L3  INTEGRATIONS ─ opt-in; all policy lives here ─────────────────────────────────────┐
 │                                                                                        │
 │ Desk  (ERC-4626: LPs deposit USDG, shares are an ERC-20)                               │
+│   • listing per series: pricer (certified model per product) + vol + cap               │
 │   • buy / sell NOTE at quote ± fee  (the pricer's only in-path use)                    │
 │   • quotes a curated grid only: 1 series / underlying / week                  [2]      │
 │   • keeps WRITER by default; no promise of WRITER liquidity                   [8]      │
@@ -32,6 +33,7 @@ research on Opyn, Pendle, Gnosis CTF, Siren and Cega (2026-09-29).
 │   • note state from series + recorder, never from caller     │        │
 │   • stale feed / out-of-range input → revert                 │        │
 │   • fee is a call parameter, emitted in NoteQuoted           │        │
+│   • one quoter for all models; the Desk passes the pricer    │        │
 │   calls: SurrogatePricer, FixingsRecorder, feed              │        │
 │                                                              │        │
 └──────────────────────────────────────────────────────────────┘        │
@@ -63,6 +65,7 @@ research on Opyn, Pendle, Gnosis CTF, Siren and Cega (2026-09-29).
 │   pure, w16a16, ~45k gas    permissionless, checked     pure: fixings → payout,        │
 │   weightsHash pinned        against feed rounds;        same rules as teacher,         │
 │   certified domain only     pause = staleness [!]       shared test vectors            │
+│   one per product, any stock                                                           │
 │                                                                                        │
 └────────────────────────────────────────────────────────────────────────────────────────┘
   feed:  Chainlink RHTSLA/USD, 24/5 → FixingsRecorder, NoteQuoter
@@ -99,6 +102,13 @@ Sources: [Opyn Gamma OZ audit](https://www.openzeppelin.com/news/opyn-gamma-prot
 - **Implied vol is not a series term.** It changes the price, never the payout. Keeping it
   out of `SeriesTerms` keeps identical notes in one fungible series; vol is set per series
   in the Desk listing.
+- **One certified model per product, not per stock or per note.** Every model input is
+  relative to the strike, so the stock enters only through vol. K1 round 0 showed one
+  network can't cover all term sheets (~18× over the gate), so each model is certified for
+  one set of terms. The Desk listing names the pricer for each series; `listSeries` checks
+  the series' terms and vol against the pricer's `certifiedRange`. Scaling to many stocks:
+  a model with vol as a free input (one per product) if K1 round 2 certifies it, otherwise
+  one model per product and vol level.
 - **The payout rules are normative** (see `INoteSeries.sol`) and are the ones the Monte Carlo
   teacher prices: accrued coupon, autocall at `>= ac`, knock-in at `< ki`, both latching and
   checked at barrier observations only, and the maturity fixing **one period after the last

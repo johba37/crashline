@@ -98,6 +98,11 @@
         "internalType": "contract INoteSeries"
       },
       {
+        "name": "pricer",
+        "type": "address",
+        "internalType": "contract ISurrogatePricer"
+      },
+      {
         "name": "volBpsAnnual",
         "type": "uint16",
         "internalType": "uint16"
@@ -113,19 +118,6 @@
         "name": "weightsHash",
         "type": "bytes32",
         "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "pricer",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract ISurrogatePricer"
       }
     ],
     "stateMutability": "view"

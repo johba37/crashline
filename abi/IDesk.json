@@ -279,6 +279,11 @@
         "internalType": "address"
       },
       {
+        "name": "pricer",
+        "type": "address",
+        "internalType": "contract ISurrogatePricer"
+      },
+      {
         "name": "volBpsAnnual",
         "type": "uint16",
         "internalType": "uint16"
@@ -325,6 +330,11 @@
             "name": "active",
             "type": "bool",
             "internalType": "bool"
+          },
+          {
+            "name": "pricer",
+            "type": "address",
+            "internalType": "contract ISurrogatePricer"
           },
           {
             "name": "volBpsAnnual",
@@ -1057,6 +1067,18 @@
         "internalType": "address"
       },
       {
+        "name": "pricer",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "weightsHash",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
+      },
+      {
         "name": "volBpsAnnual",
         "type": "uint16",
         "indexed": false,
@@ -1157,6 +1179,28 @@
         "name": "feeBps",
         "type": "uint16",
         "internalType": "uint16"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ModelMismatch",
+    "inputs": [
+      {
+        "name": "field",
+        "type": "uint8",
+        "internalType": "uint8"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "NotFactorySeries",
+    "inputs": [
+      {
+        "name": "series",
+        "type": "address",
+        "internalType": "address"
       }
     ]
   },

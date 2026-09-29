@@ -32,11 +32,20 @@ listed here.
 | times | unix seconds (`uint40`) |
 | `volBpsAnnual` | annualized implied vol in bps (e.g. 5000 = 50%) |
 
+## Models, products and stocks
+
+A pricer (Stylus model) is certified for one **product**: fixed knock-in, autocall and
+coupon, a maximum tenor, and currently a fixed vol. It never sees which stock it prices;
+every input is relative to the strike. So one model serves every series with those
+terms, on any stock with that vol. The Desk listing says which model prices which
+series: `Listing{pricer, volBpsAnnual, capNotional, …}`. One stateless quoter serves all
+models. Today: one model, `model/k1-r1` (60% / 100% / 25 bps per week, 55% vol).
+
 ## Screens and the calls behind them
 
 **Market list.** `desk.listedSeries()` → for each series:
-`desk.listing(s)` (vol, cap, sold), `series.terms()`, `series.state()`,
-`quoter.notePriceBps(s, listing.volBpsAnnual)`. When a quote reverts, show why (see Errors)
+`desk.listing(s)` (pricer, vol, cap, sold), `series.terms()`, `series.state()`,
+`quoter.notePriceBps(s, listing.pricer, listing.volBpsAnnual)`. When a quote reverts, show why (see Errors)
 rather than hiding the series.
 
 **Lifecycle to show.** Barrier observations every interval after strike; the
@@ -50,6 +59,8 @@ only (26 observations remaining), spot 50–120% of initial.
 - `series.pendingObservation()`.
 - Fixing history: `FixingRecorded` events on `series.recorder()`, and `ObservationProcessed` on the series.
 - `weightsHash`: from `notePriceBps`, or from `NoteBought` for past trades.
+- The model card: `listing.pricer`, its `weightsHash()` and `certifiedRange(0..9)`,
+  i.e. which product it was certified for and where it will answer.
 
 **Buy NOTE.**
 1. `desk.quoteBuy(s, amount, feeBps)` → `(cost, priceBps)`.
@@ -87,7 +98,7 @@ find the round (binary search over `feed.getRoundData`: the last round at or bef
 | Series | `Struck`, `ObservationProcessed`, `Settled` | lifecycle timeline |
 | Series | `Minted`, `PairRedeemed`, `Redeemed` | positions |
 | Desk | `NoteBought`, `NoteSold` (carry `priceBps`, `feeBps`, `weightsHash`) | trade history, "which model priced this" |
-| Desk | `SeriesListed`, `SeriesDelisted`, ERC-4626 `Deposit`/`Withdraw` | admin + LP views |
+| Desk | `SeriesListed(series, pricer, weightsHash, vol, cap)` (also on updates), `SeriesDelisted`, ERC-4626 `Deposit`/`Withdraw` | admin + LP views, model changes |
 
 ## Errors worth a human message
 

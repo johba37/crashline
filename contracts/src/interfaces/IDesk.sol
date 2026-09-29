@@ -3,12 +3,16 @@ pragma solidity ^0.8.24;
 
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {INoteQuoter} from "./INoteQuoter.sol";
+import {ISurrogatePricer} from "./ISurrogatePricer.sol";
 import {ISeriesFactory} from "./ISeriesFactory.sol";
 
 /// L3: the market for NOTE, and the pricer's only in-path use. An ERC-4626
 /// vault on USDG: LPs deposit USDG; the Desk mints NOTE+WRITER pairs, sells
 /// NOTE at the model's quote, keeps WRITER, and buys NOTE back for early exit.
-/// All policy lives here: the curated grid, vol, caps, bands, fee cap.
+/// All policy lives here: the curated grid, which model prices which series,
+/// vol, caps, bands, fee cap. A model covers one product (note terms), not a
+/// stock or a series: every series with those terms can share it, and a stock
+/// enters only through the vol the listing sets.
 ///
 /// Units: noteAmount in NOTE base units (6 decimals, 1 NOTE = 1 USDG notional);
 /// priceBps and feeBps in bps of notional. cost/proceeds in USDG base units.
@@ -22,12 +26,17 @@ import {ISeriesFactory} from "./ISeriesFactory.sol";
 interface IDesk is IERC4626 {
     struct Listing {
         bool active;
+        ISurrogatePricer pricer; // certified model for this series' product
         uint16 volBpsAnnual; // implied vol used for every quote of this series
+        // (a vol-pinned model refuses any other vol: see pricer.certifiedRange(2))
         uint128 capNotional; // max NOTE outstanding from this Desk (6 decimals)
         uint128 soldNotional; // NOTE currently sold and not bought back
     }
 
-    event SeriesListed(address indexed series, uint16 volBpsAnnual, uint128 capNotional);
+    /// Emitted on listing and on every update (new model, vol or cap).
+    event SeriesListed(
+        address indexed series, address indexed pricer, bytes32 weightsHash, uint16 volBpsAnnual, uint128 capNotional
+    );
     event SeriesDelisted(address indexed series);
     /// Emitted on every buy: the quote, the model version and the explicit fee.
     event NoteBought(
@@ -55,6 +64,8 @@ interface IDesk is IERC4626 {
     event Collected(address indexed series, uint256 collateralOut);
 
     error NotListed(address series);
+    error NotFactorySeries(address series);
+    error ModelMismatch(uint8 field); // PricerInputs index outside the pricer's certifiedRange
     error CapExceeded(uint256 requested, uint256 available);
     error FeeTooHigh(uint16 feeBps);
     error Slippage(uint256 actual, uint256 limit);
@@ -98,7 +109,12 @@ interface IDesk is IERC4626 {
     function collect(address series) external returns (uint256 collateralOut);
 
     // --- curator (owner) -----------------------------------------------------
-    function listSeries(address series, uint16 volBpsAnnual, uint128 capNotional) external;
+    /// Lists a series or updates its listing. Static checks, so a series can be
+    /// listed before its strike or over a weekend: the series comes from
+    /// `factory`, and its ki / ac / coupon, its observationCount and
+    /// `volBpsAnnual` lie inside the pricer's certifiedRange. A model whose
+    /// domain excludes the series can't be listed (ModelMismatch).
+    function listSeries(address series, ISurrogatePricer pricer, uint16 volBpsAnnual, uint128 capNotional) external;
     function delistSeries(address series) external; // stops new buys; sells still allowed
     function setMinSecsToObservation(uint32 secs) external;
 }
