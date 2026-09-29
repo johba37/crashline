@@ -6,6 +6,8 @@ Stylus contract, behind a model-free note core on Robinhood Chain, settled in US
 
 Architecture and the lessons it's built on: [docs/architecture.md](docs/architecture.md).
 Frontend guide to the frozen v1 interfaces: [docs/interfaces.md](docs/interfaces.md).
+Roadmap: [docs/v2-perpetual-note.md](docs/v2-perpetual-note.md), a perpetual note with
+no expiry and one token per stock, priced by a closed form plus a learned correction.
 
 ```
 contracts/src/interfaces/  frozen v1 interfaces (factory, series, tokens, quoter, Desk, recorder, pricer)
