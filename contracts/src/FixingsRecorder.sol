@@ -55,8 +55,11 @@ contract FixingsRecorder is IFixingsRecorder {
             }
         }
 
-        fixings[obsTime] = Fixing({timestamp: updatedAt, price: uint96(uint256(answer)), roundId: roundId});
-        emit FixingRecorded(obsTime, roundId, uint96(uint256(answer)), updatedAt);
+        // 0 < answer <= PRICE_MAX (1e13) fits uint96
+        // forge-lint: disable-next-line(unsafe-typecast)
+        uint96 price = uint96(uint256(answer));
+        fixings[obsTime] = Fixing({timestamp: updatedAt, price: price, roundId: roundId});
+        emit FixingRecorded(obsTime, roundId, price, updatedAt);
     }
 
     function fixingOf(uint40 obsTime) external view returns (Fixing memory) {
@@ -74,6 +77,8 @@ contract FixingsRecorder is IFixingsRecorder {
     {
         uint256 u;
         (id, answer, startedAt, u, answeredInRound) = feed.getRoundData(roundId);
+        // unix seconds fit uint40 until the year 36812
+        // forge-lint: disable-next-line(unsafe-typecast)
         updatedAt = uint40(u);
     }
 }

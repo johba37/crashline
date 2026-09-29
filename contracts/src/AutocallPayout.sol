@@ -36,6 +36,8 @@ library AutocallPayout {
 
     /// 1 + c * (N + 1) in base units: what one NOTE + WRITER pair locks.
     function maxPayoutPerNote(uint16 couponBpsPerPeriod, uint8 observationCount) internal pure returns (uint128) {
+        // <= 1e6 + 10_000 * 105 * 100 (factory bounds): fits uint128
+        // forge-lint: disable-next-line(unsafe-typecast)
         return uint128(UNIT + couponUnits(couponBpsPerPeriod, uint256(observationCount) + 1));
     }
 
@@ -92,6 +94,8 @@ library AutocallPayout {
     function _settle(Progress memory p, uint8 at, uint256 payout) private pure {
         p.phase = Phase.Settled;
         p.settledAt = at;
+        // payout <= maxPayoutPerNote, which fits uint128
+        // forge-lint: disable-next-line(unsafe-typecast)
         p.payoutPerNote = uint128(payout);
     }
 }

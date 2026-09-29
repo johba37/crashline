@@ -16,3 +16,25 @@ runs = 1000
 runs = 256
 depth = 64
 fail_on_revert = true
+
+[lint]
+# src/ builds without lint findings; tests and scripts aren't linted on build.
+# Excluded lints, each reviewed in docs/contracts-review.md:
+#   block-timestamp       the product is a schedule of timestamps (fixings, staleness, bands)
+#   calls-loop            loops are bounded (N + 2 fixings per advance, MAX_HELD_SERIES in the Desk)
+#                         and call only factory clones, their recorder and the quoter
+#   reentrancy-events     every state-changing entry point is nonReentrant; events follow
+#                         calls to trusted clones or USDG
+#   boolean-cst           false positive on tuple returns such as (false, 0)
+#   missing-zero-check    initializers are factory-only with non-zero arguments
+#   missing-events-*      initializer-only writes (the factory emits SeriesCreated)
+ignore = ["test/**", "script/**"]
+exclude_lints = [
+    "block-timestamp",
+    "calls-loop",
+    "reentrancy-events",
+    "boolean-cst",
+    "missing-zero-check",
+    "missing-events-arithmetic",
+    "missing-events-access-control",
+]

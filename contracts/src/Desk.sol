@@ -124,6 +124,8 @@ contract Desk is IDesk, ERC4626, Ownable, ReentrancyGuard {
         _checkCap(series, noteAmount);
         cost = t.amount = Math.mulDiv(noteAmount, t.priceBps, BPS, Math.Rounding.Ceil) + t.fee;
         if (cost > maxCost) revert Slippage(cost, maxCost);
+        // _checkCap: noteAmount <= capNotional - soldNotional, a uint128
+        // forge-lint: disable-next-line(unsafe-typecast)
         _listings[series].soldNotional += uint128(noteAmount);
 
         IERC20(asset()).safeTransferFrom(msg.sender, address(this), cost);
@@ -132,7 +134,8 @@ contract Desk is IDesk, ERC4626, Ownable, ReentrancyGuard {
         if (inventory < noteAmount) {
             uint256 toMint = noteAmount - inventory;
             IERC20(asset()).forceApprove(series, INoteSeries(series).previewMint(toMint));
-            INoteSeries(series).mint(toMint, address(this));
+            // forge-lint: disable-next-line(unused-return)
+            INoteSeries(series).mint(toMint, address(this)); // collateral = the previewMint approved above
             _hold(series);
         }
         note.safeTransfer(to, noteAmount);
@@ -153,11 +156,14 @@ contract Desk is IDesk, ERC4626, Ownable, ReentrancyGuard {
         t.amount = proceeds;
         if (proceeds < minProceeds) revert Slippage(proceeds, minProceeds);
         Listing storage l = _listings[series];
+        // min(…, soldNotional) fits uint128
+        // forge-lint: disable-next-line(unsafe-typecast)
         l.soldNotional -= uint128(Math.min(noteAmount, l.soldNotional));
 
         IERC20(INoteSeries(series).note()).safeTransferFrom(msg.sender, address(this), noteAmount);
         uint256 pairs = Math.min(noteAmount, IERC20(INoteSeries(series).writer()).balanceOf(address(this)));
-        if (pairs != 0) INoteSeries(series).redeemPair(pairs, address(this));
+        // forge-lint: disable-next-line(unused-return)
+        if (pairs != 0) INoteSeries(series).redeemPair(pairs, address(this)); // USDG lands in idle
         if (pairs < noteAmount) _hold(series); // NOTE inventory from a hedger's pair
         IERC20(asset()).safeTransfer(to, proceeds);
         _payFee(feeReceiver, t.fee);
@@ -351,6 +357,8 @@ contract Desk is IDesk, ERC4626, Ownable, ReentrancyGuard {
 
     function _checkRange(ISurrogatePricer pricer, uint8 field, uint256 value) internal view {
         (int64 lo, int64 hi) = pricer.certifiedRange(field);
+        // value is a uint8/uint16 term: fits int256
+        // forge-lint: disable-next-line(unsafe-typecast)
         if (int256(value) < lo || int256(value) > hi) revert ModelMismatch(field);
     }
 
@@ -396,8 +404,9 @@ contract Desk is IDesk, ERC4626, Ownable, ReentrancyGuard {
             notePerUnit = maxPayout; // final period, not knocked in: the payout is certain
         } else {
             Listing memory l = _listings[series];
-            uint16 priceBps;
+            uint16 priceBps = 0;
             if (strict) {
+                // forge-lint: disable-next-line(unused-return)
                 (priceBps,) = quoter.notePriceBps(s, l.pricer, l.volBpsAnnual);
             } else {
                 try quoter.notePriceBps(s, l.pricer, l.volBpsAnnual) returns (uint16 p, bytes32) {

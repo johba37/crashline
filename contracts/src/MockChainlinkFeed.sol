@@ -31,6 +31,7 @@ contract MockChainlinkFeed {
     }
 
     function pushRound(int256 answer) external {
+        // forge-lint: disable-next-line(unsafe-typecast)
         _push(answer, uint40(block.timestamp));
     }
 
@@ -60,6 +61,7 @@ contract MockChainlinkFeed {
         view
         returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
     {
+        // forge-lint: disable-next-line(unsafe-typecast)
         return getRoundData(uint80(uint256(PHASE_OFFSET) + rounds.length));
     }
 

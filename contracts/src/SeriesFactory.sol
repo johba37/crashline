@@ -87,8 +87,13 @@ contract SeriesFactory is ISeriesFactory {
         series = Clones.cloneDeterministic(seriesImplementation, id);
         address note = Clones.cloneDeterministic(tokenImplementation, _tokenSalt(id, true));
         address writer = Clones.cloneDeterministic(tokenImplementation, _tokenSalt(id, false));
+        // register before the (trusted) initialize calls
+        seriesOf[id] = series;
+        isSeries[series] = true;
+        _allSeries.push(series);
 
-        string memory tag = Strings.toHexString(uint256(uint32(bytes4(id))), 4);
+        // forge-lint: disable-next-line(unsafe-typecast)
+        string memory tag = Strings.toHexString(uint256(uint32(bytes4(id))), 4); // bytes4 -> uint32 is exact
         SeriesToken(note)
             .initialize(
                 series, true, COLLATERAL_DECIMALS, string.concat("Autocall NOTE ", tag), string.concat("NOTE-", tag)
@@ -102,10 +107,6 @@ contract SeriesFactory is ISeriesFactory {
                 string.concat("WRITER-", tag)
             );
         NoteSeries(series).initialize(id, terms, note, writer, recorder, collateral);
-
-        seriesOf[id] = series;
-        isSeries[series] = true;
-        _allSeries.push(series);
         emit SeriesCreated(id, terms.feed, series, note, writer, terms);
     }
 
@@ -133,6 +134,8 @@ contract SeriesFactory is ISeriesFactory {
     }
 
     function _recorderInitCode(address feed) internal pure returns (bytes memory) {
+        // creation code + ABI-encoded constructor argument: the standard CREATE2 init code
+        // forge-lint: disable-next-line(encode-packed-collision)
         return abi.encodePacked(type(FixingsRecorder).creationCode, abi.encode(feed));
     }
 

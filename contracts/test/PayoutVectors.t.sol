@@ -155,7 +155,7 @@ contract PayoutVectorsTest is Base {
         assertEq(s.maxPayoutPerNote(), v.maxPayoutPerNote, v.tag);
     }
 
-    function _checkSettledEvent(Vector memory v, address series) internal {
+    function _checkSettledEvent(Vector memory v, address series) internal view {
         Vm.Log[] memory logs = vm.getRecordedLogs();
         uint256 found;
         for (uint256 k = 0; k < logs.length; k++) {

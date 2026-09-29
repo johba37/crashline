@@ -211,7 +211,7 @@ contract NoteSeries is INoteSeries, ReentrancyGuard {
     /// Processes every processable fixing in order, emits, and stores the result.
     function _advance() internal returns (AutocallPayout.Progress memory p) {
         p = _progress;
-        bool changed;
+        bool changed = false;
         while (true) {
             (bool ok, uint40 obsTime, uint96 fixing, bool fallbackUsed) = _nextFixing(p);
             if (!ok) break;
@@ -238,8 +238,11 @@ contract NoteSeries is INoteSeries, ReentrancyGuard {
         s.knockedIn = p.knockedIn;
         s.autocalled = p.autocalled;
         s.nextObservation = p.phase == Phase.Settled ? 0 : _nextTime(p);
-        s.maturity =
-            uint40(uint256(_terms.strikeTime) + (uint256(_terms.observationCount) + 1) * _terms.observationInterval);
+        uint256 maturity =
+            uint256(_terms.strikeTime) + (uint256(_terms.observationCount) + 1) * _terms.observationInterval;
+        // the factory rejects schedules whose maturity doesn't fit uint40 (BadSchedule)
+        // forge-lint: disable-next-line(unsafe-typecast)
+        s.maturity = uint40(maturity);
         s.payoutPerNote = p.payoutPerNote;
     }
 }

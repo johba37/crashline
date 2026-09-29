@@ -44,6 +44,8 @@ contract NoteQuoter is INoteQuoter {
         if (pending) revert FixingPending(obsTime);
         SeriesTerms memory t = series.terms();
 
+        // Every cast below is range-checked first (or exact by construction).
+        // forge-lint: disable-start(unsafe-typecast)
         uint256 spot = _spot(IAggregatorV3(t.feed));
         uint256 spotBps = spot * BPS / st.initialFixing;
         if (spotBps > type(uint16).max) revert ISurrogatePricer.OutOfRange(0, int64(uint64(spotBps)));
@@ -65,6 +67,7 @@ contract NoteQuoter is INoteQuoter {
         in_.timeToNextObsSecs = uint32(tNext);
         in_.observationsRemaining = uint8(obsRemaining);
         in_.flags = st.knockedIn ? 1 : 0;
+        // forge-lint: disable-end(unsafe-typecast)
     }
 
     /// @inheritdoc INoteQuoter
@@ -83,9 +86,12 @@ contract NoteQuoter is INoteQuoter {
     }
 
     function _spot(IAggregatorV3 feed) internal view returns (uint256) {
+        // forge-lint: disable-next-line(unused-return)
         (, int256 answer,, uint256 updatedAt,) = feed.latestRoundData();
         if (answer <= 0) revert BadFeedAnswer();
+        // forge-lint: disable-next-line(unsafe-typecast)
         if (updatedAt + MAX_FEED_STALENESS < block.timestamp) revert FeedStale(uint40(updatedAt));
-        return uint256(answer);
+        // forge-lint: disable-next-line(unsafe-typecast)
+        return uint256(answer); // > 0, checked above
     }
 }
