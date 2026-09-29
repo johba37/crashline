@@ -1,0 +1,10 @@
+jump teacher: merton-tsla-2016-2026 lambdaYear 72.2299 muJ -5.9616e-06 sigmaJ 0.0526104 jumpVol 0.4471 kappa 0.001379 r 0.04
+PASS (a) lambda=0 bit-identical to K1 GBM teacher: 440 states x 2 path counts (2^12, 2^15), smoothed; reference sha256 ok; max |diff| 0 bps
+PASS (b) martingale with jumps (and total variance = vol^2 T): T=0.0192y E[S_T]=1.000766 vs 1.000767 (z -0.33), Var[logS]=0.00580 vs 0.00580 (z -0.33); T=0.4822y E[S_T]=1.019460 vs 1.019475 (z -0.14), Var[logS]=0.14584 vs 0.14586 (z -0.12); T=0.9974y E[S_T]=1.040582 vs 1.040701 (z -0.55), Var[logS]=0.30156 vs 0.30171 (z -0.35)
+PASS (c) European put vs Merton closed form: K=0.6: MC 115.76+-0.27 vs Merton 116.00 (z -0.92; BS same total vol 115.95); K=1.0: MC 1425.82+-0.70 vs Merton 1425.99 (z -0.23; BS same total vol 1427.76); K=1.2: MC 2698.08+-0.46 vs Merton 2698.55 (z -1.03; BS same total vol 2699.10)
+PASS (d) smoothing vs brute-force last step: 24 states, 2^17 paths; max |z| 2.83 at spot 7000 obs 1 tNext 0 ki 1 (7024.9 vs 7024.6); mean z^2 1.27; stderr smoothed/brute mean 1.07/1.16 bps
+PASS (e) determinism: same seed -> identical prices and stderrs; other seed differs
+PASS (f) smoke checks: gbm autocall 10000.0000 (want 10000); merton-tsla-2016-2026 autocall 10000.0000 (want 10000); gbm knocked-in low-vol 5637.2 vs 5637.2; gbm knocked-in no-autocall spot 7000: 7297.71+-0.47 vs 7297.96 (z -0.52); merton-tsla-2016-2026 knocked-in no-autocall spot 7000: 7297.12+-0.48 vs 7297.05 (z +0.14); merton-tsla-2016-2026 knocked-in no-autocall spot 9000: 8557.20+-1.40 vs 8557.59 (z -0.28)
+PASS (g) torch backend vs numpy teacher: 64 states (1 deterministic, |diff| 0.0e+00), 2^18 paths, cuda via /opt/ai/cache/venv-cuda/bin/python (NVIDIA GeForce RTX 3090); max |z| 2.22, mean z^2 0.97, max |diff| 6.77 bps; time numpy 42.5s / torch 8.7s
+PASS (h) barrier equality at tNext=0: spot == ki (5500/6000/7000) stays un-knocked, spot == ac (9500/10000/10500) autocalls, GBM and jumps
+8/8 checks passed in 95s
