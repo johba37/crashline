@@ -1,0 +1,16 @@
+teacher labels loaded from k1_eval_cache.npz
+eval label MC stderr bps: mean 1.47, p95 3.13, max 3.22
+overall                            n=11208  max   203.83  p99    74.70  mean   19.16
+near AC (9500-10500)               n= 1608  max   203.83  p99   136.58  mean   18.90
+near KI (5500-6500)                n= 1608  max    72.21  p99    51.78  mean   14.17
+elsewhere                          n= 7992  max    76.01  p99    72.16  mean   20.22
+tNext=0 (at observation)           n= 2802  max   203.83  p99   120.18  mean   25.30
+tNext>0 (away from observation)    n= 8406  max    89.13  p99    70.36  mean   17.12
+near AC & at-obs                   n=  402  max   203.83  p99   171.66  mean   37.43
+near AC & away                     n= 1206  max    89.13  p99    83.87  mean   12.72
+near KI & at-obs                   n=  402  max    72.21  p99    67.23  mean   17.60
+near KI & away                     n= 1206  max    52.42  p99    44.62  mean   13.02
+elsewhere & at-obs                 n= 1998  max    76.01  p99    74.70  mean   24.41
+elsewhere & away                   n= 5994  max    75.16  p99    69.77  mean   18.83
+worst point: spot 10000 tNext 0 knockedIn 1  teacher 10000.00 (se 0.00)  student 9796.17  d -203.83
+plot written to ../docs/k1-round0b-w28.png

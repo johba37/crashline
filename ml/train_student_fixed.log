@@ -1,0 +1,24 @@
+data loaded from data_fixed.npz: (200000, 10)
+target standardization: mean 8494.6 std 1981.8
+param count: 1489
+epoch    1  val RMSE   369.39 bps
+epoch   25  val RMSE    62.45 bps
+epoch   50  val RMSE    39.41 bps
+epoch   75  val RMSE    41.39 bps
+epoch  100  val RMSE    31.83 bps
+epoch  125  val RMSE    27.01 bps
+epoch  150  val RMSE    27.94 bps
+epoch  175  val RMSE    25.16 bps
+epoch  200  val RMSE    23.77 bps
+epoch  225  val RMSE    23.11 bps
+epoch  250  val RMSE    22.77 bps
+epoch  275  val RMSE    22.71 bps
+epoch  300  val RMSE    24.13 bps
+epoch  325  val RMSE    24.07 bps
+epoch  350  val RMSE    22.78 bps
+epoch  375  val RMSE    22.87 bps
+epoch  400  val RMSE    31.47 bps
+epoch  425  val RMSE    35.26 bps
+early stop at epoch 434
+best val RMSE 21.34 bps | train RMSE 22.15 bps (label-noise floor ~5.9 bps)
+total runtime 81.4s

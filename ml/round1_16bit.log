@@ -1,0 +1,40 @@
+pq inputs: torch.Size([200000, 10]) (2.2s); range [-1.0000, 1.0000]
+param count: 1489
+epoch    1  val RMSE  1340.86 bps
+epoch   50  val RMSE    47.72 bps
+epoch  100  val RMSE    30.22 bps
+epoch  150  val RMSE    32.15 bps
+epoch  200  val RMSE    28.18 bps
+epoch  250  val RMSE    26.32 bps
+epoch  300  val RMSE    27.75 bps
+epoch  350  val RMSE    25.52 bps
+epoch  400  val RMSE    27.74 bps
+epoch  450  val RMSE    24.58 bps
+early stop at epoch 480
+best val RMSE 24.50 bps (87.9s total)
+export written: student_export.json (weightsHash placeholder 0xc7f8a110787c880e…, parameterCount 1489)
+grid forward passes done (5.9s)
+
+== quantization-only: |integer - float| (bps) ==
+overall                                n=11208  max     2.49  p99     1.45  mean    0.44
+outside AC eps-band                    n=10002  max     2.49  p99     1.46  mean    0.44
+
+== float student (pq-norm inputs) vs teacher ==
+overall                                n=11208  max   217.90  p99   121.04  mean   25.10
+near AC                                n= 1608  max   217.90  p99   169.42  mean   30.53
+near KI                                n= 1608  max    72.47  p99    48.48  mean   10.96
+elsewhere                              n= 7992  max   135.02  p99   116.73  mean   26.85
+at-obs                                 n= 2802  max   217.90  p99   150.36  mean   27.77
+away                                   n= 8406  max   135.02  p99   116.62  mean   24.20
+outside AC eps-band                    n=10002  max   135.02  p99   113.37  mean   23.89
+
+== INTEGER student (pq.forward, the on-chain number) vs teacher ==
+overall                                n=11208  max   218.00  p99   121.11  mean   25.09
+near AC                                n= 1608  max   218.00  p99   168.93  mean   30.54
+near KI                                n= 1608  max    73.25  p99    48.94  mean   10.93
+elsewhere                              n= 7992  max   135.60  p99   116.83  mean   26.85
+at-obs                                 n= 2802  max   218.00  p99   150.97  mean   27.78
+away                                   n= 8406  max   135.60  p99   116.69  mean   24.20
+outside AC eps-band                    n=10002  max   135.60  p99   114.01  mean   23.88
+
+worst integer point: spot 10000 tNext 0 knockedIn 1  teacher 10000.00  int 9782  d -218.00
