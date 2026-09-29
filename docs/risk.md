@@ -22,6 +22,8 @@ search free for attackers, and our adversarial grid is the same search, run firs
 
 **Mitigations, layered:**
 - Full collateralization caps any loss at the series' maximum payout.
+- A **certified domain**: outside the region where the model's fidelity was measured, the pricer
+  reverts (`OutOfRange` / `Inconsistent` / `Uncertified`), and every rule has a reject test vector.
 - ε-bands: no quotes near barriers and before observations.
 - Rounding against the trader.
 - Per-series caps and a Desk TVL cap.
@@ -45,8 +47,11 @@ bounded by collateral caps, published as a fidelity number, and monitored in pub
 
 ## Current status caveats (MVP)
 
-- The deployed model is **synthetic** until the distillation lane ships the real Monte Carlo
-  export (see the README status table).
+- The default model is **`model/k1-r1`**, the K1 round-1 student (1,489 params) distilled from
+  the Monte Carlo teacher. Round 0 failed the 50 bps worst-case target because the price
+  genuinely jumps by about 229 bps of notional at an autocall observation instant
+  ([k1-round0.md](k1-round0.md)). The fix is the **certified domain**: the model refuses to quote
+  wherever its fidelity wasn't measured. The synthetic toy model stays as a second CI target.
 - Testnet uses **mock price feeds** with staged history; there's no demo mode in production contracts.
 - No external audit yet.
 - Not financial advice. This is infrastructure: a pricer and a collateralized note core.
