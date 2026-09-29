@@ -14,8 +14,10 @@ Sets (seeds are fixed here and used nowhere else):
   V  validation set, model selection only. Same structure with disjoint
      values: spots offset by 25 / 5 bps, other obs and tNext values, 20,000
      uniform points from another seed.
+     Plus 30,000 random points in the steep knock-in region (steep_ki_points).
   train  mixture sampler (uniform + barrier / observation-day oversampling),
      seeded per call.
+  steep  extra training points from steep_ki_points, seeded per call.
 
 Labels come from `teacher.price_batch`, sharded (fixed shard size, one seed
 per shard derived from the set's label seed with SeedSequence) so the result
@@ -134,8 +136,23 @@ def val_points() -> np.ndarray:
     obs = (1, 2, 3, 5, 7, 10, 15, 19, 23, 24, 26)
     tn = (0, 1800, 64800, 86401, 93600, 129600, 259200, 475200, 604800)
     g = _grid(spots, obs, tn)
-    u = uniform_points(20_000, np.random.default_rng(VAL_POINT_SEED))
-    return np.vstack([g, u])
+    rng = np.random.default_rng(VAL_POINT_SEED)
+    u = uniform_points(20_000, rng)
+    # dense block where the teacher is steepest outside the bands (round2_bands.log:
+    # up to 144 bps per 10 bps of spot at obs 1, knockedIn 0, just past tNext = 1 day)
+    h = steep_ki_points(30_000, rng)
+    X = np.vstack([g, u, h])
+    t = set(map(tuple, test_points().tolist()))  # keep V disjoint from T
+    return X[np.array([tuple(r) not in t for r in X.tolist()])]
+
+
+def steep_ki_points(n: int, rng: np.random.Generator) -> np.ndarray:
+    """Not knocked in, spot 5000-7400, tNext just past the band edge to a
+    week (half within 3 days), obs 1-10 skewed to 1: the steep knock-in
+    region outside the exclusion band."""
+    tn = np.where(rng.random(n) < 0.5, rng.integers(DAY + 1, 3 * DAY + 1, n), rng.integers(DAY + 1, WEEK + 1, n))
+    obs = np.minimum(1 + np.floor(10 * rng.random(n) ** 2).astype(np.int64), 10)
+    return rows(rng.integers(SPOT_LO, KI + 1401, n), tn, obs, np.zeros(n, np.int64))
 
 
 def train_points(n: int, rng: np.random.Generator) -> np.ndarray:
@@ -238,13 +255,13 @@ def _device_name(backend: str) -> str:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--set", choices=("T", "V", "train"), required=True)
+    ap.add_argument("--set", choices=("T", "V", "train", "steep"), required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--paths", type=int, default=2**18)
     ap.add_argument("--max-se", type=float, default=None,
                     help="re-label every shard holding a row above this stderr at 4x paths until none")
-    ap.add_argument("--n", type=int, default=400_000, help="train: number of points")
-    ap.add_argument("--seed", type=int, default=1, help="train: point + label seed")
+    ap.add_argument("--n", type=int, default=400_000, help="train/steep: number of points")
+    ap.add_argument("--seed", type=int, default=1, help="train/steep: point + label seed")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--backend", choices=("numpy", "cuda"), default="numpy")
     args = ap.parse_args()
@@ -254,9 +271,12 @@ def main() -> None:
         X, lseed = test_points(), TEST_LABEL_SEED
     elif args.set == "V":
         X, lseed = val_points(), VAL_LABEL_SEED
-    else:
+    elif args.set == "train":
         rng = np.random.default_rng([0x7EA1, args.seed])
         X, lseed = train_points(args.n, rng), int(np.random.SeedSequence([0x7EA1, args.seed, 1]).generate_state(1)[0])
+    else:  # steep: extra training points in the steep knock-in region
+        rng = np.random.default_rng([0x57EE, args.seed])
+        X, lseed = steep_ki_points(args.n, rng), int(np.random.SeedSequence([0x57EE, args.seed, 1]).generate_state(1)[0])
     fp = teacher_fingerprint()
     print(f"set {args.set}: {len(X)} points, {args.paths} paths, label seed {lseed}, teacher {fp}", flush=True)
     t0 = time.time()
@@ -279,7 +299,7 @@ def main() -> None:
     np.savez_compressed(args.out, X=X.astype(np.int32), y=y, se=se, paths=paths.astype(np.int32),
                         meta=json.dumps({"set": args.set, "label_seed": lseed, "paths": args.paths,
                                          "max_se_target": args.max_se, "topup_rounds": rnd,
-                                         "n": len(X), "seed": args.seed if args.set == "train" else None,
+                                         "n": len(X), "seed": args.seed if args.set in ("train", "steep") else None,
                                          "teacher": fp, "backend": args.backend, "device": _device_name(args.backend),
                                          "shard": SHARD, "cuda_max_elems": CUDA_MAX_ELEMS,
                                          "seconds": round(dt),
