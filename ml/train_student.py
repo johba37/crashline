@@ -25,7 +25,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-import teacher
+from reference import teacher_gbm_k1 as teacher  # K1 labels: the GBM teacher, frozen copy (docs/teacher-v2.md)
 
 WEEK = teacher.WEEK_SECS
 MAT_MAX = 63_072_000  # NoteQuoter.MATURITY_MAX_SECS
