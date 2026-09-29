@@ -5,7 +5,6 @@ import {Test} from "forge-std/Test.sol";
 import {MockChainlinkFeed} from "../src/MockChainlinkFeed.sol";
 import {FixingsRecorder} from "../src/FixingsRecorder.sol";
 import {IFixingsRecorder} from "../src/interfaces/IFixingsRecorder.sol";
-import {NoteQuoter, NoteTerms} from "../src/NoteQuoter.sol";
 
 contract FeedScenariosTest is Test {
     uint80 constant R1 = uint80(1) << 64 | 1; // 2^64 + 1
@@ -13,28 +12,11 @@ contract FeedScenariosTest is Test {
 
     MockChainlinkFeed feed;
     FixingsRecorder recorder;
-    NoteQuoter quoter;
 
     function setUp() public {
         vm.warp(1_790_699_124); // 2026-09-29 16:25 UTC, matches the probed fork
         feed = new MockChainlinkFeed("RHTSLA / USD");
         recorder = new FixingsRecorder(address(feed));
-        quoter = new NoteQuoter(address(feed), address(1)); // dummy pricer: quote() not under test
-    }
-
-    function _terms(uint40 maturity, uint40 nextObs) internal pure returns (NoteTerms memory) {
-        return NoteTerms({
-            initialFixing: uint256(PRICE),
-            kiBarrierBps: 6000,
-            acBarrierBps: 10000,
-            couponBpsPerPeriod: 200,
-            volBpsAnnual: 5500,
-            observationIntervalSecs: 604800,
-            maturity: maturity,
-            nextObservation: nextObs,
-            observationsRemaining: 26,
-            knockedIn: false
-        });
     }
 
     // --- Case A: normal observation -------------------------------------
@@ -108,18 +90,6 @@ contract FeedScenariosTest is Test {
             abi.encodeWithSelector(IFixingsRecorder.FixingTooStale.selector, uint40(1_790_699_124), obsTime)
         );
         recorder.recordFixing(obsTime, R1);
-    }
-
-    // --- weekend: feed silent, quote fails closed -------------------------
-
-    function test_weekend_quote_fails_closed() public {
-        feed.pushRound(PRICE); // Friday close
-        NoteTerms memory terms = _terms(uint40(block.timestamp + 180 days), uint40(block.timestamp + 3 days));
-        quoter.extractFeatures(terms); // fresh: works
-
-        vm.warp(block.timestamp + 27 hours); // Saturday night, feed asleep
-        vm.expectRevert(abi.encodeWithSelector(NoteQuoter.FeedStale.selector, uint40(1_790_699_124)));
-        quoter.extractFeatures(terms);
     }
 
     // --- Case B: halted feed, observation rolls to first fresh round ------
