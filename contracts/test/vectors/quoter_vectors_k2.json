@@ -1,6 +1,6 @@
 {
- "model": "k1-r1",
- "weightsHash": "0x7d76382feb1aec4f76905047529f08ae2fe96e3ec80e703f0262c96f3435bb7c",
+ "model": "k2",
+ "weightsHash": "0xaf76ddf21ca24495bf0540bd54d3d65bef81ea81ddacb55c3e79d64b1266cd8a",
  "vol": 5500,
  "terms": {
   "ki": 6000,
@@ -32,9 +32,9 @@
    ],
    "accruedBps": 10,
    "result": 0,
-   "a": 9776,
+   "a": 9804,
    "b": 0,
-   "notePriceBps": 9786
+   "notePriceBps": 9814
   },
   {
    "label": "first_week_mid",
@@ -57,9 +57,9 @@
    ],
    "accruedBps": 12,
    "result": 0,
-   "a": 8904,
+   "a": 8998,
    "b": 0,
-   "notePriceBps": 8916
+   "notePriceBps": 9010
   },
   {
    "label": "first_week_just_after_strike",
@@ -82,9 +82,9 @@
    ],
    "accruedBps": 0,
    "result": 0,
-   "a": 9163,
+   "a": 9298,
    "b": 0,
-   "notePriceBps": 9163
+   "notePriceBps": 9298
   },
   {
    "label": "first_week_at_obs",
@@ -107,9 +107,9 @@
    ],
    "accruedBps": 25,
    "result": 0,
-   "a": 8534,
+   "a": 8655,
    "b": 0,
-   "notePriceBps": 8559
+   "notePriceBps": 8680
   },
   {
    "label": "first_week_ac_band",
@@ -157,9 +157,9 @@
    ],
    "accruedBps": 24,
    "result": 0,
-   "a": 9574,
+   "a": 9569,
    "b": 0,
-   "notePriceBps": 9598
+   "notePriceBps": 9593
   },
   {
    "label": "first_week_at_ki",
@@ -182,9 +182,9 @@
    ],
    "accruedBps": 3,
    "result": 0,
-   "a": 6672,
+   "a": 6654,
    "b": 0,
-   "notePriceBps": 6675
+   "notePriceBps": 6657
   },
   {
    "label": "first_week_spot_min",
@@ -207,9 +207,9 @@
    ],
    "accruedBps": 3,
    "result": 0,
-   "a": 5634,
+   "a": 5627,
    "b": 0,
-   "notePriceBps": 5637
+   "notePriceBps": 5630
   },
   {
    "label": "first_week_spot_below_domain",
@@ -257,9 +257,9 @@
    ],
    "accruedBps": 3,
    "result": 0,
-   "a": 10023,
+   "a": 10013,
    "b": 0,
-   "notePriceBps": 10026
+   "notePriceBps": 10016
   },
   {
    "label": "first_week_spot_above_domain",
@@ -307,9 +307,9 @@
    ],
    "accruedBps": 8,
    "result": 0,
-   "a": 9198,
+   "a": 9299,
    "b": 0,
-   "notePriceBps": 9206
+   "notePriceBps": 9307
   },
   {
    "label": "first_week_ki_band",
@@ -331,10 +331,10 @@
     0
    ],
    "accruedBps": 24,
-   "result": 0,
-   "a": 7209,
+   "result": 3,
+   "a": 1,
    "b": 0,
-   "notePriceBps": 7233
+   "notePriceBps": 0
   },
   {
    "label": "mid_life",
@@ -356,10 +356,10 @@
     0
    ],
    "accruedBps": 257,
-   "result": 1,
-   "a": 6,
-   "b": 10108800,
-   "notePriceBps": 0
+   "result": 0,
+   "a": 9314,
+   "b": 0,
+   "notePriceBps": 9571
   },
   {
    "label": "mid_life_ki_band_knocked_in",
@@ -381,10 +381,10 @@
     1
    ],
    "accruedBps": 274,
-   "result": 1,
-   "a": 6,
-   "b": 9680400,
-   "notePriceBps": 0
+   "result": 0,
+   "a": 6834,
+   "b": 0,
+   "notePriceBps": 7108
   },
   {
    "label": "mid_life_knocked_in",
@@ -406,10 +406,10 @@
     1
    ],
    "accruedBps": 257,
-   "result": 1,
-   "a": 6,
-   "b": 10108800,
-   "notePriceBps": 0
+   "result": 0,
+   "a": 7307,
+   "b": 0,
+   "notePriceBps": 7564
   },
   {
    "label": "mid_life_at_obs",
@@ -431,10 +431,10 @@
     0
    ],
    "accruedBps": 350,
-   "result": 1,
-   "a": 6,
-   "b": 7862400,
-   "notePriceBps": 0
+   "result": 0,
+   "a": 9522,
+   "b": 0,
+   "notePriceBps": 9872
   },
   {
    "label": "last_observation_week",
@@ -456,10 +456,10 @@
     1
    ],
    "accruedBps": 625,
-   "result": 1,
-   "a": 6,
-   "b": 1206000,
-   "notePriceBps": 0
+   "result": 0,
+   "a": 8972,
+   "b": 0,
+   "notePriceBps": 9597
   },
   {
    "label": "final_period",

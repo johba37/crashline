@@ -44,7 +44,9 @@ STATES = [
     ("first_week_spot_max", 100 * 10**8, 12_000, 0, 0, 86400),
     ("first_week_spot_above_domain", 100 * 10**8, 12_001, 0, 0, 86400),
     ("first_week_floor", 333_33_330_000, None, 0, 0, 200_000),  # raw spot price below, floor matters
+    ("first_week_ki_band", 100 * 10**8, 6_500, 0, 0, WEEK - 3600),  # k2: knock-in band, not knocked in
     ("mid_life", 100 * 10**8, 8_500, 10, 0, 172_800),
+    ("mid_life_ki_band_knocked_in", 100 * 10**8, 6_500, 10, 1, WEEK - 3600),  # the k2 band excludes knockedIn = 0 only
     ("mid_life_knocked_in", 100 * 10**8, 7_000, 10, 1, 172_800),
     ("mid_life_at_obs", 100 * 10**8, 8_500, 13, 0, WEEK),
     ("last_observation_week", 100 * 10**8, 9_000, 25, 1, 3600),
