@@ -62,7 +62,7 @@ research on Opyn, Pendle, Gnosis CTF, Siren and Cega (2026-09-29).
 │ SurrogatePricer (Stylus)  FixingsRecorder             AutocallPayout (library)         │
 │   pure, w16a16, ~45k gas    permissionless, checked     pure: fixings → payout,        │
 │   weightsHash pinned        against feed rounds;        same rules as teacher,         │
-│   OutOfRange → revert       pause = staleness [!]       shared test vectors            │
+│   certified domain only     pause = staleness [!]       shared test vectors            │
 │                                                                                        │
 └────────────────────────────────────────────────────────────────────────────────────────┘
   feed:  Chainlink RHTSLA/USD, 24/5 → FixingsRecorder, NoteQuoter
@@ -99,9 +99,13 @@ Sources: [Opyn Gamma OZ audit](https://www.openzeppelin.com/news/opyn-gamma-prot
 - **Implied vol is not a series term.** It changes the price, never the payout. Keeping it
   out of `SeriesTerms` keeps identical notes in one fungible series; vol is set per series
   in the Desk listing.
-- **The payout rules are normative** (see `INoteSeries.sol`). The Monte Carlo teacher must
-  implement exactly the same ones: accrued coupon, autocall at `>= ac`, knock-in at `< ki`,
-  both latching and checked at fixings only.
+- **The payout rules are normative** (see `INoteSeries.sol`) and are the ones the Monte Carlo
+  teacher prices: accrued coupon, autocall at `>= ac`, knock-in at `< ki`, both latching and
+  checked at barrier observations only, and the maturity fixing **one period after the last
+  observation**. That extra period is what keeps the knock-in barrier smooth for the model.
+- **Each model carries a certified domain** (format v2): pinned note terms, exact derived
+  fields, and excluded regions such as the autocall observation-day band. The Stylus contract
+  reverts outside it, so a direct caller can't get an unmeasured price either.
 - **No demo mode in production contracts.** The demo stages feed history on the mock feed
   and uses series whose strike lies in the past.
 - **The Desk's LP flows pause while any held series can't be quoted** (weekends, pending

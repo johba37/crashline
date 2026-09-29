@@ -26,7 +26,7 @@ listed here.
 | Quantity | Unit |
 |---|---|
 | NOTE, WRITER, USDG amounts | base units, 6 decimals. 1 NOTE = 1 USDG notional |
-| `priceBps`, `feeBps`, barriers, coupon | bps: of notional (price, fee, coupon) or of the initial fixing (barriers) |
+| `priceBps`, `feeBps`, barriers, coupon | bps: of notional (price, fee, coupon) or of the initial fixing (barriers). Quoted prices include coupon accrued since strike; the model's own `priceBps` is clean |
 | `payoutPerNote`, `maxPayoutPerNote` | USDG base units per 1 NOTE (1e6 base units) |
 | feed prices, `initialFixing`, fixings | feed decimals (8) |
 | times | unix seconds (`uint40`) |
@@ -38,6 +38,12 @@ listed here.
 `desk.listing(s)` (vol, cap, sold), `series.terms()`, `series.state()`,
 `quoter.notePriceBps(s, listing.volBpsAnnual)`. When a quote reverts, show why (see Errors)
 rather than hiding the series.
+
+**Lifecycle to show.** Barrier observations every interval after strike; the
+maturity fixing is **one interval after the last observation** (see
+`INoteSeries`). No quotes in that final period, or anywhere outside the model's
+certified domain: for the K1 round-1 model that is the first week after strike
+only (26 observations remaining), spot 50–120% of initial.
 
 **Note detail.** Everything from the market list, plus:
 - `quoter.inputs(s, vol)`: exactly what the model saw. Showing it is the transparency pitch.
@@ -93,7 +99,9 @@ pricer, so include `INoteQuoter` and `ISurrogatePricer` errors.
 | `FeedStale(updatedAt)` | "Market closed: quotes resume when the feed updates" (weekends) |
 | `FixingPending(obsTime)` | "Observation at … awaiting its fixing": offer the keeper button |
 | `TooCloseToObservation(obsTime)` | "Trading pauses shortly before each observation" |
-| `OutOfRange(field, value)` | "Outside the model's certified range (field …)": the model refuses rather than guesses |
+| `OutOfRange(field, value)` | "Outside the model's certified range (field …)": the model refuses rather than guesses. `pricer.certifiedRange(field)` gives the range to show |
+| `Uncertified(region)` | "Too close to the autocall barrier on observation day": the one place the payoff jumps |
+| `Inconsistent(field)` | a bug in whoever built the inputs; never expected from our quoter |
 | `NotLive()` | not struck yet, or already settled |
 | `CapExceeded`, `Slippage`, `FeeTooHigh` | self-explanatory |
 

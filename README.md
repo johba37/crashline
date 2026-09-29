@@ -14,7 +14,10 @@ abi/                       interface ABIs for the frontend (contracts/script/exp
 stylus/pricer-model/       Rust/Stylus model contract: priceBps(PricerInputs), weightsHash()
 tools/pricer_quant.py      integer reference (bit-exact twin), float→int quantizer, hash
 tools/make_synthetic.py    synthetic student + golden vectors (toy target, NOT the teacher)
-model/synthetic/           student_export.json, golden_vectors.json, report.json
+model/k1-r1/               K1 round-1 student with its certified domain (default build)
+model/synthetic/           toy student + vectors (second CI target)
+ml/                        Monte Carlo teacher, student training, K1 eval (docs/k1-round0.md)
+tools/certify.py           attach a certified domain, generate golden + reject vectors
 docs/model-export-format.md  the distillation ↔ contract boundary
 ```
 
@@ -23,15 +26,15 @@ docs/model-export-format.md  the distillation ↔ contract boundary
 | Check | Result |
 |---|---|
 | Golden vectors (100) vs Python reference | exact, native `cargo test` and on a local Nitro dev node |
-| Out-of-range inputs | revert `OutOfRange(uint8,int64)` (selector `0xd49f98cf`), all bounds tested |
+| Certified domain (format v2) | outside it: `OutOfRange` / `Inconsistent` / `Uncertified`; every rule has a reject vector |
 | `weightsHash()` | recomputed at build time; a flipped weight byte fails the build |
 | ABI | callable from Solidity through NoteQuoter's `ISurrogatePricer` / `PricerInputs` struct |
 | Activation on Robinhood Chain testnet (46630) | `cargo stylus check` passes: 15.3 KB compressed, data fee 0.000077 ETH |
 | Execution gas per quote | **~45,000** (Solidity caller, `gasleft()` delta, uncached init included, independent of input) |
 | Quantization error (int16 vs float, synthetic) | p50 0.3 / p99 1.2 / max 3.2 bps |
 
-The model is **synthetic** until the distillation lane ships a real export.
-To swap it in: `PRICER_MODEL_DIR=<dir with student_export.json + golden_vectors.json> cargo test`.
+Default model: `model/k1-r1` (K1 round 1, 1489 params, 11.2 KB). CI runs both:
+`cargo test` and `PRICER_MODEL_DIR=../../model/synthetic cargo test`.
 
 ## Commands
 

@@ -248,3 +248,33 @@ teacher 10000.00 (immediate autocall, deterministic), integer student
   restate fidelity as p99 ≈ 100–115 + bounded worst ≈ 135 bps at this
   architecture/training budget (50 bps worst-case remains unmet; the round-0
   follow-up of more data / lower label noise is still the open lever).
+
+---
+
+## Contracts-lane review (2026-09-29)
+
+Appended by the contracts lane after reading round 1; nothing above is changed.
+
+1. **Payout convention adopted by the contracts.** The teacher's maturity rule
+   (maturity fixing one period after the last barrier observation, knock-in not
+   checked at maturity) is now the normative rule in `INoteSeries.sol`, because
+   it's what keeps the knock-in barrier smooth. Open item: the teacher compares
+   the maturity fixing with `acBarrierBps`, the contracts with the initial
+   fixing; identical at the pinned ac = 10000 (teacher-spec §5).
+2. **Clean price.** The teacher values coupon from now on; the quoter adds the
+   coupon accrued since strike.
+3. **Certified domain (export format v2).** `ml/student_export.json` declared the
+   full normalization ranges, so the contract accepted terms the student never
+   saw (vol 20% → 10019, 80 observations → 9570, coupon 10%/week → 7445, all
+   silently). `model/k1-r1/` is the same weights (keccak hash, replacing the
+   sha3 placeholder) with `tools/domains/k1-r1.json` attached:
+   pinned vol 5500 / ki 6000 / ac 10000 / coupon 25, spot 5000–12000,
+   **observationsRemaining = 26 only**, exact dist and ttm, and the
+   autocall observation-day band excluded. Stylus: 6/6 tests, 100 golden
+   vectors exact, 23 reject vectors.
+4. **Why only 26 observations remaining:** the adversarial eval grid fixed
+   `ttm = 26·604800 + tNext`, so fidelity was measured for the first week after
+   strike only (and at tNext ∈ {0, 3600, 86400, 302400}). The trained range is
+   1–26; the certified one is what was measured. **Round 2 should extend the
+   eval grid over observationsRemaining 1–26 and tNext across the week**; then
+   the domain widens and mid-life quotes (early exit) become possible.
