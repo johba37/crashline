@@ -53,7 +53,22 @@ contract NoteQuoterTest is Base {
     // --- conformity with tools/quoter_vectors.py (pricer_quant twin) ----------------
 
     function test_quoter_vectors() public {
-        string memory json = vm.readFile(string.concat(vm.projectRoot(), "/test/vectors/quoter_vectors.json"));
+        _quoterVectors("quoter_vectors.json"); // model/k1-r1
+    }
+
+    /// Same states run through model/k2 (tools/quoter_vectors.py --model model/k2
+    /// --out …/quoter_vectors_k2.json); skipped until that file exists.
+    function test_quoter_vectors_k2() public {
+        string memory path = string.concat(vm.projectRoot(), "/test/vectors/quoter_vectors_k2.json");
+        if (!vm.exists(path)) {
+            vm.skip(true);
+            return;
+        }
+        _quoterVectors("quoter_vectors_k2.json");
+    }
+
+    function _quoterVectors(string memory file) internal {
+        string memory json = vm.readFile(string.concat(vm.projectRoot(), "/test/vectors/", file));
         uint256 count = vm.parseJsonUint(json, ".count");
         assertGe(count, 10);
         for (uint256 i = 0; i < count; i++) {
