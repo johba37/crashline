@@ -11,7 +11,7 @@ Pipeline (docs/model-export-format.md):
   phase 2 = tail phase from the best phase-1 checkpoint: weighted mean
             (|e|/50 bps)^p (p > 2) at a low learning rate, which spends
             capacity on the worst points instead of the average
-  select  = the checkpoint with the lowest max |error| on V outside the
+  select  = the checkpoint (EMA of the weights, --ema) with the lowest max |error| on V outside the
             exclusion bands (float), evaluated every --eval-every epochs;
             the chosen one is quantized (pq.quantize) and its INTEGER error
             on V is reported. Selection never touches the test set T.
@@ -192,11 +192,12 @@ def main() -> None:
     ap.add_argument("--widths", default="48,48,48,48")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--epochs", type=int, default=1500, help="phase 1 epochs")
-    ap.add_argument("--tail-epochs", type=int, default=500, help="phase 2 epochs")
+    ap.add_argument("--tail-epochs", type=int, default=0, help="phase 2 epochs (0 = off)")
     ap.add_argument("--tail-p", type=float, default=4.0)
     ap.add_argument("--lr", type=float, default=2e-3)
     ap.add_argument("--tail-lr", type=float, default=3e-5)
     ap.add_argument("--clip", type=float, default=1.0, help="gradient norm clip")
+    ap.add_argument("--ema", type=float, default=0.999, help="EMA decay of the weights per step (0 = off)")
     ap.add_argument("--batch", type=int, default=8192)
     ap.add_argument("--band-weight", type=float, default=0.05)
     ap.add_argument("--eval-every", type=int, default=10)
@@ -207,6 +208,7 @@ def main() -> None:
 
     out = pathlib.Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
+    print("# python ml/round2.py " + " ".join(sys.argv[1:]), flush=True)
     widths = [int(w) for w in args.widths.split(",")]
     domain = json.loads(pathlib.Path(args.domain).read_text())
     torch.manual_seed(args.seed)
@@ -237,10 +239,17 @@ def main() -> None:
     n = len(Xt)
     steps_per_epoch = (n + args.batch - 1) // args.batch
 
+    # exponential moving average of the weights (--ema decay per step, 0 = off):
+    # evaluated and selected instead of the raw weights, which jitter step to step
+    ema = {k: v.detach().clone() for k, v in model.state_dict().items()} if args.ema > 0 else None
+
+    def weights():
+        return ema if ema is not None else model.state_dict()
+
     def val_max():
         model.eval()
         with torch.no_grad():
-            pred = model(Xvt).double() * PRICE_SCALE_BPS + OFFSET_BPS
+            pred = torch.func.functional_call(model, weights(), (Xvt,)).double() * PRICE_SCALE_BPS + OFFSET_BPS
             e = (pred - yv_t).abs()[vout_t]
         model.train()
         return float(e.max()), float(torch.quantile(e.float(), 0.99)), float(e.mean())
@@ -270,12 +279,16 @@ def main() -> None:
                 torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
                 opt.step()
                 sched.step()
+                if ema is not None:
+                    with torch.no_grad():
+                        for k, v in model.state_dict().items():
+                            ema[k].lerp_(v, 1.0 - args.ema)
                 tot += loss.detach() * len(i)
             if ep % args.eval_every == 0 or ep == epochs:
                 mx, p99, mean = val_max()
                 history.append((name, ep, mx, p99, mean))
                 if mx < best[0]:
-                    best = (mx, {k: v.detach().clone() for k, v in model.state_dict().items()}, (name, ep))
+                    best = (mx, {k: v.detach().clone() for k, v in weights().items()}, (name, ep))
                 if ep % (args.eval_every * 10) == 0 or ep == epochs:
                     print(f"{name} ep {ep:5d} loss {float(tot) / n:.3e}  V out-band max {mx:7.1f} p99 {p99:6.1f} "
                           f"mean {mean:5.2f}  best {best[0]:7.1f}@{best[2]}  ({time.time() - t0:.0f}s)", flush=True)
@@ -283,6 +296,8 @@ def main() -> None:
     run_phase("mse", args.epochs, args.lr, lambda e, w: (w * e * e).mean())
     if best[1] is not None:
         model.load_state_dict(best[1])  # the tail phase refines the best MSE checkpoint
+        if ema is not None:
+            ema = {k: v.clone() for k, v in best[1].items()}
     p = args.tail_p
     # (|e| / 50 bps)^p: O(1) at the gate, so the batch loss is dominated by the worst points
     run_phase("tail", args.tail_epochs, args.tail_lr,
