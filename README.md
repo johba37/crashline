@@ -17,7 +17,8 @@ Stylus contract, behind a model-free note core on Robinhood Chain, settled in US
   - **NOTE:** coupons, with the loss if knocked in
   - **WRITER:** the other side, i.e. crash protection
 - **A pricer:** a 16-bit integer surrogate of a Monte Carlo pricer, running in Stylus (~45k gas per
-  quote). It quotes what a note is worth *right now*, where no closed form exists.
+  quote). It quotes what a note is worth *right now*, where no closed form exists, and it
+  **refuses to quote outside its certified domain**, where its fidelity wasn't measured.
 - **A Desk** that buys and sells NOTE at the pricer's quote plus a visible, capped fee.
 
 **Settlement never touches the model.** Payouts are exact arithmetic on recorded fixings.
@@ -75,11 +76,11 @@ Robinhood Chain testnet (chain ID 46630). Addresses will be added after deployme
 
 | Criterion | Evidence |
 |---|---|
-| Smart contract quality | Model-free core with no admin, no pause and no upgrade; a separate USDG escrow per series; every rule traced to a real exploit ([architecture.md](docs/architecture.md)); the Stylus model matches its Python reference exactly on 100 golden vectors, rejects out-of-range inputs, and has its `weightsHash` recomputed at build. Core invariant tests: TBD |
+| Smart contract quality | Model-free core with no admin, no pause and no upgrade; a separate USDG escrow per series; every rule traced to a real exploit ([architecture.md](docs/architecture.md)); the Stylus model matches its Python reference exactly on golden vectors and **refuses to quote outside its certified domain** (where its fidelity was measured; every rejection rule has a test vector), and its `weightsHash` is recomputed at build. CI runs the default and both secondary models. Core invariants (escrow ≥ claims, no foreign clones) at 512 runs × 100 calls ([contracts-review.md](docs/contracts-review.md)) |
 | Product-market fit | $149.4B US / €100.1B German structured-note markets; hidden issuer markups; two-sided on-chain users ([market.md](docs/market.md), [user-stories.md](docs/user-stories.md)) |
 | Innovation and creativity | Monte-Carlo-class pricing of path-dependent payoffs inside a transaction: a surrogate distilled from a simulation (the labels come from code, not market data), verifiable by anyone |
 | Real problem solving | Structured-note prices are the issuer's private model; this makes every quote public and recomputable |
-| Use of Arbitrum technology | Stylus is the enabling constraint (15.3 KB, ~45k gas per quote, reproducible `cargo stylus verify`); deployed on Robinhood Chain (Arbitrum Orbit) |
+| Use of Arbitrum technology | Stylus is the enabling constraint (k2: 23,913 of 24,576 bytes compressed, ~45k gas per quote on the synthetic model, reproducible `cargo stylus verify`); deployed on Robinhood Chain (Arbitrum Orbit) |
 | Presentation | Pitch and demo videos: TBD |
 
 ## Sponsor technologies
