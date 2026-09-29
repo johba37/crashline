@@ -98,7 +98,9 @@ contract FeedScenariosTest is Test {
         feed.pushRound(PRICE + 2e8); // R2: first round after the halt
 
         // the stale R1 is rejected for this observation
-        vm.expectRevert(abi.encodeWithSelector(IFixingsRecorder.FixingTooStale.selector, uint40(1_790_699_124), obsTime));
+        vm.expectRevert(
+            abi.encodeWithSelector(IFixingsRecorder.FixingTooStale.selector, uint40(1_790_699_124), obsTime)
+        );
         recorder.recordFixing(obsTime, R1);
 
         // R2 is accepted as the rolled fixing
@@ -113,7 +115,9 @@ contract FeedScenariosTest is Test {
         uint40 obsTime = uint40(block.timestamp) + 7 days;
         vm.warp(obsTime + 9 days); // dead > 8 days: vault-level settlement territory
         feed.pushRound(PRICE);
-        vm.expectRevert(abi.encodeWithSelector(IFixingsRecorder.RollTooLong.selector, uint40(obsTime + 9 days), obsTime));
+        vm.expectRevert(
+            abi.encodeWithSelector(IFixingsRecorder.RollTooLong.selector, uint40(obsTime + 9 days), obsTime)
+        );
         recorder.recordFixing(obsTime, R1 + 1);
     }
 

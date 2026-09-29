@@ -14,8 +14,8 @@ import {IFixingsRecorder} from "./interfaces/IFixingsRecorder.sol";
 ///                     round proves a >96h gap (disrupted day).
 contract FixingsRecorder is IFixingsRecorder {
     uint40 public constant MAX_FIX_AGE = 96 hours; // holiday-weekend coverage
-    uint40 public constant MAX_ROLL = 8 days;      // beyond: settle at last good fix (vault logic)
-    int256 public constant PRICE_MAX = 1e13;       // $100k @ 8dec — kills early-round scale anomaly
+    uint40 public constant MAX_ROLL = 8 days; // beyond: settle at last good fix (vault logic)
+    int256 public constant PRICE_MAX = 1e13; // $100k @ 8dec — kills early-round scale anomaly
 
     IAggregatorV3 public immutable feed;
 

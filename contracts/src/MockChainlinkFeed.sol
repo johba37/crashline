@@ -12,7 +12,7 @@ contract MockChainlinkFeed {
     uint80 public constant PHASE_OFFSET = uint80(1) << 64; // roundId = 2^64 + n
 
     struct Round {
-        int256 answer;   // 8 decimals
+        int256 answer; // 8 decimals
         uint40 updatedAt;
     }
 
