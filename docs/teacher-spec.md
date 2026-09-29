@@ -1,6 +1,6 @@
 # Teacher Spec — Monte Carlo reference pricer
 
-Status: v0.1, 2026-09-29. Normative counterpart: `contracts/src/NoteQuoter.sol`
+Status: v0.2, 2026-09-29 (§5 payoff decided). Normative counterparts: `contracts/src/interfaces/INoteSeries.sol` (payout), `contracts/src/NoteQuoter.sol`
 (feature vector + ranges), `contracts/src/FixingsRecorder.sol` (fixing rule),
 `DESIGN.md` (Decisions 1–2). The teacher defines the instrument the student
 learns — **if teacher and contract disagree on semantics, fidelity is void.**
@@ -69,15 +69,31 @@ Rules:
 - `timeToNextObsSecs = 0` means "at an observation" — the value function's
   steepest region; the adversarial grid must oversample it.
 
-## 5. Payoff module (the one open slot)
+## 5. Payoff (decided 2026-09-29; normative counterpart `INoteSeries.sol`)
 
-Interface: `payoff(fixings[], terms) → payoutBpsOfNotional`. Payoff choice is
-still open (idea file, K2). Leading candidate: **weekly-observed autocallable on
-the feed series**, KI barrier 60%, AC barrier 100%, ~26 observations, coupon
-continuous-style (accrued, no digital coupon feature) to keep the value function
-as smooth as the format allows. Constraint from K1: prefer no digital features;
-whatever ships, the payoff module must be <100 lines and explainable in 30 s of
-video.
+Weekly-observed autocallable on the feed series, the convention `ml/teacher.py`
+implements, adopted by the contracts so teacher and settlement price the same
+instrument. With c = coupon per period, N barrier observations, interval I:
+
+- barrier observations at `strike + i·I`, i = 1..N; **maturity fixing one
+  period after the last**, at `strike + (N+1)·I`
+- knock-in: any observation fixing < ki·initial (latching, discrete, **not
+  checked at the maturity fixing**)
+- autocall: first observation fixing ≥ ac·initial → `1 + c·i`
+- maturity: knocked in and maturity fixing < **initial** → `fixing/initial + c·(N+1)`,
+  otherwise `1 + c·(N+1)`
+
+The extra period between the last observation and the maturity fixing is what
+keeps the knock-in barrier smooth (K1 round 0: no measurable jump at KI).
+
+**Clean price.** The teacher values coupon accruing from now on
+(`c·τ/I`); the coupon accrued since strike is certain, and the quoter adds it.
+Label = clean value.
+
+**Open alignment item:** `ml/teacher.py` uses `strike = acBarrierBps` for the
+loss comparison at maturity; the contracts use the initial fixing. Identical
+for the pinned K1 terms (ac = 10000); change the teacher before training any
+template with ac ≠ 100%.
 
 ## 6. MC settings
 

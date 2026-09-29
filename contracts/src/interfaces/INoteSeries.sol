@@ -9,8 +9,8 @@ import {IFixingsRecorder} from "./IFixingsRecorder.sol";
 struct SeriesTerms {
     address feed; // underlying: AggregatorV3 feed, 8 decimals
     uint40 strikeTime; // observation time of the initial fixing (a market close)
-    uint32 observationInterval; // seconds between observations; >= 1 hour (Desk grid: 604800)
-    uint8 observationCount; // observations after strike, 1..104; the last one is maturity
+    uint32 observationInterval; // seconds between fixings; >= 1 hour (Desk grid: 604800)
+    uint8 observationCount; // barrier observations after strike, 1..104; maturity is one interval after the last
     uint16 kiBarrierBps; // knock-in barrier, bps of initial fixing; 0 < ki <= ac
     uint16 acBarrierBps; // autocall barrier, bps of initial fixing; <= 20_000
     uint16 couponBpsPerPeriod; // accrued per elapsed observation, bps of notional; <= 10_000
@@ -27,11 +27,11 @@ enum Phase {
 struct SeriesState {
     Phase phase;
     uint96 initialFixing; // feed decimals; 0 while Pending
-    uint8 observationsDone; // processed observations, excluding the strike
+    uint8 observationsDone; // processed barrier observations (excludes strike and maturity fixings)
     bool knockedIn; // latching; discrete monitoring at fixings only
     bool autocalled;
-    uint40 nextObservation; // 0 once Settled
-    uint40 maturity; // strikeTime + observationCount * observationInterval
+    uint40 nextObservation; // next fixing time (a barrier observation, or maturity); 0 once Settled
+    uint40 maturity; // strikeTime + (observationCount + 1) * observationInterval
     uint128 payoutPerNote; // USDG base units per 1 NOTE (1e6 base units); 0 until Settled
 }
 
@@ -39,16 +39,22 @@ struct SeriesState {
 /// No model, no admin, no pause, no upgrade. Every state-changing entry point
 /// first processes all recorded fixings (same as calling advance()).
 ///
-/// Payout per NOTE, in units of its 1-USDG notional (normative; the Monte
-/// Carlo teacher implements the same rules):
-///   observations i = 1..N at strikeTime + i * interval; c = coupon per period
-///   knock-in:  any fixing_i < ki * initial  (latching)
+/// Payout per NOTE, in units of its 1-USDG notional. Normative: ml/teacher.py
+/// prices exactly this instrument (docs/teacher-spec.md §5).
+///   c = coupon per period, N = observationCount, I = observationInterval
+///   barrier observations  i = 1..N  at strikeTime + i * I
+///   maturity fixing       M        at strikeTime + (N + 1) * I
+///   knock-in:  any observation fixing_i < ki * initial      (latching; not checked at M)
 ///   autocall:  first i with fixing_i >= ac * initial  ->  1 + c * i, settle at i
-///   maturity:  knocked in and fixing_N < initial  ->  fixing_N / initial + c * N
-///              otherwise                          ->  1 + c * N
-///   maxPayout = 1 + c * N;  WRITER gets maxPayout - NOTE payout
-/// Fallback: an observation still unrecorded MAX_ROLL + FALLBACK_GRACE after
-/// obsTime reuses the previous fixing (the strike fixing for i = 1).
+///   maturity:  knocked in and fixing_M < initial      ->  fixing_M / initial + c * (N + 1)
+///              otherwise                              ->  1 + c * (N + 1)
+///   maxPayout = 1 + c * (N + 1);  WRITER gets maxPayout - NOTE payout
+/// Maturity is one period after the last barrier observation on purpose: the
+/// final price moves for one more period after the knock-in state is fixed,
+/// which removes the ~40% knock-in jump a same-day final check would create
+/// (the reason the knock-in barrier passes K1).
+/// Fallback: a fixing still unrecorded MAX_ROLL + FALLBACK_GRACE after its
+/// time reuses the previous fixing (the strike fixing for i = 1).
 interface INoteSeries {
     event Struck(uint96 initialFixing);
     event ObservationProcessed(
@@ -76,7 +82,7 @@ interface INoteSeries {
     function collateral() external view returns (address); // USDG
 
     // --- economics ------------------------------------------------------------
-    /// USDG base units locked per 1 NOTE + 1 WRITER (= 1e6 * (1 + c * N)).
+    /// USDG base units locked per 1 NOTE + 1 WRITER (= 1e6 * (1 + c * (N + 1))).
     function maxPayoutPerNote() external view returns (uint128);
     function FALLBACK_GRACE() external view returns (uint40);
 
