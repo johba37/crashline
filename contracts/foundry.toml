@@ -13,8 +13,8 @@ fs_permissions = [{ access = "read", path = "./test/vectors" }, { access = "read
 runs = 1000
 
 [invariant]
-runs = 256
-depth = 64
+runs = 512
+depth = 100
 fail_on_revert = true
 
 [lint]

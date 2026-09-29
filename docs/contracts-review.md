@@ -11,7 +11,7 @@ How to reproduce what this document relies on:
 ```sh
 cd contracts
 forge fmt --check && forge build          # no compiler or lint findings in src/
-forge test                                # unit, fuzz (1,000 runs), invariants (256 x 64)
+forge test                                # unit, fuzz (1,000 runs each), invariants (512 runs x depth 100)
 forge build --sizes                       # Desk is the largest contract
 ../tools/.venv/bin/python ../tools/payout_vectors.py   # regenerates test/vectors/payout_vectors.json
 ../tools/.venv/bin/python ../tools/quoter_vectors.py   # regenerates test/vectors/quoter_vectors.json
@@ -53,8 +53,8 @@ Every rounding goes against the party that asks, and in favor of the escrow and 
 
 What the tests prove:
 
-- Invariant `invariant_escrow_covers_claims`: at every step of 256 × 64 random
-  calls, a series' USDG covers what its outstanding NOTE and WRITER can claim.
+- Invariant `invariant_escrow_covers_claims`: at every step of 512 runs × 100
+  random calls, a series' USDG covers what its outstanding NOTE and WRITER can claim.
   The claims are computed exactly, before the per-holder floors. A mutation
   (mint rounding down) breaks it.
 - `afterInvariant`: after settling and redeeming every holder, the escrow holds
@@ -139,15 +139,16 @@ open `mint`, so it must never be deployed where value is at stake.
 
 ## 7. Payout conformity with the teacher
 
-`tools/payout_vectors.py` was compared line by line with `ml/teacher.py`
-(`_simulate`, main) and lane A's version. They agree on the autocall test (`>=`,
-checked first), the knock-in test (`<`, latching, barrier observations only, not
-at maturity), the autocall payout 1 + c·i, the maturity fixing one interval after
-observation N, and the maturity payout. One mismatch, already known and reported:
-the teacher on main compares the maturity fixing with `acBarrierBps` instead of
-the initial fixing. Lane A's version uses the initial fixing. The two agree at
-ac = 10000. The contracts' fallback fixing is not simulated by the teacher. That
-is consistent with teacher-spec §3 (no feed gaps in simulation).
+`tools/payout_vectors.py` was compared line by line with the teacher's `_simulate`
+(`ml/teacher.py`, first the K1 version, then lane A's jump teacher as merged
+into main at `5353120`). They agree on the autocall test (`>=`, checked first),
+the knock-in test (`<`, latching, barrier observations only, not at maturity),
+the autocall payout 1 + c·i, the maturity fixing one interval after observation
+N, and the maturity payout with the loss measured against the **initial**
+fixing. The K1 teacher used `acBarrierBps` there (identical at ac = 10000). That
+mismatch was reported, and the merged teacher uses the initial fixing. The
+contracts' fallback fixing is not simulated by the teacher. That is consistent
+with teacher-spec §3 (no feed gaps in simulation).
 
 ## 8. Out of scope / not done
 
