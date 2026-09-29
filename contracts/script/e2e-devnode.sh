@@ -118,7 +118,7 @@ WEIGHTS=$(call "$PRICER" "weightsHash()(bytes32)")
 [ "$WEIGHTS" = "$(jq -r .weightsHash "$MODEL_DIR/student_export.json")" ] || fail "weightsHash differs from the export"
 read -r OBS_MIN OBS_MAX < <(call "$PRICER" "certifiedRange(uint8)(int64,int64)" 8 | num | xargs)
 echo "pricer $PRICER, model $(basename "$MODEL_DIR"), weightsHash $WEIGHTS"
-echo "  $(sed 's/\x1b\[[0-9;]*m//g' "$DEPLOY_LOG" | grep -o 'contract size: .*' | head -1)"
+echo "  $(sed 's/\x1b\[[0-9;]*m//g' "$DEPLOY_LOG" | grep -o 'contract size: .*' | sed -n 1p)"
 echo "  certified observationsRemaining $OBS_MIN..$OBS_MAX, featureSpecVersion $(call "$PRICER" "featureSpecVersion()(uint16)")"
 
 # --- 2. Solidity contracts ----------------------------------------------------------------
@@ -197,12 +197,16 @@ check_trade() { # check_trade <tx> <topic0>: the trade price equals the quoter a
   mapfile -t T < <("$CAST" decode-abi "f()$TRADE_T" "$data" | num)
   inputs=$(call --block "$block" "$QUOTER" "inputs(address,uint16)($IN_T)" "$SERIES" "$VOL" | sed 's/ \[[^]]*\]//g')
   clean=$(call --block "$block" "$PRICER" "priceBps($IN_T)(uint16)" "$inputs" | num)
-  quoted=$(call --block "$block" "$QUOTER" "notePriceBps(address,address,uint16)(uint16,bytes32)" "$SERIES" "$PRICER" "$VOL" | head -1 | num)
+  quoted=$(call --block "$block" "$QUOTER" "notePriceBps(address,address,uint16)(uint16,bytes32)" "$SERIES" "$PRICER" "$VOL" | sed -n 1p | num)
   REM=$(tr -d '()' <<<"$inputs" | awk -F', ' '{print $9}')
   echo "  model saw $inputs"
   echo "  model clean price $clean bps + accrued coupon $((quoted - clean)) bps = quote $quoted bps; traded at ${T[2]} bps"
   echo "  amount $(usd "${T[1]}") NOTE, USDG $(usd "${T[3]}"), fee ${T[4]} bps to ${T[5]}, weightsHash ${T[6]}"
-  echo "  gas used $("$CAST" receipt --rpc-url "$RPC" "$tx" gasUsed) (whole trade: quote incl. the Stylus model, mint or unwind, transfers)"
+  local rj g l1
+  rj=$("$CAST" receipt --rpc-url "$RPC" --json "$tx")
+  g=$("$CAST" to-dec "$(jq -r .gasUsed <<<"$rj")")
+  l1=$("$CAST" to-dec "$(jq -r '.gasUsedForL1 // "0x0"' <<<"$rj")")
+  echo "  gas used $g, of which L1 data $l1, L2 execution $((g - l1)) (quote incl. the Stylus model, mint or unwind, transfers)"
   [ "${T[2]}" = "$quoted" ] || fail "trade price ${T[2]} != model quote $quoted"
   [ "${T[6]}" = "$WEIGHTS" ] || fail "event weightsHash"
 }
