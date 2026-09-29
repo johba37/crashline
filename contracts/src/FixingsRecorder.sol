@@ -26,7 +26,9 @@ contract FixingsRecorder is IFixingsRecorder {
     }
 
     function recordFixing(uint40 obsTime, uint80 roundId) external {
-        if (obsTime > block.timestamp) revert FutureObservation(obsTime);
+        // Strictly in the past: several blocks share a timestamp, so a round
+        // with updatedAt == obsTime can still arrive after this call.
+        if (obsTime >= block.timestamp) revert FutureObservation(obsTime);
         if (fixings[obsTime].timestamp != 0) revert AlreadyRecorded(obsTime);
 
         (, int256 answer,, uint40 updatedAt,) = _round(roundId);

@@ -58,6 +58,7 @@ contract FeedScenariosTest is Test {
         vm.warp(block.timestamp + 30 minutes);
         feed.pushRound(PRICE); // R2
         uint40 obsTime = uint40(block.timestamp); // at/after R2
+        vm.warp(obsTime + 1);
         // R1 is not the last round at-or-before obsTime — R2 is
         vm.expectRevert(abi.encodeWithSelector(IFixingsRecorder.NotLastRoundBefore.selector, R1, obsTime));
         recorder.recordFixing(obsTime, R1);
@@ -66,6 +67,7 @@ contract FeedScenariosTest is Test {
     function test_already_recorded() public {
         feed.pushRound(PRICE);
         uint40 obsTime = uint40(block.timestamp);
+        vm.warp(obsTime + 1);
         recorder.recordFixing(obsTime, R1);
         vm.expectRevert(abi.encodeWithSelector(IFixingsRecorder.AlreadyRecorded.selector, obsTime));
         recorder.recordFixing(obsTime, R1);
@@ -73,8 +75,39 @@ contract FeedScenariosTest is Test {
 
     function test_bad_price_anomaly_guard() public {
         feed.pushRound(int256(3.96e18)); // the real feed's round-1 scale artifact
+        uint40 obsTime = uint40(block.timestamp);
+        vm.warp(obsTime + 1);
         vm.expectRevert(abi.encodeWithSelector(IFixingsRecorder.BadPrice.selector, int256(3.96e18)));
-        recorder.recordFixing(uint40(block.timestamp), R1);
+        recorder.recordFixing(obsTime, R1);
+    }
+
+    function test_bad_price_non_positive() public {
+        feed.pushRound(0);
+        uint40 obsTime = uint40(block.timestamp);
+        vm.warp(obsTime + 1);
+        vm.expectRevert(abi.encodeWithSelector(IFixingsRecorder.BadPrice.selector, int256(0)));
+        recorder.recordFixing(obsTime, R1);
+    }
+
+    function test_future_observation_rejected() public {
+        feed.pushRound(PRICE);
+        uint40 obsTime = uint40(block.timestamp);
+        // obsTime == now is still "future": a later block in the same second
+        // could add a round with updatedAt == obsTime.
+        vm.expectRevert(abi.encodeWithSelector(IFixingsRecorder.FutureObservation.selector, obsTime));
+        recorder.recordFixing(obsTime, R1);
+        vm.expectRevert(abi.encodeWithSelector(IFixingsRecorder.FutureObservation.selector, obsTime + 1));
+        recorder.recordFixing(obsTime + 1, R1);
+    }
+
+    function test_caseA_too_stale() public {
+        feed.pushRound(PRICE);
+        uint40 obsTime = uint40(block.timestamp) + 96 hours + 1;
+        vm.warp(obsTime + 1);
+        vm.expectRevert(
+            abi.encodeWithSelector(IFixingsRecorder.FixingTooStale.selector, uint40(1_790_699_124), obsTime)
+        );
+        recorder.recordFixing(obsTime, R1);
     }
 
     // --- weekend: feed silent, quote fails closed -------------------------
