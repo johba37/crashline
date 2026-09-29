@@ -1,0 +1,13 @@
+# 2026-09-29T21:09:54Z numpy: python ml/bench_teacher.py --device numpy --states 64 --paths 65536
+# backend numpy: 64 states, 65536 paths, mean obs 13.56, 28.1s -> 2.023e+06 path-steps/s (one process); label stderr mean 2.44 max 6.33 bps; loadavg 18.9
+#   test T (60k x 2^18): 29.16 h
+#   validation V (60k x 2^18): 29.16 h
+#   train (400k x 2^14): 12.15 h
+#   total lane-B label budget at this rate: 70.47 h (one process)
+# cuda: /opt/ai/cache/venv-cuda/bin/python ml/bench_teacher.py --device cuda --states 1024
+# device NVIDIA GeForce RTX 3090, torch 2.11.0+cu128
+# backend cuda: 1024 states, 262144 paths, mean obs 13.22, 13.0s -> 2.729e+08 path-steps/s (one process); label stderr mean 1.14 max 3.23 bps; loadavg 20.5
+#   test T (60k x 2^18): 0.22 h
+#   validation V (60k x 2^18): 0.22 h
+#   train (400k x 2^14): 0.09 h
+#   total lane-B label budget at this rate: 0.52 h (one process)
