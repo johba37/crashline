@@ -490,6 +490,50 @@ contract DeskTest is Base {
         assertEq(desk.maxDeposit(lp), 0);
     }
 
+    /// totalAssets loops over held series: the Desk refuses to hold more than MAX_HELD_SERIES.
+    function test_held_series_limit() public {
+        // 64 more series on the same feed, strikes 1 s apart, all fixed by one round
+        uint40 base = uint40(block.timestamp) + 1 days;
+        vm.warp(base - 1);
+        _spot(9000);
+        address[] memory more = new address[](64);
+        for (uint256 i = 0; i < 64; i++) {
+            more[i] = factory.createSeries(_terms(base + uint40(i)));
+        }
+        vm.warp(uint256(base) + 64);
+        uint80 r = uint80(feed.latestRound());
+        for (uint256 i = 0; i < 64; i++) {
+            _recorder(s).recordFixing(base + uint40(i), r);
+        }
+        _spot(9000);
+        usdg.mint(alice, 1_000e6);
+        vm.startPrank(alice);
+        usdg.approve(address(desk), type(uint256).max);
+        vm.stopPrank();
+        desk.listSeries(address(s), pricer, VOL, CAP);
+        vm.prank(alice);
+        desk.buy(address(s), 1e6, type(uint256).max, 0, address(0), alice); // held #1
+        for (uint256 i = 0; i < 63; i++) {
+            desk.listSeries(more[i], pricer, VOL, CAP);
+            vm.prank(alice);
+            desk.buy(more[i], 1e6, type(uint256).max, 0, address(0), alice);
+        }
+        assertEq(desk.heldSeries().length, 64);
+        desk.listSeries(more[63], pricer, VOL, CAP);
+        vm.prank(alice);
+        vm.expectRevert(Desk.HeldSeriesLimit.selector);
+        desk.buy(more[63], 1e6, type(uint256).max, 0, address(0), alice);
+    }
+
+    function test_mock_usdg_only_issuer() public {
+        vm.startPrank(alice);
+        vm.expectRevert(MockUSDG.NotIssuer.selector);
+        usdg.setPaused(true);
+        vm.expectRevert(MockUSDG.NotIssuer.selector);
+        usdg.setFrozen(bob, true);
+        vm.stopPrank();
+    }
+
     function test_usdg_pause_blocks_trading_not_views() public {
         _buy(alice, 1e6, 0);
         usdg.setPaused(true);

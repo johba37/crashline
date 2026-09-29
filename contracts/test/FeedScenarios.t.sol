@@ -141,4 +141,38 @@ contract FeedScenariosTest is Test {
         recorder.recordFixing(uint40(1_790_600_000), R1);
         assertTrue(recorder.isRecorded(uint40(1_790_600_000)));
     }
+
+    function test_caseB_rejects_when_previous_round_is_after_obs() public {
+        feed.pushRound(PRICE); // R1
+        uint40 obsTime = uint40(block.timestamp) - 1 hours; // before R1
+        vm.warp(block.timestamp + 1 hours);
+        feed.pushRound(PRICE); // R2
+        // R2 is after obsTime, but so is R1: R2 is not the first round after it
+        vm.expectRevert(abi.encodeWithSelector(IFixingsRecorder.NoGapProof.selector, R1 + 1, obsTime));
+        recorder.recordFixing(obsTime, R1 + 1);
+    }
+
+    // --- mock feed guards -------------------------------------------------------
+
+    function test_mock_feed_guards() public {
+        vm.expectRevert(MockChainlinkFeed.NoRounds.selector);
+        feed.latestRound();
+        vm.expectRevert(abi.encodeWithSelector(MockChainlinkFeed.UnknownRound.selector, R1));
+        feed.getRoundData(R1);
+        vm.prank(address(0xBEEF));
+        vm.expectRevert(MockChainlinkFeed.NotOwner.selector);
+        feed.pushRound(PRICE);
+        feed.pushRound(PRICE);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MockChainlinkFeed.NonMonotonic.selector, uint40(block.timestamp), uint40(block.timestamp)
+            )
+        );
+        feed.pushRoundAt(PRICE, uint40(block.timestamp));
+        assertEq(feed.decimals(), 8);
+        (uint80 id, int256 answer,, uint256 updatedAt,) = feed.latestRoundData();
+        assertEq(id, R1);
+        assertEq(answer, PRICE);
+        assertEq(updatedAt, block.timestamp);
+    }
 }
