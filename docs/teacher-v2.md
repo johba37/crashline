@@ -285,7 +285,8 @@ American puts are treated as European, so the put IVs are slightly overstated.
    left). A lower-vol product would need one of: a jump variance scaled to the
    listing vol (e.g. a fixed jump share of variance, 57%), the 5-year window's jump
    vol (38.8%), or a jump risk-premium adjustment. Out of scope for this freeze; flagged
-   for the orchestrator.
+   for the orchestrator. The fixed share is measured across 12 more stocks in
+   [multi-stock-jumps.md](multi-stock-jumps.md).
 3. The market has a put skew (+3 to +8 vol points at 0.55–0.70 vs ATM). The fitted
    symmetric jumps produce a nearly flat smile (55.0 vs 54.9%). See simplification 2.
 

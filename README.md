@@ -24,7 +24,7 @@ model/k2/                  K2 round-2 student, whole note life (default build, d
 model/k1-r1/               K1 round-1 student (first week only; CI target)
 model/synthetic/           toy student + vectors (CI target)
 ml/                        jump-diffusion teacher (docs/teacher-v2.md), student training, evals
-ml/data/                   TSLA daily closes with source URL and fetch date
+ml/data/                   TSLA daily closes with source URL and fetch date; multi/: 12 more symbols
 tools/certify.py           attach a certified domain, generate golden + reject vectors
 docs/model-export-format.md  the distillation ↔ contract boundary
 docs/contracts-review.md   self-review: reentrancy, rounding, USDG freeze/pause, provenance, staleness
@@ -42,7 +42,10 @@ docs/contracts-review.md   self-review: reentrancy, rounding, USDG freeze/pause,
 
 Known limit: the teacher's jump variance is pinned from history, so total vol must stay
 above 44.7%. Listed TSLA options (6-month ATM ~43%) sit below that; see
-[docs/teacher-v2.md](docs/teacher-v2.md) "Listed options".
+[docs/teacher-v2.md](docs/teacher-v2.md) "Listed options". Across 12 more stocks (v2 input,
+[docs/multi-stock-jumps.md](docs/multi-stock-jumps.md)), 7 sit below it; a fixed jump share
+of variance lands within 7.6 bps of each large cap's own fit, and misses by 16–27 bps on
+stocks with rare large earnings drops.
 
 ## Stylus model status
 
