@@ -11,7 +11,8 @@
 #   series with a past strike -> past fixings recorded -> LP deposit -> listing,
 #   spread and risk budget -> NOTE bought -> cover (WRITER) bought by a hedger
 #   -> NOTE sold mid-life, all at the model's quote +- the spread -> the next
-#   observation autocalls -> redeem, collect, LP withdraw.
+#   observation autocalls (the LP queues a redemption while its fixing is
+#   pending) -> redeem, collect, queue paid and claimed, LP withdraw.
 # The strike lies in the past so mid-life is reachable in real time: the next
 # observation is E2E_LEAD_SECS after staging, and the script waits for it.
 # Exits 0 only if every step succeeds and every check holds.
@@ -284,6 +285,12 @@ WAIT=$((T_NEXT + 2 - $(date +%s)))
 step "9. Waiting ${WAIT}s for observation $((DONE + 1)) at $(date -u -d "@$T_NEXT" '+%T') UTC"
 [ "$WAIT" -gt 0 ] && sleep "$WAIT"
 poke
+# the observation has passed and its fixing isn't recorded: no share price, so no ERC-4626 withdrawal
+[ "$(call "$DESK" "maxRedeem(address)(uint256)" "$LP" | num)" = 0 ] || fail "maxRedeem should be 0 while the fixing is pending"
+QUEUED=$((LP_SHARES / 5))
+send "$LP_KEY" "$DESK" "requestRedeem(uint256)" "$QUEUED" >/dev/null
+echo "fixing pending: maxRedeem 0, but the LP queues $QUEUED shares (20%) for redemption"
+[ "$(call "$DESK" "queuedShares()(uint256)" | num)" = "$QUEUED" ] || fail "queuedShares"
 send "$DEV_KEY" "$FEED" "pushRoundAt(int256,uint40)" $((INITIAL * AC_FIX_BPS / 10000)) "$T_NEXT" >/dev/null
 send "$DEV_KEY" "$RECORDER" "recordFixing(uint40,uint80)" "$T_NEXT" "$(round_id $((DONE + 3)))" >/dev/null
 TX=$(send "$DEV_KEY" "$SERIES" "advance()")
@@ -310,11 +317,18 @@ TX=$(send "$DEV_KEY" "$DESK" "collect(address)" "$SERIES")
 COLLECTED=$("$CAST" decode-abi "f()(uint256)" "$(event_data "$TX" "$DESK" "$("$CAST" keccak "Collected(address,uint256)")")" | num)
 echo "Desk collected $(usd "$COLLECTED") USDG for its NOTE"
 [ "$COLLECTED" = $(((BUY_COVER - BUY_NOTE + SELL_NOTE) * PAYOUT / 1000000)) ] || fail "collect amount"
-MAX_REDEEM=$(call "$DESK" "maxRedeem(address)(uint256)" "$LP" | num)
 L0=$(call "$USDG" "balanceOf(address)(uint256)" "$LP" | num)
+[ "$(call "$DESK" "maxRedeem(address)(uint256)" "$LP" | num)" = 0 ] || fail "no ERC-4626 redemption ahead of the queue"
+send "$DEV_KEY" "$DESK" "processQueue(uint256)" 10 >/dev/null # anyone can
+CLAIMABLE=$(call "$DESK" "claimableAssets(address)(uint256)" "$LP" | num)
+send "$LP_KEY" "$DESK" "claim(address)" "$LP" >/dev/null
+echo "queue processed: $QUEUED shares filled for $(usd "$CLAIMABLE") USDG, claimed by the LP"
+[ "$(call "$DESK" "queuedShares()(uint256)" | num)" = 0 ] || fail "queue not emptied"
+MAX_REDEEM=$(call "$DESK" "maxRedeem(address)(uint256)" "$LP" | num)
 send "$LP_KEY" "$DESK" "redeem(uint256,address,address)" "$MAX_REDEEM" "$LP" "$LP" >/dev/null
 L1=$(call "$USDG" "balanceOf(address)(uint256)" "$LP" | num)
-echo "LP redeemed $MAX_REDEEM of $LP_SHARES shares for $(usd $((L1 - L0))) USDG (deposited $(usd $LP_DEPOSIT); P&L $(usd $((L1 - L0 - LP_DEPOSIT))))"
+[ $((MAX_REDEEM + QUEUED)) = "$LP_SHARES" ] || fail "LP shares left"
+echo "LP redeemed the other $MAX_REDEEM of $LP_SHARES shares; in total $(usd $((L1 - L0))) USDG (deposited $(usd $LP_DEPOSIT); P&L $(usd $((L1 - L0 - LP_DEPOSIT))))"
 DUST_DESK=$(call "$USDG" "balanceOf(address)(uint256)" "$DESK" | num)
 DUST_SERIES=$(call "$USDG" "balanceOf(address)(uint256)" "$SERIES" | num)
 echo "left over: Desk $DUST_DESK, series escrow $DUST_SERIES base units"

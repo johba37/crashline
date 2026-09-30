@@ -12,6 +12,7 @@ no expiry and one token per stock, priced by a closed form plus a learned correc
 ```
 contracts/src/interfaces/  frozen v1 interfaces (factory, series, tokens, quoter, Desk, recorder, pricer)
                            + IDeskCover: the Desk's WRITER leg, two prices, risk budget
+                           + IDeskQueue: LP redemption queue
 contracts/src/             SeriesFactory, NoteSeries, SeriesToken, AutocallPayout, NoteQuoter,
                            Desk (ERC-4626 on USDG), FixingsRecorder, MockChainlinkFeed, MockUSDG
 contracts/script/          Deploy.s.sol (Robinhood testnet), e2e-devnode.sh, export-abi.sh
@@ -37,8 +38,8 @@ docs/contracts-review.md   self-review: reentrancy, rounding, USDG freeze/pause,
 |---|---|---|
 | Teacher | Merton jump-diffusion calibrated to 10 years of TSLA daily closes (λ 72.2/yr, σJ 5.26%, jump vol 44.7% of the pinned 55% total); 8/8 checks pass, incl. λ=0 bit-identical to the K1 GBM teacher | `ml/test_teacher.py`, [docs/teacher-v2.md](docs/teacher-v2.md) |
 | Student `model/k2` | whole note life (observationsRemaining 1–26, timeToNextObs 0–7 days); **GATE PASS** on the held-out set vs the jump teacher: max 18.7 / p99 7.9 / mean 1.65 bps outside the two observation-day bands (gate 50), max label stderr 3.24 bps; fresh confirmation set T2: max 17.8 bps | `ml/round2_eval.py`, [docs/k2-round2.md](docs/k2-round2.md) |
-| Note core, quoter, Desk | 128 forge tests pass: 260 payout-conformity vectors, quoter vectors for k1-r1 and k2, fuzz at 1,000 runs, invariants at 512 runs × 100 calls (escrow ≥ claims, no foreign clones). The Desk trades NOTE and WRITER (cover) at two prices and keeps NOTE, within a risk budget per stock | `forge test`, [docs/contracts-review.md](docs/contracts-review.md) |
-| End to end | local Nitro dev node with the Stylus k2 pricer: series struck in the past, NOTE buy, cover buy by a hedger, **mid-life sell at observationsRemaining 16 at the model's quote ± the spread**, autocall, redeem, collect, LP withdraw | `contracts/script/e2e-devnode.sh`, [log](contracts/logs/e2e-devnode-k2.log) |
+| Note core, quoter, Desk | 139 forge tests pass: 260 payout-conformity vectors, quoter vectors for k1-r1 and k2, fuzz at 1,000 runs, invariants at 512 runs × 100 calls (escrow ≥ claims, no foreign clones). The Desk trades NOTE and WRITER (cover) at two prices and keeps NOTE, within a risk budget per stock; LPs can queue redemptions at any time | `forge test`, [docs/contracts-review.md](docs/contracts-review.md) |
+| End to end | local Nitro dev node with the Stylus k2 pricer: series struck in the past, NOTE buy, cover buy by a hedger, **mid-life sell at observationsRemaining 16 at the model's quote ± the spread**, autocall (the LP queues a redemption while the fixing is pending), redeem, collect, queue paid, LP withdraw | `contracts/script/e2e-devnode.sh`, [log](contracts/logs/e2e-devnode-k2.log) |
 | Robinhood Chain testnet (46630) | `Deploy.s.sol` simulates cleanly; not broadcast yet (no deployer key set); `cargo stylus check` passes for k2 | |
 
 Known limit: the teacher's jump variance is pinned from history, so total vol must stay

@@ -122,7 +122,10 @@ Sources: [Opyn Gamma OZ audit](https://www.openzeppelin.com/news/opyn-gamma-prot
 - **No demo mode in production contracts.** The demo stages feed history on the mock feed
   and uses series whose strike lies in the past.
 - **The Desk's LP flows pause while any held series can't be quoted** (weekends, pending
-  fixing). Otherwise the share price would be unknown.
+  fixing). Otherwise the share price would be unknown. A redemption *request* needs no
+  share price: `IDeskQueue` takes it at any time and fills it, first in first out, at
+  the share price of the moment the Desk can be valued and has idle USDG. Queued
+  redemptions come before new risk and before other withdrawals.
 - **The Desk trades both legs at two prices** (`IDeskCover`, additive to the frozen
   `IDesk`). A USDG vault has nothing to insure, so WRITER belongs with holders of the
   stock and NOTE with the vault. `buyCover` sells WRITER for the premium alone and the

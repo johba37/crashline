@@ -159,6 +159,33 @@ open `mint`, so it must never be deployed where value is at stake.
   final period of a note that isn't knocked in (NOTE = max, certain). That second
   case matters: with one series a week, some series is always in its final week,
   and the model refuses `observationsRemaining = 0`.
+- **Redemption queue (added 2026-09-30, `IDeskQueue`).** `requestRedeem` moves shares
+  into the Desk at any time; `processQueue` (permissionless) fills requests first in,
+  first out at one share price per call, out of idle USDG, and sets the USDG aside;
+  `claim(to)` pulls it (USDG can freeze an account, so a push could block the queue).
+  Checked:
+  - *Forward pricing.* A request is filled at the share price when it is processed, not
+    when it was made, so a request placed on a weekend carries Monday's mark. Queued
+    shares stay in `totalSupply` and share gains and losses until filled.
+  - *Fairness of a fill.* The batch uses OpenZeppelin's `convertToAssets` formula with
+    `totalAssets` read once. Fuzz `testFuzz_fill_is_fair_to_both_sides`: a fill pays no
+    more than the shares were worth and moves the remaining share price by at most one
+    base unit per USDG.
+  - *Set-aside USDG.* `reservedAssets` is excluded from `totalAssets`, from the idle USDG
+    behind `maxWithdraw` and the risk budget, and a trade that would leave the balance
+    below it reverts `ReservedForClaims`.
+  - *Queue first.* A trade that adds to a position fills up to `QUEUE_BATCH` (8) requests
+    itself and reverts `QueuePending` if shares remain; `maxWithdraw`/`maxRedeem` are 0
+    while shares are queued. Deposits, `collect` and trades that shrink a position stay
+    open: they are what frees USDG.
+  - Five mutations of the queue logic each fail a test in `DeskQueue.t.sol`.
+  - **Residual:** requests of at least `MIN_REQUEST_SHARES` are free to make and cancel,
+    so someone can keep more than 8 small requests in the queue and make every
+    risk-adding trade wait for a `processQueue` call; it costs them gas and blocks
+    nobody's money. A large LP's request legitimately stops new cover until it is paid.
+    A request can't be filled while a held series is unquotable, e.g. the final week of
+    a knocked-in note: the queue removes the wait for *requesting*, not for a price.
+    Deposits are not queued and still pause in those states.
 - **LP flows pause** (max* = 0, `totalAssets` reverts with the quoter's or model's
   error) while any held series can't be quoted: weekends, a pending fixing, the
   model's excluded bands, and the final period of a knocked-in note. These are

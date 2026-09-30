@@ -1,7 +1,8 @@
 # Interfaces v1: guide for the frontend
 
-**Frozen 2026-09-29; `IDeskCover` added 2026-09-30** (it extends `IDesk`; the `IDesk`
-ABI is unchanged, see "Cover and the two prices"). The Solidity interfaces in
+**Frozen 2026-09-29; `IDeskCover` and `IDeskQueue` added 2026-09-30** (`IDeskCover`
+extends `IDesk`, whose ABI is unchanged, see "Cover and the two prices"; `IDeskQueue` is
+the LP redemption queue, see "LP"). The Solidity interfaces in
 [`contracts/src/interfaces/`](../contracts/src/interfaces/) are the contract between
 the contracts and the frontend. ABIs for viem/wagmi are in [`abi/`](../abi/)
 (regenerate with `contracts/script/export-abi.sh`). Any change goes through a PR that
@@ -16,7 +17,7 @@ updates the interface, the ABI and this file together. Layer picture:
 | FixingsRecorder | `IFixingsRecorder` | done; records only observation times strictly in the past |
 | SeriesFactory, NoteSeries, SeriesToken | `ISeriesFactory`, `INoteSeries`, `ISeriesToken` | done (`contracts/src/`), payout via the `AutocallPayout` library |
 | NoteQuoter | `INoteQuoter` | done, series-based; one quoter for every model |
-| Desk | `IDesk` (ERC-4626) + `IDeskCover` | done; `MAX_FEE_BPS` = 200 (of notional, NOTE), `MAX_COVER_FEE_BPS` = 1000 (of the premium, cover), `BACKSTOP_SHARE_BPS` = 5000, `MAX_SPREAD_BPS` = 1000. Use `abi/IDeskCover.json`: it contains all of `IDesk` |
+| Desk | `IDesk` (ERC-4626) + `IDeskCover` | done; `MAX_FEE_BPS` = 200 (of notional, NOTE), `MAX_COVER_FEE_BPS` = 1000 (of the premium, cover), `BACKSTOP_SHARE_BPS` = 5000, `MAX_SPREAD_BPS` = 1000. Use `abi/IDeskCover.json` (it contains all of `IDesk`) merged with `abi/IDeskQueue.json` |
 
 All of the above pass `forge test` and the dev node end-to-end run
 (`contracts/script/e2e-devnode.sh`); see [contracts-review.md](contracts-review.md).
@@ -44,6 +45,9 @@ Implementation notes beyond the interfaces:
 > `limit − atRisk`. Show it as "cover available", disable the button when the trade
 > doesn't fit, and handle the revert anyway (another trade can land first). A feed whose
 > budget was never set has `limit` = 0.
+>
+> The same trades also revert `QueuePending` while LP redemptions are queued and the
+> Desk's idle USDG can't pay them all: read `desk.queuedShares()` too (see "LP").
 
 ## Units
 
@@ -152,6 +156,19 @@ until then every trade that adds to the Desk's positions on that feed reverts.
 (weekends, pending fixing), and in the final week of a knocked-in note, which the model
 doesn't price. Say so in the UI; don't let the transaction revert.
 
+When `maxWithdraw` is 0 or smaller than the LP wants (the rest is locked in series), offer
+the queue (`IDeskQueue`) instead. It works in every state:
+1. `desk.requestRedeem(shares)` → `id`. No approval; the shares move into the Desk and keep
+   earning until they are filled. Minimum `MIN_REQUEST_SHARES` (10 USDG worth at the start).
+2. Anyone calls `desk.processQueue(n)` once every held series can be quoted (a keeper, or a
+   button). Requests fill first in, first out at the share price of that moment; the last
+   one partially if idle USDG runs out. Show `desk.redeemRequest(id)` → `(owner, unfilled
+   shares)` and `desk.queue()` → `(head, length)` for the position in line.
+3. `desk.claim(to)` pays `desk.claimableAssets(owner)`.
+`desk.cancelRedeem(id)` returns the unfilled shares. While `desk.queuedShares() > 0`,
+`maxWithdraw`/`maxRedeem` are 0 for everyone (no withdrawal ahead of the queue), and a
+trade that adds to the Desk's position pays the queue first or reverts `QueuePending`.
+
 **Keeper (anyone, could be a button).** For each observation time that has passed:
 find the round (binary search over `feed.getRoundData`: the last round at or before
 `obsTime`) → `recorder.recordFixing(obsTime, roundId)` → `series.advance()`.
@@ -166,6 +183,7 @@ find the round (binary search over `feed.getRoundData`: the last round at or bef
 | Series | `Minted`, `PairRedeemed`, `Redeemed` | positions |
 | Desk | `NoteBought`, `NoteSold`, `CoverBought`, `CoverSold` (carry `priceBps`, `feeBps`, `weightsHash`) | trade history, "which model priced this" |
 | Desk | `SpreadSet(series, bidBps, askBps, volBandBps)`, `RiskBudgetSet(feed, budgetBps)` | the two prices, cover capacity |
+| Desk | `RedeemRequested(id, owner, shares)`, `RedeemFilled(id, owner, shares, assets)` (once per fill, a request can fill in parts), `RedeemCancelled`, `RedeemClaimed(owner, to, assets)` | the LP's queue position and payouts |
 | Desk | `SeriesListed(series, pricer, weightsHash, vol, cap)` (also on updates), `SeriesDelisted`, ERC-4626 `Deposit`/`Withdraw` | admin + LP views, model changes |
 
 ## Errors worth a human message
@@ -184,6 +202,9 @@ pricer, so include `INoteQuoter` and `ISurrogatePricer` errors.
 | `NotLive()` | not struck yet, or already settled |
 | `RiskBudgetExceeded(atRisk, limit)` | "The Desk has reached its risk budget for this stock": the trade would add to its position. Trades that shrink the position still work |
 | `CapExceeded(requested, available)` | "Only `available` on offer": NOTE beyond the Desk's inventory and WRITER cap, or WRITER sold back beyond the cap |
+| `QueuePending(queuedShares)` | "LP redemptions are waiting for USDG: the Desk takes no new position until they are paid." Trades that shrink its position still work |
+| `ReservedForClaims()` | the trade would spend USDG already set aside for filled redemptions: the Desk's own idle USDG is too low |
+| `RequestTooSmall`, `NothingToClaim`, `NotRequestOwner` | queue input errors |
 | `Slippage`, `FeeTooHigh` | self-explanatory |
 
 ## What is deliberately not here

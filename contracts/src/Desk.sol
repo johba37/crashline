@@ -12,6 +12,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IDeskCover} from "./interfaces/IDeskCover.sol";
+import {IDeskQueue} from "./interfaces/IDeskQueue.sol";
 import {INoteQuoter} from "./interfaces/INoteQuoter.sol";
 import {ISurrogatePricer} from "./interfaces/ISurrogatePricer.sol";
 import {ISeriesFactory} from "./interfaces/ISeriesFactory.sol";
@@ -43,9 +44,11 @@ import {INoteSeries, SeriesTerms, SeriesState, Phase} from "./interfaces/INoteSe
 ///    (they never revert), so deposit/withdraw revert with ERC4626Exceeded*.
 ///  - maxWithdraw / maxRedeem are also capped by idle USDG: collateral locked
 ///    in series comes back only through sells, redeemPair or collect.
+///  - maxWithdraw / maxRedeem are 0 while redemptions are queued (IDeskQueue):
+///    a request can be made in every one of these states and is paid first.
 /// Inflation: OpenZeppelin's virtual shares with a 6-decimal offset, so
 /// shares have 12 decimals and a donation can't round a depositor to zero.
-contract Desk is IDeskCover, ERC4626, Ownable, ReentrancyGuard {
+contract Desk is IDeskCover, IDeskQueue, ERC4626, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -58,6 +61,8 @@ contract Desk is IDeskCover, ERC4626, Ownable, ReentrancyGuard {
     uint16 public constant BACKSTOP_SHARE_BPS = 5_000; // half of every fee stays with the LPs
     uint256 public constant MAX_HELD_SERIES = 64; // bounds the totalAssets loop
     uint16 public constant MAX_SPREAD_BPS = 1_000;
+    uint256 public constant MIN_REQUEST_SHARES = 10e12; // 10 USDG at the first deposit's share price
+    uint256 public constant QUEUE_BATCH = 8;
 
     ISeriesFactory public immutable factory;
     INoteQuoter public immutable quoter;
@@ -68,6 +73,18 @@ contract Desk is IDeskCover, ERC4626, Ownable, ReentrancyGuard {
     mapping(address feed => uint16) public riskBudgetBps;
     address[] internal _listed;
     EnumerableSet.AddressSet internal _held;
+
+    /// A queued redemption; `shares` is the unfilled rest (0 once filled or cancelled).
+    struct Request {
+        address owner;
+        uint256 shares;
+    }
+
+    Request[] internal _queue;
+    uint256 internal _queueHead;
+    uint256 public queuedShares;
+    uint256 public reservedAssets;
+    mapping(address owner => uint256) public claimableAssets;
 
     event MinSecsToObservationSet(uint32 secs);
 
@@ -210,6 +227,52 @@ contract Desk is IDeskCover, ERC4626, Ownable, ReentrancyGuard {
         emit Collected(series, collateralOut);
     }
 
+    // --- redemption queue (IDeskQueue) ------------------------------------------------
+
+    function queue() external view returns (uint256 head, uint256 length) {
+        return (_queueHead, _queue.length);
+    }
+
+    function redeemRequest(uint256 id) external view returns (address owner_, uint256 shares) {
+        Request memory r = _queue[id];
+        return (r.owner, r.shares);
+    }
+
+    function requestRedeem(uint256 shares) external nonReentrant returns (uint256 id) {
+        if (shares < MIN_REQUEST_SHARES) revert RequestTooSmall(shares, MIN_REQUEST_SHARES);
+        _transfer(msg.sender, address(this), shares);
+        id = _queue.length;
+        _queue.push(Request({owner: msg.sender, shares: shares}));
+        queuedShares += shares;
+        emit RedeemRequested(id, msg.sender, shares);
+    }
+
+    function cancelRedeem(uint256 id) external nonReentrant returns (uint256 shares) {
+        if (id >= _queue.length || _queue[id].owner != msg.sender) revert NotRequestOwner(id);
+        shares = _queue[id].shares;
+        _queue[id].shares = 0;
+        queuedShares -= shares;
+        _transfer(address(this), msg.sender, shares);
+        emit RedeemCancelled(id, msg.sender, shares);
+    }
+
+    function processQueue(uint256 maxRequests)
+        external
+        nonReentrant
+        returns (uint256 sharesFilled, uint256 assetsSetAside)
+    {
+        return _processQueue(maxRequests);
+    }
+
+    function claim(address to) external nonReentrant returns (uint256 assets) {
+        assets = claimableAssets[msg.sender];
+        if (assets == 0) revert NothingToClaim();
+        claimableAssets[msg.sender] = 0;
+        reservedAssets -= assets;
+        IERC20(asset()).safeTransfer(to, assets);
+        emit RedeemClaimed(msg.sender, to, assets);
+    }
+
     // --- curator ------------------------------------------------------------------
 
     function listSeries(address series, ISurrogatePricer pricer, uint16 volBpsAnnual, uint128 capNotional)
@@ -265,7 +328,7 @@ contract Desk is IDeskCover, ERC4626, Ownable, ReentrancyGuard {
 
     /// Reverts (with the quoter's or model's error) while a held series can't be quoted.
     function totalAssets() public view override(ERC4626, IERC4626) returns (uint256 assets) {
-        assets = IERC20(asset()).balanceOf(address(this));
+        assets = _idle();
         uint256 n = _held.length();
         for (uint256 i = 0; i < n; i++) {
             (, uint256 v,) = _position(_held.at(i), true);
@@ -282,12 +345,12 @@ contract Desk is IDeskCover, ERC4626, Ownable, ReentrancyGuard {
     }
 
     function maxWithdraw(address owner_) public view override(ERC4626, IERC4626) returns (uint256) {
-        if (!_allQuotable()) return 0;
+        if (queuedShares != 0 || !_allQuotable()) return 0;
         return Math.min(_convertToAssets(balanceOf(owner_), Math.Rounding.Floor), _idle());
     }
 
     function maxRedeem(address owner_) public view override(ERC4626, IERC4626) returns (uint256) {
-        if (!_allQuotable()) return 0;
+        if (queuedShares != 0 || !_allQuotable()) return 0;
         return Math.min(balanceOf(owner_), _convertToShares(_idle(), Math.Rounding.Floor));
     }
 
@@ -370,6 +433,7 @@ contract Desk is IDeskCover, ERC4626, Ownable, ReentrancyGuard {
         INoteSeries s = INoteSeries(t.series);
         cost = t.amount = _buyCost(t.legAmount, t.priceBps, t.fee);
         if (cost > maxCost) revert Slippage(cost, maxCost);
+        if (t.growth != 0) _queueFirst();
 
         IERC20(asset()).safeTransferFrom(msg.sender, address(this), cost);
         if (t.growth != 0) {
@@ -381,6 +445,7 @@ contract Desk is IDeskCover, ERC4626, Ownable, ReentrancyGuard {
         IERC20(t.side == Side.BuyNote ? s.note() : s.writer()).safeTransfer(t.to, t.legAmount);
         _payFee(t.feeReceiver, t.fee);
         if (t.growth != 0) _checkRisk(t.series);
+        _checkReserve();
         _emitTrade(t);
     }
 
@@ -390,6 +455,7 @@ contract Desk is IDeskCover, ERC4626, Ownable, ReentrancyGuard {
         (proceeds, t.fee) = _sellProceeds(t.legAmount, t.priceBps, t.fee);
         t.amount = proceeds;
         if (proceeds < minProceeds) revert Slippage(proceeds, minProceeds);
+        if (t.growth != 0) _queueFirst();
 
         IERC20(t.side == Side.SellNote ? s.note() : s.writer()).safeTransferFrom(msg.sender, address(this), t.legAmount);
         uint256 pairs = t.legAmount - t.growth;
@@ -399,6 +465,7 @@ contract Desk is IDeskCover, ERC4626, Ownable, ReentrancyGuard {
         IERC20(asset()).safeTransfer(t.to, proceeds);
         _payFee(t.feeReceiver, t.fee);
         if (t.growth != 0) _checkRisk(t.series);
+        _checkReserve();
         _emitTrade(t);
     }
 
@@ -557,8 +624,67 @@ contract Desk is IDeskCover, ERC4626, Ownable, ReentrancyGuard {
         if (_held.add(series) && _held.length() > MAX_HELD_SERIES) revert HeldSeriesLimit();
     }
 
+    /// USDG the vault can use: its balance minus what is set aside for filled redemptions.
     function _idle() internal view returns (uint256) {
-        return IERC20(asset()).balanceOf(address(this));
+        uint256 balance = IERC20(asset()).balanceOf(address(this));
+        return balance > reservedAssets ? balance - reservedAssets : 0;
+    }
+
+    /// A trade paid out: it must not have dipped into the USDG set aside for claims.
+    function _checkReserve() internal view {
+        if (IERC20(asset()).balanceOf(address(this)) < reservedAssets) revert ReservedForClaims();
+    }
+
+    /// Before a trade adds to a position: queued redemptions are paid first, or the trade fails.
+    function _queueFirst() internal {
+        if (queuedShares == 0) return;
+        // forge-lint: disable-next-line(unused-return)
+        _processQueue(QUEUE_BATCH);
+        if (queuedShares != 0) revert QueuePending(queuedShares);
+    }
+
+    /// Fills requests from the head at one share price (the vault's, now) out of
+    /// idle USDG; the last one partially. Every visited request counts towards
+    /// `maxRequests`, cancelled ones too, so the loop is bounded by the caller.
+    function _processQueue(uint256 maxRequests) internal returns (uint256 sharesFilled, uint256 assetsSetAside) {
+        uint256 head = _queueHead;
+        uint256 len = _queue.length;
+        if (queuedShares == 0) {
+            _queueHead = len; // only cancelled requests are left
+            return (0, 0);
+        }
+        // OpenZeppelin's convertToAssets, with totalAssets read once for the whole batch
+        uint256 nav = totalAssets() + 1;
+        uint256 supply = totalSupply() + 10 ** _decimalsOffset();
+        uint256 idle = _idle();
+        for (; head < len && maxRequests != 0; maxRequests--) {
+            Request storage r = _queue[head];
+            uint256 shares = r.shares;
+            if (shares == 0) {
+                head++;
+                continue;
+            }
+            uint256 assets = Math.mulDiv(shares, nav, supply);
+            if (assets > idle) {
+                shares = Math.mulDiv(shares, idle, assets);
+                assets = Math.mulDiv(shares, nav, supply);
+            }
+            if (shares == 0) break; // no idle USDG left
+            r.shares -= shares;
+            idle -= assets;
+            claimableAssets[r.owner] += assets;
+            sharesFilled += shares;
+            assetsSetAside += assets;
+            emit RedeemFilled(head, r.owner, shares, assets);
+            if (r.shares != 0) break; // partly filled: the USDG ran out
+            head++;
+        }
+        _queueHead = head;
+        if (sharesFilled != 0) {
+            queuedShares -= sharesFilled;
+            reservedAssets += assetsSetAside;
+            _burn(address(this), sharesFilled);
+        }
     }
 
     function _balance(address token) internal view returns (uint256) {
