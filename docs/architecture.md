@@ -24,6 +24,7 @@ research on Opyn, Pendle, Gnosis CTF, Siren and Cega (2026-09-29).
 │   • IS the market: no AMM pools for NOTE                                      [6]      │
 │                                                                                        │
 │ NoteOracle  (roadmap)  AggregatorV3 price per NOTE for lenders                [5]      │
+│ Treasury    (roadmap)  idle USDG in yield venues (roadmap-usdg-yield.md)               │
 │ Router      (stretch)  permit + buy in one transaction                                 │
 │                                                                                        │
 └────────────────────────────────────────────────────────────────────────────────────────┘
