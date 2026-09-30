@@ -2,8 +2,7 @@ name: Pages
 
 on:
   push:
-    # max/frontend deploys until it merges; remove it then.
-    branches: [main, max/frontend]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
