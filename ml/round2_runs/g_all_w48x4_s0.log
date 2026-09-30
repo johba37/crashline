@@ -1,0 +1,63 @@
+# python ml/round2.py --train /opt/ai/cache/sp-student/train_s1.npz /opt/ai/cache/sp-student/train_s2.npz /opt/ai/cache/sp-student/train_s3.npz /opt/ai/cache/sp-student/steep_s1.npz /opt/ai/cache/sp-student/steep_s2.npz --val k2_val_labels.npz --epochs 3000 --widths 48,48,48,48 --seed 0 --device cuda:0 --out-dir /opt/ai/cache/sp-student/runs/g_all_w48x4_s0
+train 2000000 rows (3.5% in bands, label se mean 3.9 max 9.2); val 109400 rows (98030 outside bands, se max 3.24); params 7633; device cuda:0
+mse ep   100 loss 2.682e-04  V out-band max   128.1 p99   47.0 mean 11.28  best    88.3@('mse', 70)  (227s)
+mse ep   200 loss 2.239e-04  V out-band max    59.2 p99   23.4 mean  5.62  best    55.4@('mse', 180)  (444s)
+mse ep   300 loss 1.023e-04  V out-band max    62.9 p99   29.3 mean  6.42  best    39.9@('mse', 240)  (666s)
+mse ep   400 loss 5.427e-05  V out-band max    41.8 p99   21.3 mean  4.40  best    29.0@('mse', 380)  (863s)
+mse ep   500 loss 5.794e-05  V out-band max    37.7 p99   13.7 mean  3.40  best    29.0@('mse', 380)  (1057s)
+mse ep   600 loss 5.716e-05  V out-band max    39.2 p99   13.2 mean  3.29  best    29.0@('mse', 380)  (1242s)
+mse ep   700 loss 6.351e-05  V out-band max    38.4 p99   13.3 mean  3.24  best    25.0@('mse', 690)  (1440s)
+mse ep   800 loss 5.330e-05  V out-band max    37.6 p99   12.9 mean  3.14  best    23.7@('mse', 710)  (1659s)
+mse ep   900 loss 2.733e-05  V out-band max    23.3 p99   10.3 mean  2.53  best    23.3@('mse', 900)  (1873s)
+mse ep  1000 loss 1.382e-04  V out-band max    21.6 p99   10.1 mean  2.43  best    21.6@('mse', 1000)  (2075s)
+mse ep  1100 loss 2.255e-05  V out-band max    20.0 p99    9.7 mean  2.29  best    20.0@('mse', 1100)  (2272s)
+mse ep  1200 loss 1.762e-05  V out-band max    19.2 p99    9.4 mean  2.19  best    19.2@('mse', 1200)  (2473s)
+mse ep  1300 loss 2.478e-05  V out-band max    23.7 p99    9.8 mean  2.24  best    18.4@('mse', 1240)  (2655s)
+mse ep  1400 loss 1.330e-05  V out-band max    21.4 p99    9.2 mean  2.12  best    18.4@('mse', 1240)  (2837s)
+mse ep  1500 loss 1.600e-05  V out-band max    19.7 p99    8.9 mean  2.05  best    18.4@('mse', 1240)  (3036s)
+mse ep  1600 loss 1.405e-05  V out-band max    19.3 p99    8.8 mean  2.00  best    18.4@('mse', 1240)  (3227s)
+mse ep  1700 loss 1.204e-05  V out-band max    19.9 p99    8.6 mean  1.95  best    18.4@('mse', 1240)  (3415s)
+mse ep  1800 loss 8.148e-06  V out-band max    20.7 p99    8.4 mean  1.92  best    18.4@('mse', 1240)  (3606s)
+mse ep  1900 loss 1.191e-05  V out-band max    20.0 p99    8.3 mean  1.90  best    18.4@('mse', 1240)  (3795s)
+mse ep  2000 loss 8.170e-06  V out-band max    21.1 p99    8.2 mean  1.88  best    18.4@('mse', 1240)  (3992s)
+mse ep  2100 loss 7.697e-06  V out-band max    20.6 p99    8.1 mean  1.86  best    18.4@('mse', 1240)  (4190s)
+mse ep  2200 loss 7.064e-06  V out-band max    20.7 p99    8.1 mean  1.84  best    18.4@('mse', 1240)  (4384s)
+mse ep  2300 loss 6.952e-06  V out-band max    20.3 p99    8.1 mean  1.83  best    18.4@('mse', 1240)  (4578s)
+mse ep  2400 loss 6.880e-06  V out-band max    19.7 p99    8.1 mean  1.82  best    18.4@('mse', 1240)  (4769s)
+mse ep  2500 loss 6.975e-06  V out-band max    19.2 p99    8.0 mean  1.81  best    18.4@('mse', 1240)  (4959s)
+mse ep  2600 loss 6.695e-06  V out-band max    19.0 p99    8.0 mean  1.81  best    18.4@('mse', 1240)  (5142s)
+mse ep  2700 loss 6.633e-06  V out-band max    18.9 p99    8.0 mean  1.80  best    18.4@('mse', 1240)  (5337s)
+mse ep  2800 loss 6.603e-06  V out-band max    18.9 p99    8.1 mean  1.81  best    18.4@('mse', 1240)  (5524s)
+mse ep  2900 loss 6.584e-06  V out-band max    19.0 p99    8.1 mean  1.81  best    18.4@('mse', 1240)  (5720s)
+mse ep  3000 loss 6.572e-06  V out-band max    18.9 p99    8.1 mean  1.81  best    18.4@('mse', 1240)  (5932s)
+
+selected ('mse', 1240) (V float out-band max 18.4); quantization |int - float| max 3.83 bps
+== V, INTEGER student vs teacher ==
+region (outside exclusions unless stated)        n      max      p99    mean
+outside exclusions (GATE)                    98030     20.6      9.4    2.20
+inside exclusions (refused on-chain)         11370    766.9    120.9   14.17
+near ki (5500-6500)                          31526     20.6      9.8    2.34
+near ac (9500-10500)                         15632     18.3     10.4    2.69
+obs 1-2                                      23874     20.6     10.1    2.15
+obs 3-6                                      21611     17.6      9.8    2.24
+obs 7-13                                     20847     18.3      9.1    2.17
+obs 14-20                                    13939     17.3      8.7    2.17
+obs 21-26                                    17759     14.0      8.5    2.27
+tNext 0                                       3080     16.0      8.4    1.96
+tNext (0,1d]                                  8188     15.0      8.3    1.78
+tNext (1d,2d]                                32528     20.6      9.9    2.22
+tNext (2d,4d]                                24925     17.0      8.7    2.07
+tNext (4d,7d]                                29309     18.7      9.7    2.42
+knockedIn 0                                  61768     20.6      9.7    2.40
+knockedIn 1                                  36262     18.3      8.6    1.85
+  worst {'spot': 6027, 'tNext': 105930, 'obs': 1, 'knockedIn': 0, 'err': -20.599578234308865}
+  worst {'spot': 6255, 'tNext': 475200, 'obs': 1, 'knockedIn': 0, 'err': -18.69581839766761}
+  worst {'spot': 10005, 'tNext': 86401, 'obs': 7, 'knockedIn': 1, 'err': 18.28540622001674}
+  worst {'spot': 6111, 'tNext': 599386, 'obs': 4, 'knockedIn': 0, 'err': -17.592364895146602}
+  worst {'spot': 7725, 'tNext': 604800, 'obs': 2, 'knockedIn': 0, 'err': 17.313250131697714}
+  worst {'spot': 5935, 'tNext': 86401, 'obs': 15, 'knockedIn': 0, 'err': 17.302533406245857}
+  worst {'spot': 6035, 'tNext': 604800, 'obs': 3, 'knockedIn': 0, 'err': 17.063542218048497}
+  worst {'spot': 6061, 'tNext': 195442, 'obs': 2, 'knockedIn': 0, 'err': -17.023717659934846}
+  worst {'spot': 10015, 'tNext': 86401, 'obs': 7, 'knockedIn': 1, 'err': 16.932832632355712}
+  worst {'spot': 5925, 'tNext': 86401, 'obs': 15, 'knockedIn': 0, 'err': 16.734956088810577}
+done in 5951s -> /opt/ai/cache/sp-student/runs/g_all_w48x4_s0

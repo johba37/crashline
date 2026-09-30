@@ -1,0 +1,48 @@
+# python ml/round2.py --train /opt/ai/cache/sp-student/train_s1.npz --val /opt/ai/cache/sp-student/val_v1.npz --epochs 1500 --device cuda:1 --out-dir /opt/ai/cache/sp-student/runs/b_s1_ema
+train 400000 rows (5.8% in bands, label se mean 3.4 max 9.2); val 79400 rows (68030 outside bands, se max 3.24); params 7633; device cuda:1
+mse ep   100 loss 5.530e-04  V out-band max   566.3 p99  133.5 mean 37.05  best   566.3@('mse', 100)  (41s)
+mse ep   200 loss 2.363e-04  V out-band max   190.9 p99   48.7 mean  8.95  best   190.9@('mse', 200)  (86s)
+mse ep   300 loss 1.076e-04  V out-band max   114.7 p99   33.7 mean  6.67  best   114.7@('mse', 300)  (127s)
+mse ep   400 loss 1.284e-04  V out-band max    81.1 p99   25.8 mean  5.35  best    81.1@('mse', 400)  (169s)
+mse ep   500 loss 6.512e-05  V out-band max    54.6 p99   21.0 mean  4.40  best    54.6@('mse', 500)  (216s)
+mse ep   600 loss 7.971e-05  V out-band max    52.5 p99   17.2 mean  3.71  best    50.7@('mse', 530)  (262s)
+mse ep   700 loss 4.762e-05  V out-band max    50.7 p99   15.4 mean  3.27  best    47.6@('mse', 660)  (305s)
+mse ep   800 loss 1.166e-05  V out-band max    49.7 p99   14.5 mean  2.95  best    47.6@('mse', 660)  (348s)
+mse ep   900 loss 1.286e-05  V out-band max    49.8 p99   13.7 mean  2.76  best    47.6@('mse', 660)  (390s)
+mse ep  1000 loss 1.153e-05  V out-band max    56.1 p99   13.1 mean  2.62  best    47.6@('mse', 660)  (435s)
+mse ep  1100 loss 9.077e-06  V out-band max    50.0 p99   12.6 mean  2.52  best    47.6@('mse', 660)  (482s)
+mse ep  1200 loss 8.295e-06  V out-band max    46.2 p99   12.1 mean  2.45  best    45.8@('mse', 1170)  (527s)
+mse ep  1300 loss 7.998e-06  V out-band max    45.8 p99   11.9 mean  2.39  best    45.8@('mse', 1170)  (574s)
+mse ep  1400 loss 7.744e-06  V out-band max    45.1 p99   11.7 mean  2.37  best    45.0@('mse', 1380)  (619s)
+mse ep  1500 loss 7.679e-06  V out-band max    44.7 p99   11.7 mean  2.36  best    44.7@('mse', 1500)  (663s)
+
+selected ('mse', 1500) (V float out-band max 44.7); quantization |int - float| max 3.04 bps
+== V, INTEGER student vs teacher ==
+region (outside exclusions unless stated)        n      max      p99    mean
+outside exclusions (GATE)                    68030     43.8     11.8    2.38
+inside exclusions (refused on-chain)         11370   2309.0    170.7   18.90
+near ki (5500-6500)                          19161     43.8     14.6    2.51
+near ac (9500-10500)                         15632     20.1     11.2    2.72
+obs 1-2                                      10403     43.8     14.7    2.26
+obs 3-6                                      11810     30.8     14.1    2.63
+obs 7-13                                     14119     19.4     10.8    2.22
+obs 14-20                                    13939     20.1     10.0    2.32
+obs 21-26                                    17759     18.5     10.6    2.47
+tNext 0                                       3080     30.8     10.4    2.03
+tNext (0,1d]                                  8188     26.9      9.3    1.92
+tNext (1d,2d]                                22604     43.8     14.0    2.62
+tNext (2d,4d]                                12415     22.4     10.5    2.14
+tNext (4d,7d]                                21743     20.7     10.9    2.50
+knockedIn 0                                  31768     43.8     14.1    3.18
+knockedIn 1                                  36262     12.3      6.9    1.68
+  worst {'spot': 6045, 'tNext': 86401, 'obs': 1, 'knockedIn': 0, 'err': -43.76808048253406}
+  worst {'spot': 5975, 'tNext': 86401, 'obs': 1, 'knockedIn': 0, 'err': -38.6911115588282}
+  worst {'spot': 6115, 'tNext': 86401, 'obs': 2, 'knockedIn': 0, 'err': -33.9262738237976}
+  worst {'spot': 6095, 'tNext': 86401, 'obs': 1, 'knockedIn': 0, 'err': -33.1795963462464}
+  worst {'spot': 6025, 'tNext': 129600, 'obs': 2, 'knockedIn': 0, 'err': 32.26034255400191}
+  worst {'spot': 7225, 'tNext': 0, 'obs': 5, 'knockedIn': 0, 'err': -30.835124216937402}
+  worst {'spot': 6105, 'tNext': 86401, 'obs': 1, 'knockedIn': 0, 'err': -30.360542916505437}
+  worst {'spot': 6115, 'tNext': 93600, 'obs': 2, 'knockedIn': 0, 'err': -29.89157298029022}
+  worst {'spot': 6135, 'tNext': 93600, 'obs': 5, 'knockedIn': 0, 'err': -29.762846270152295}
+  worst {'spot': 6035, 'tNext': 129600, 'obs': 2, 'knockedIn': 0, 'err': 29.617757138406887}
+done in 668s -> /opt/ai/cache/sp-student/runs/b_s1_ema
