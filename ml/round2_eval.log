@@ -1,4 +1,4 @@
-model model/k2: weightsHash 0x26e44e1fda9e81d86e28d4842902c0dded925ff6823e16d8d70e765b889fb9b4, 7633 params, layers [48, 48, 48, 48, 1]
+model model/k2: weightsHash 0xaf76ddf21ca24495bf0540bd54d3d65bef81ea81ddacb55c3e79d64b1266cd8a, 7465 params, layers [64, 48, 40, 40, 1]
 labels /opt/ai/sp-worktrees/student/ml/k2_test_labels.npz: set T, 79598 points, label seed 2119630850, base paths 262144, top-up rounds 0
 teacher at labelling: {'teacher.py': '3e3ff8c33c91887544f6e959beaade8b780db505e6d171e9eadfb31c0f140910', 'teacher_config.json': '463782fbc14f5f6d53d5dd44a75fd4ad0dd4305f9e31f2d114a8be10fd020638', 'teacher_torch.py': '242f89d3c7360e5935f2ba7c7165867707906a493f1f8c412f891419ae1bd2ba'}
 teacher now:          {'teacher.py': '3e3ff8c33c91887544f6e959beaade8b780db505e6d171e9eadfb31c0f140910', 'teacher_config.json': '463782fbc14f5f6d53d5dd44a75fd4ad0dd4305f9e31f2d114a8be10fd020638', 'teacher_torch.py': '242f89d3c7360e5935f2ba7c7165867707906a493f1f8c412f891419ae1bd2ba'}
@@ -8,35 +8,34 @@ domain: 64506 points certified, 15092 refused (Uncertified) by ['acObservationDa
 
 == T: integer student (pq.forward) - teacher, bps ==
 region (outside exclusions unless stated)        n      max      p99    mean
-outside exclusions (GATE)                    64506     64.4     14.5    4.23
-inside exclusions (refused on-chain)         15092   2036.0    173.1   16.92
-near ki (5500-6500)                          18169     64.4     18.7    5.98
-near ac (9500-10500)                         13461     18.5     13.0    3.34
-obs 1-2                                       9678     64.4     19.5    4.37
-obs 3-6                                      15353     29.3     16.7    4.40
-obs 7-13                                     13399     19.4     12.3    3.97
-obs 14-20                                     9322     18.7     11.7    4.13
-obs 21-26                                    16754     18.5     13.1    4.26
-tNext 0                                       3069     19.7     11.7    4.17
-tNext (0,1d]                                 11285     23.6     10.9    4.10
-tNext (1d,2d]                                22686     64.4     16.2    4.31
-tNext (2d,4d]                                12185     36.1     12.8    4.01
-tNext (4d,7d]                                15281     29.3     15.1    4.39
-knockedIn 0                                  29244     64.4     17.4    3.97
-knockedIn 1                                  35262     16.2     10.4    4.45
+outside exclusions (GATE)                    64506     18.7      7.9    1.65
+inside exclusions (refused on-chain)         15092   1423.3     81.0    9.44
+near ki (5500-6500)                          18169     18.7      8.8    1.51
+near ac (9500-10500)                         13461     15.2      7.5    1.98
+obs 1-2                                       9678     18.7      8.0    1.33
+obs 3-6                                      15353     16.7      8.0    1.50
+obs 7-13                                     13399     18.5      8.1    1.67
+obs 14-20                                     9322     14.9      7.6    1.77
+obs 21-26                                    16754     15.2      7.8    1.88
+tNext 0                                       3069     18.0      6.9    1.32
+tNext (0,1d]                                 11285     18.5      6.8    1.30
+tNext (1d,2d]                                22686     18.7      8.5    1.75
+tNext (2d,4d]                                12185     15.2      7.4    1.64
+tNext (4d,7d]                                15281     15.9      8.1    1.82
+knockedIn 0                                  29244     18.7      9.3    2.13
+knockedIn 1                                  35262     11.1      5.5    1.25
 
 worst points outside the exclusions:
-  spot  6130 tNext 172800 obs  1 knockedIn 0  err   +64.4
-  spot  6050 tNext  86401 obs  1 knockedIn 0  err   -47.7
-  spot  6120 tNext 172800 obs  1 knockedIn 0  err   +43.2
-  spot  6140 tNext 172800 obs  1 knockedIn 0  err   +37.6
-  spot  5960 tNext  86401 obs  2 knockedIn 0  err   -37.6
-  spot  6100 tNext  86401 obs  1 knockedIn 0  err   -37.6
-  spot  6150 tNext 345600 obs  1 knockedIn 0  err   +36.1
-  spot  6330 tNext  86401 obs  2 knockedIn 0  err   +34.4
-  spot  6270 tNext  86401 obs  2 knockedIn 0  err   +34.0
-  spot  5950 tNext  86401 obs  2 knockedIn 0  err   -33.3
+  spot  6060 tNext  86401 obs  1 knockedIn 0  err   -18.7
+  spot  7850 tNext  86400 obs  9 knockedIn 0  err   -18.5
+  spot  7800 tNext      0 obs  9 knockedIn 0  err   -18.0
+  spot  8150 tNext   3600 obs 13 knockedIn 0  err   -17.9
+  spot  7800 tNext  43200 obs  9 knockedIn 0  err   -17.4
+  spot  6090 tNext  90000 obs 13 knockedIn 0  err   -16.9
+  spot  5940 tNext  86401 obs  3 knockedIn 0  err   +16.7
+  spot  6120 tNext  86401 obs 13 knockedIn 0  err   -16.6
+  spot  6110 tNext  86401 obs  1 knockedIn 0  err   -16.6
+  spot  5880 tNext  86401 obs  1 knockedIn 0  err   +15.9
 
-max |student - teacher| outside exclusions: 64.4 bps (gate 50); max label stderr 3.24 bps
-FAIL: max error 64.4 > 50 bps
-GATE FAIL (measured max 64.4 bps)
+max |student - teacher| outside exclusions: 18.7 bps (gate 50); max label stderr 3.24 bps
+GATE PASS
