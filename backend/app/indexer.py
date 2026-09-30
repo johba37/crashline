@@ -18,9 +18,9 @@ status `DeploymentMissing` until `config.json` changes; it re-reads the file
 whenever its mtime changes.
 
 Hooks (`indexer.hooks`) run in the indexer thread after each committed chunk
-with (indexer, from_block, to_block, touched), where touched = {"series": set,
-"feeds": set}; later work packages hang the feed rounds and the history
-sampler on them.
+with (indexer, from_block, to_block, touched), where touched = {"series",
+"feeds", "accounts", "desk" (event names), "newSeries"} (sets); the feed
+rounds (app/feeds.py) and the history sampler (app/history.py) hang on them.
 """
 
 from __future__ import annotations
@@ -213,7 +213,8 @@ class Indexer:
 
         blocks = sorted({int(lg["blockNumber"], 16) for lg in logs} | {to})
         infos = self._blocks(blocks)
-        touched: dict[str, set] = {"series": set(), "feeds": set(), "accounts": set()}
+        touched: dict[str, set] = {"series": set(), "feeds": set(), "accounts": set(), "desk": set(),
+                                   "newSeries": set(new_series)}
         c = self.db.conn()
         c.execute("BEGIN IMMEDIATE")
         try:
@@ -272,6 +273,7 @@ class Indexer:
                        args["priceBps"], str(usdg), args["feeBps"], args["feeReceiver"], args["weightsHash"]))
             touched["series"].add(args["series"])
             touched["accounts"].update({account, args["to"]})
+            touched["desk"].add(e.name)
             return
         series = feed = account = sender = None
         if kind == "factory" and e.name == "SeriesCreated":
@@ -289,6 +291,7 @@ class Indexer:
             feed = args["feed"]
             address = args["recorder"]  # stored under the recorder's address: the lookup key
         elif kind == "desk":
+            touched["desk"].add(e.name)
             series = args.get("series")
             feed = args.get("feed")
             account = args.get("owner")

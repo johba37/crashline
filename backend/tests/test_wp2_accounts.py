@@ -31,8 +31,7 @@ ZERO = "0x" + "00" * 20
 def refresh_feeds(chain, cfg):
     """A fresh round (same price) on the deployment's feeds, so held series are quotable."""
     for f in cfg["addresses"]["feeds"].values():
-        feed = chain.at("feed", f)
-        feed.send(dp.DEV_KEY, "pushRound", feed.call("latestRoundData")[1])
+        dp.push_round(chain, dp.DEV_KEY, f, chain.at("feed", f).call("latestRoundData")[1])
 
 
 def position_of(account, series):

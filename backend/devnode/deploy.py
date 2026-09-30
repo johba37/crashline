@@ -237,6 +237,20 @@ def poke(chain: Chain, key: str) -> dict:
     return chain.block(int(r["blockNumber"], 16))
 
 
+def push_round(chain: Chain, key: str, feed: str, answer: int) -> dict:
+    """`pushRound(answer)` on a mock feed. Rounds must be strictly later than the last one
+    and the dev node can put several blocks in one second, so first move the chain's
+    clock past the latest round. Returns the receipt."""
+    f = chain.at("feed", feed)
+    try:
+        last = f.call("latestRoundData")[3]
+    except Revert:  # no rounds yet
+        last = 0
+    while poke(chain, key)["time"] <= last:
+        time.sleep(0.25)
+    return f.send(key, "pushRound", answer)
+
+
 def stage(chain: Chain, key: str, addrs: dict, feed_name: str, path_bps: list[int], spot_bps: int,
           observations_done: int, lead_secs: int, terms: dict | None = None, listing: dict | None = None,
           initial: int = INITIAL, push_spot: bool = True) -> dict:
@@ -332,6 +346,7 @@ def make_config(chain: Chain, core: dict, model_dir: Path, rpc_url: str, public_
         "db": f"backend/data/{chain.chain_id}.sqlite",
         "pollSecs": 2,
         "historyStepSecs": 3600,
+        "replayStepSecs": 3600,
         "testAccounts": {name: address_of(k) for name, k in TEST_KEYS.items()},
     }
 

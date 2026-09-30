@@ -13,7 +13,7 @@ import sqlite3
 import threading
 from pathlib import Path
 
-SCHEMA_VERSION = "2"
+SCHEMA_VERSION = "3"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
@@ -47,9 +47,19 @@ CREATE TABLE IF NOT EXISTS rounds (
     updated_at INTEGER NOT NULL, block INTEGER NOT NULL,
     PRIMARY KEY (feed, n));
 CREATE INDEX IF NOT EXISTS rounds_time ON rounds (feed, updated_at);
+-- history (WP3): marks per series and the vault's NAV; block -1 = replayed before the series existed
+CREATE TABLE IF NOT EXISTS samples (
+    series TEXT NOT NULL, time INTEGER NOT NULL, block INTEGER NOT NULL,
+    spot TEXT, spot_bps INTEGER, note_bps INTEGER, cover_bps INTEGER, quotable INTEGER NOT NULL,
+    reason TEXT, source TEXT NOT NULL, trigger TEXT NOT NULL,
+    PRIMARY KEY (series, time, block));
+CREATE TABLE IF NOT EXISTS nav_samples (
+    block INTEGER PRIMARY KEY, time INTEGER NOT NULL, total_assets TEXT, total_supply TEXT NOT NULL,
+    share_price TEXT, trigger TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS nav_time ON nav_samples (time);
 """
 
-TABLES = ("blocks", "series", "trades", "events", "rounds")
+TABLES = ("blocks", "series", "trades", "events", "rounds", "samples", "nav_samples")
 
 
 class DB:

@@ -365,6 +365,80 @@ ones (`app/feeds.py`, table `rounds`). 404 `UnknownFeed` for a feed no series us
 - `room` is signed; `navError` reports why the NAV is unknown; inventory rows
   carry `quotable`.
 
+## History (WP3)
+
+`GET /series/{addr}/history?from=&to=&step=`
+
+```json
+{ "series": "0x32fb…eab8", "step": 3600,
+  "points": [
+    { "time": 1785011817, "block": null, "spotBps": 9400, "spot": "23500000000", "noteBps": 9547,
+      "coverBps": 1128, "quotable": true, "reason": null, "source": "replay", "observation": 1 },
+    { "time": 1786221417, "block": null, "spotBps": 5500, "spot": "13750000000", "noteBps": null,
+      "coverBps": null, "quotable": false, "reason": "Uncertified", "source": "replay", "observation": 3 },
+    …,
+    { "time": 1790801242, "block": 491, "spotBps": 8500, "spot": "21250000000", "noteBps": 8838,
+      "coverBps": 1837, "quotable": true, "reason": null, "source": "chain", "observation": null } ],
+  "observations": [ { "obsTime": 1784407017, "index": 0, "fixingBps": 10000 },
+                    { "obsTime": 1785011817, "index": 1, "fixingBps": 9400 }, … ],
+  "block": 491, "time": 1790801242 }
+```
+
+- A point is the **quoter's** mid at that time (`notePriceBps` at the
+  listing's vol; `coverBps = maxBps − noteBps`) and the feed's spot
+  (`spotBps` = spot / initial fixing in bps, `spot` in feed units).
+  `quotable: false` with `reason` (the quoter's or model's error) when it
+  refused; then `noteBps` is null. This is the quoter's view, so the Desk's
+  60 s pre-observation band doesn't blank points; `/series/{addr}.quotable`
+  is the Desk's view.
+- `observation`: the fixing index (0 = strike) when the point lies exactly
+  on the schedule, else null; `observations` lists the recorded fixings with
+  `fixingBps`. The grid starts at the strike, so every past observation has a
+  point.
+- `from`/`to` (unix seconds) default to the strike and now. `step` thins the
+  stored points to the last one per `step` bucket, always keeping the
+  observation points and the ones sampled on an event (a trade, a feed
+  round, a fixing). The last point is always computed live at the response's
+  block, so it equals `/series/{addr}.mid` read at the same block.
+- `source: "chain"` points come from `eth_call` at a block (`block` set).
+  `source: "replay"` points (`block: null`) lie **before the series existed
+  on-chain**: the dev node's scenarios stage a strike weeks before their first
+  block, so there is no block to call. For those the service replays what the
+  quoter would have answered (`app/replay.py`): the note's state from its
+  recorded fixings (each taken as processed once its time has passed), the
+  feed round in force at that time (FeedStale if it is more than 26 h old),
+  NoteQuoter's input derivation, the model's domain check and the bit-exact
+  student (`tools/pricer_quant.py`, vectorized in `app/student.py`), plus the
+  accrued coupon. A test checks the replay against the on-chain quoter.
+- **Staged feeds are weekly**: the e2e staging pushes one round per
+  observation, so in the replayed past the quoter answers only in the 26 h
+  after each observation and says `FeedStale` in between. The spot line is
+  continuous; the mid line is a series of day-long segments, one per week.
+
+`GET /vault/history?from=&to=&step=` — `{"step", "points": [ {time, block,
+totalAssets, totalSupply, sharePrice} ]}` from the deployment on
+(`totalAssets`/`sharePrice` null where the NAV was unknown), thinned like the
+series history, the last point live.
+
+Sampling (`app/history.py`): after each indexed chunk a hook samples, at the
+new head, every series whose last on-chain sample is `historyStepSecs`
+(3600 s) old or that the chunk touched (trade, fixing, observation, listing,
+a new feed round), and the NAV likewise (any Desk event, or a step). On the
+dev node blocks are rarer than the step, so that is every block. A
+background thread backfills the grid: slots after the series existed get an
+`eth_call` at the last block inside the slot (the node runs in archive mode;
+a slot without a block had no state change and stays empty), slots before it
+are replayed (`replayStepSecs`, 3600 s). Tables `samples`, `nav_samples`.
+
+### Choices where the spec is silent (WP3)
+
+- History points are the quoter's view (above); points carry `reason`,
+  `source` and `observation` besides the listed fields.
+- Pre-chain history is replayed off-chain rather than left empty
+  (`eth_call` can't reach a time before the first block).
+- The stored resolution is the step (3600 s) plus event points; a smaller
+  `step` in the request returns what is stored, no interpolation.
+
 ### Choices where the spec is silent (WP1)
 
 - `before` in `/trades` is a block number (the dev node puts one tx in a block).
@@ -403,3 +477,13 @@ database), so a service on 8650 keeps running.
   adding up to `totalAssets`, `queuedShares` non-zero while the request is
   open (with `navError` FixingPending) and zero after `processQueue`; FIFO and
   `position` unit checks.
+- `test_wp3_history.py`: the vectorized student equals `pricer_quant.forward`
+  bit for bit; the default series' history has a marked point at the strike
+  and every past observation (spot = the fixing), the observation list, the
+  last point equal to the quoter's mid and to `/series/{addr}.mid` at the same
+  block, a coarser `step` keeping the observations; a `cast send pushRound`
+  is indexed within one poll and leaves a stored point with the new spot; the
+  replay equals the on-chain quoter on five staged states (normal, near the
+  knock-in, 6 observations left, out of range, stale feed); `/vault/history`
+  samples a trade's block; a service stopped while blocks are made
+  backfills those blocks with `eth_call` on restart (series and NAV).

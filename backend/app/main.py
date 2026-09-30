@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse
 
 from .chain import Revert, RpcError
 from .service import SERVICE, ApiError
-from . import api_accounts, api_catalog
+from . import api_accounts, api_catalog, history
 from .feeds import sync_rounds
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -23,9 +23,11 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    SERVICE.indexer.hooks.append(sync_rounds)
+    SERVICE.indexer.hooks += [sync_rounds, history.HISTORY.hook]
     SERVICE.start()
+    history.HISTORY.start()
     yield
+    history.HISTORY.stop()
     SERVICE.stop()
 
 
@@ -33,6 +35,7 @@ app = FastAPI(title="Surrogate Pricer backend", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 app.include_router(api_catalog.router)
 app.include_router(api_accounts.router)
+app.include_router(history.router)
 
 
 @app.exception_handler(ApiError)
