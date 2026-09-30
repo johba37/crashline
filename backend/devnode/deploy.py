@@ -6,7 +6,7 @@
 
 Mirrors contracts/script/e2e-devnode.sh steps 0-6 (without the trades):
   1. the Stylus pricer from model/k2 (`cargo stylus deploy`, build dir backend/.build/stylus-target)
-  2. MockUSDG, MockChainlinkFeed, SeriesFactory, NoteQuoter(93600), Desk(curator = dev key, band 60 s),
+  2. MockUSDG, SeriesFactory, NoteQuoter(93600), Desk(curator = dev key, band 60 s), from a fresh deployer key,
      built with forge in backend/.build/sol (a copy of contracts/src, so nothing under contracts/ is written)
   3. funds the three anvil test accounts (1 ETH, 100,000 USDG each) and seeds the vault
      with 100,000 USDG from the dev account
@@ -25,6 +25,7 @@ import hashlib
 import json
 import os
 import re
+import secrets
 import shutil
 import subprocess
 import sys
@@ -74,6 +75,7 @@ MIN_SECS_TO_OBSERVATION = 60
 LP_SEED = 100_000 * USDG
 FUND_ETH = 1 * ETH
 FUND_USDG = 100_000 * USDG
+DEPLOYER_ETH = 5 * ETH
 DEFAULT_MODEL_DIR = "model/k2"
 
 
@@ -194,10 +196,10 @@ def deploy_pricer(rpc_url: str, key: str, model_dir: Path) -> str:
     return m.group(1).lower()
 
 
-def deploy_core(chain: Chain, key: str, pricer: str, model_dir: Path) -> dict:
-    """The Solidity side; returns the config's `addresses` block (without feeds) and the first block."""
+def deploy_core(chain: Chain, key: str, pricer: str, model_dir: Path, curator: str) -> dict:
+    """The Solidity side, deployed from `key`, the Desk owned by `curator`; returns the
+    config's `addresses` block (without feeds) and the first block."""
     build_contracts()
-    dev = address_of(key)
     want = json.loads((model_dir / "student_export.json").read_text())["weightsHash"]
     got = chain.at("pricer", pricer).call("weightsHash")
     if got != want:
@@ -207,7 +209,7 @@ def deploy_core(chain: Chain, key: str, pricer: str, model_dir: Path) -> dict:
     factory = chain.deploy(key, bytecode("SeriesFactory"), ["address"], [usdg])
     quoter = chain.deploy(key, bytecode("NoteQuoter"), ["uint40"], [MAX_FEED_STALENESS])
     desk = chain.deploy(key, bytecode("Desk"), ["address", "address", "address", "address", "uint32"],
-                        [usdg, factory, quoter, dev, MIN_SECS_TO_OBSERVATION])
+                        [usdg, factory, quoter, curator, MIN_SECS_TO_OBSERVATION])
     return {"addresses": {"usdg": usdg, "seriesFactory": factory, "noteQuoter": quoter, "desk": desk,
                           "surrogatePricer": pricer, "feeds": {}},
             "deploymentBlock": first_block}
@@ -237,10 +239,11 @@ def poke(chain: Chain, key: str) -> dict:
 
 def stage(chain: Chain, key: str, addrs: dict, feed_name: str, path_bps: list[int], spot_bps: int,
           observations_done: int, lead_secs: int, terms: dict | None = None, listing: dict | None = None,
-          initial: int = INITIAL) -> dict:
+          initial: int = INITIAL, push_spot: bool = True) -> dict:
     """The e2e script's steps 3-4: a new feed with a staged history, a series whose strike is
     (observations_done + 1) weeks before the next observation, the past fixings recorded,
     `advance()`; with `listing`, the listing, its spread and the feed's risk budget.
+    `push_spot=False` leaves the last fixing as the latest round (a stale feed).
     Returns {feed, series, note, writer, recorder, strikeTime, nextObservation}."""
     t = dict(K2_TERMS, **(terms or {}))
     done = int(observations_done)
@@ -263,7 +266,8 @@ def stage(chain: Chain, key: str, addrs: dict, feed_name: str, path_bps: list[in
     f.send(key, "pushRoundAt", initial, strike)
     for i in range(1, done + 1):
         f.send(key, "pushRoundAt", initial * path_bps[i - 1] // 10_000, strike + i * WEEK)
-    f.send(key, "pushRound", initial * spot_bps // 10_000)
+    if push_spot:
+        f.send(key, "pushRound", initial * spot_bps // 10_000)
 
     factory = chain.at("factory", addrs["seriesFactory"])
     terms_t = {"feed": feed, "strikeTime": strike, "observationInterval": WEEK, "observationCount": t["count"],
@@ -360,16 +364,22 @@ def deployed(chain: Chain, cfg: dict) -> bool:
 
 def deploy_all(rpc_url: str, public_rpc_url: str | None = None, model_dir: str = DEFAULT_MODEL_DIR,
                lead_secs: int = DEFAULT_LEAD, key: str = DEV_KEY, write: bool = True) -> dict:
-    """Steps 1-6; returns the new config (written to backend/config.json when `write`)."""
+    """Steps 1-6; returns the new config (written to backend/config.json when `write`).
+
+    The contracts come from a fresh deployer key, funded by `key`: a new dev chain
+    replays the same nonces, so deploying from `key` would give every reset the same
+    addresses. `key` stays the curator (Desk owner), the feeds' owner and the house LP."""
     t0 = time.monotonic()
     chain = wait_for_node(rpc_url)
     mdir = (ROOT / model_dir).resolve()
     log(f"chain {chain.chain_id} at {rpc_url}, block {chain.block_number()}")
-    log("1. Stylus pricer")
-    pricer = deploy_pricer(rpc_url, key, mdir)
+    deployer_key = "0x" + secrets.token_hex(32)
+    chain.transfer_eth(key, address_of(deployer_key), DEPLOYER_ETH)
+    log(f"1. Stylus pricer (deployer {address_of(deployer_key)})")
+    pricer = deploy_pricer(rpc_url, deployer_key, mdir)
     log(f"   pricer {pricer}")
     log("2. Solidity contracts")
-    core = deploy_core(chain, key, pricer, mdir)
+    core = deploy_core(chain, deployer_key, pricer, mdir, curator=address_of(key))
     for k, v in core["addresses"].items():
         if k != "feeds":
             log(f"   {k:16s} {v}")
@@ -385,6 +395,7 @@ def deploy_all(rpc_url: str, public_rpc_url: str | None = None, model_dir: str =
     log(f"   series {st['series']} on {st['feedName']} {st['feed']}; next observation in {lead_secs} s")
     log(f"   quoteBuy(1 NOTE) = {cost} USDG base units at {price} bps")
     cfg = make_config(chain, core, mdir, rpc_url, public_rpc_url or rpc_url.replace("127.0.0.1", "localhost"))
+    cfg["deployer"] = address_of(deployer_key)
     if write:
         cfgmod.save(cfg)
         p = write_deployments(cfg)

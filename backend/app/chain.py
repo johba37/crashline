@@ -18,6 +18,7 @@ A revert (eth_call, eth_estimateGas or a mined tx with status 0) raises
 from __future__ import annotations
 
 import json
+import re
 import threading
 import time
 from dataclasses import dataclass, field
@@ -60,16 +61,23 @@ class RpcError(Exception):
 
 class Revert(Exception):
     """A decoded revert. `name` is the Solidity error name ("Unknown" if the
-    selector is not in any ABI), `args` its named arguments."""
+    selector is not in any ABI), `fields` its named arguments (not `args`,
+    which BaseException owns)."""
 
-    def __init__(self, name: str, args: dict | None = None, data: str = "0x"):
-        super().__init__(f"{name}{json.dumps(args or {}, default=str)}")
+    def __init__(self, name: str, fields: dict | None = None, data: str = "0x", inputs: list | None = None):
+        super().__init__(f"{name}{json.dumps(fields or {}, default=str)}")
         self.name = name
-        self.args = args or {}
+        self.fields = fields or {}
         self.data = data
+        self.inputs = inputs or []
+
+    def args_json(self) -> dict:
+        """The args with integers wider than 53 bits as decimal strings."""
+        by_name = {p["name"]: p for p in self.inputs}
+        return {k: json_value(v, by_name[k]) if k in by_name else jsonable(v) for k, v in self.fields.items()}
 
     def to_json(self) -> dict:
-        return {"error": self.name, "args": jsonable(self.args)}
+        return {"error": self.name, "args": self.args_json()}
 
 
 def jsonable(v: Any) -> Any:
@@ -81,6 +89,23 @@ def jsonable(v: Any) -> Any:
     if isinstance(v, (list, tuple)):
         return [jsonable(x) for x in v]
     return v
+
+
+def json_value(v: Any, p: dict) -> Any:
+    """A decoded ABI value for JSON: integers wider than 53 bits (JavaScript's exact
+    range) as decimal strings, so uint256 amounts, uint96 prices and uint80 round ids
+    survive the frontend; times, bps and counts stay numbers."""
+    t = p["type"]
+    if t.startswith("tuple"):
+        if t.endswith("[]"):
+            return [json_value(x, dict(p, type=t[:-2])) for x in v]
+        return {c["name"]: json_value(v[c["name"]], c) for c in p["components"]}
+    if t.endswith("]"):
+        return [json_value(x, dict(p, type=t[:t.rindex("[")])) for x in v]
+    m = re.fullmatch(r"u?int(\d*)", t)
+    if m and int(m.group(1) or 256) > 53:
+        return str(v)
+    return jsonable(v)
 
 
 # ---------------------------------------------------------------------------
@@ -177,6 +202,11 @@ class Event:
     def topic0(self) -> str:
         return "0x" + keccak(text=self.signature).hex()
 
+    def decode_json(self, log: dict) -> dict:
+        """decode() with json_value applied per input."""
+        args = self.decode(log)
+        return {p["name"]: json_value(args[p["name"]], p) for p in self.inputs}
+
     def decode(self, log: dict) -> dict:
         topics = log["topics"][1:]
         indexed = [p for p in self.inputs if p.get("indexed")]
@@ -261,7 +291,7 @@ class Registry:
                 return Revert("Panic", {"code": code}, data)
             e = self.errors.get(sel)
             if e is not None:
-                return Revert(e.name, e.decode(body), data)
+                return Revert(e.name, e.decode(body), data, e.inputs)
         except Exception:  # malformed payload: report the selector
             pass
         return Revert("Unknown", {"selector": "0x" + sel.hex()}, data)
@@ -320,6 +350,27 @@ class Chain:
                 out.append(RpcError(e.get("code", -1), e.get("message", ""), e.get("data")))
             else:
                 out.append(r.get("result"))
+        return out
+
+    def call_many(self, calls: list[tuple["Contract", str, tuple]], block: int | str | None = None) -> list[Any]:
+        """Batched eth_calls at one block: each decoded result, or the Revert it raised."""
+        fns, reqs = [], []
+        for c, fn, args in calls:
+            f = c.iface.fn(fn)
+            fns.append(f)
+            reqs.append(("eth_call", [{"to": c.address, "data": f.encode(*args)}, block_tag(block)]))
+        results: list[Any] = []
+        for i in range(0, len(reqs), 500):  # geth's default batch limit is 1000
+            results += self.batch(reqs[i:i + 500])
+        out: list[Any] = []
+        for f, r in zip(fns, results):
+            if isinstance(r, RpcError):
+                e = self._revert_from(r)
+                if not isinstance(e, Revert):
+                    raise e
+                out.append(e)
+            else:
+                out.append(f.decode(r))
         return out
 
     @property
