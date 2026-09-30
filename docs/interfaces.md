@@ -1,6 +1,7 @@
 # Interfaces v1: guide for the frontend
 
-**Frozen 2026-09-29.** The Solidity interfaces in
+**Frozen 2026-09-29; `IDeskCover` added 2026-09-30** (it extends `IDesk`; the `IDesk`
+ABI is unchanged, see "Cover and the two prices"). The Solidity interfaces in
 [`contracts/src/interfaces/`](../contracts/src/interfaces/) are the contract between
 the contracts and the frontend. ABIs for viem/wagmi are in [`abi/`](../abi/)
 (regenerate with `contracts/script/export-abi.sh`). Any change goes through a PR that
@@ -15,11 +16,11 @@ updates the interface, the ABI and this file together. Layer picture:
 | FixingsRecorder | `IFixingsRecorder` | done; records only observation times strictly in the past |
 | SeriesFactory, NoteSeries, SeriesToken | `ISeriesFactory`, `INoteSeries`, `ISeriesToken` | done (`contracts/src/`), payout via the `AutocallPayout` library |
 | NoteQuoter | `INoteQuoter` | done, series-based; one quoter for every model |
-| Desk | `IDesk` (ERC-4626) | done; `MAX_FEE_BPS` = 200, `BACKSTOP_SHARE_BPS` = 2000 |
+| Desk | `IDesk` (ERC-4626) + `IDeskCover` | done; `MAX_FEE_BPS` = 200, `BACKSTOP_SHARE_BPS` = 2000, `MAX_SPREAD_BPS` = 1000. Use `abi/IDeskCover.json`: it contains all of `IDesk` |
 
 All of the above pass `forge test` and the dev node end-to-end run
 (`contracts/script/e2e-devnode.sh`); see [contracts-review.md](contracts-review.md).
-No interface or ABI changed since the freeze.
+No frozen interface or ABI changed since the freeze; `IDeskCover` and its ABI are new.
 
 Robinhood Chain testnet: chain ID 46630, RPC `https://rpc.testnet.chain.robinhood.com`,
 USDG `0x7E955252E15c84f5768B83c41a71F9eba181802F` (6 decimals). `contracts/script/Deploy.s.sol`
@@ -28,6 +29,9 @@ listed here.
 
 Implementation notes beyond the interfaces:
 - `desk.listedSeries()` also returns delisted series; check `desk.listing(s)`.
+- `listing.capNotional` is the most WRITER the Desk may hold in the series, and
+  `listing.soldNotional` the WRITER it holds now (read live). NOTE available to buy =
+  the Desk's NOTE balance + `capNotional − soldNotional`.
 - The Desk has one extra view not in `IDesk`: `heldSeries()`.
 - The integrator fee on a sell is capped at the gross proceeds.
 - `FixingPending(obsTime)` starts once `obsTime < block.timestamp`.
@@ -37,7 +41,7 @@ Implementation notes beyond the interfaces:
 | Quantity | Unit |
 |---|---|
 | NOTE, WRITER, USDG amounts | base units, 6 decimals. 1 NOTE = 1 USDG notional |
-| `priceBps`, `feeBps`, barriers, coupon | bps: of notional (price, fee, coupon) or of the initial fixing (barriers). Quoted prices include coupon accrued since strike; the model's own `priceBps` is clean |
+| `priceBps`, `feeBps`, spreads, barriers, coupon | bps: of notional (price, fee, spread, coupon) or of the initial fixing (barriers). `quoter.notePriceBps` is the model's quote including coupon accrued since strike; the model's own `priceBps` is clean; the Desk's `priceBps` (quotes, trade events) is the price applied to that leg, spread included |
 | `payoutPerNote`, `maxPayoutPerNote` | USDG base units per 1 NOTE (1e6 base units) |
 | feed prices, `initialFixing`, fixings | feed decimals (8) |
 | times | unix seconds (`uint40`) |
@@ -86,8 +90,12 @@ region 1).
 3. `desk.buy(s, amount, maxCost, feeBps, feeReceiver, to)`.
 
 `feeBps`/`feeReceiver` are the integrator fee: our frontend can charge one (≤ `MAX_FEE_BPS`) or pass 0.
+`CapExceeded(requested, available)` now means: the Desk's NOTE inventory plus its WRITER
+cap covers only `available`.
 
 **Sell NOTE (early exit).** `desk.quoteSell` → `NOTE.approve(desk, amount)` → `desk.sell(..., minProceeds, ...)`.
+NOTE the Desk can't pair with WRITER it holds becomes its position and needs room in the
+risk budget (`RiskBudgetExceeded`).
 
 **Redeem after settlement.**
 - If `state().phase == Settled`: `series.redeem(noteAmount, writerAmount, to)`. No approval
@@ -95,9 +103,36 @@ region 1).
 - If the phase is still Live but maturity or an autocall fixing has passed: call
   `series.advance()` first (anyone can), or just call `redeem`, which advances internally.
 
-**Hedger: mint a pair.** `USDG.approve(series, previewMint(n))` → `series.mint(n, to)`.
-You get `n` NOTE and `n` WRITER. Sell the NOTE to the Desk or keep it.
-`series.redeemPair(n, to)` unwinds the pair at any time.
+**Hedger: buy cover.** WRITER is crash cover: it pays `maxPayout − NOTE payout`.
+1. `desk.quoteBuyCover(s, amount, feeBps)` → `(cost, priceBps)`: the premium, not the pair's collateral.
+2. `USDG.approve(desk, maxCost)`.
+3. `desk.buyCover(s, amount, maxCost, feeBps, feeReceiver, to)`: `amount` WRITER arrives at `to`.
+
+Exit: `desk.quoteSellCover` → `WRITER.approve(desk, amount)` → `desk.sellCover(..., minProceeds, ...)`.
+After settlement: `series.redeem(0, writerAmount, to)`. `desk.risk(feed)` → `(atRisk, limit)`
+shows how much more cover the Desk can sell on that stock. Minting a pair directly
+(`series.mint`, `series.redeemPair`) still works and needs no Desk.
+
+**Cover and the two prices.** `desk.spread(s)` → `(bidBps, askBps, volBandBps)`,
+`maxBps = series.maxPayoutPerNote() / 100`. The Desk asks the model at the listing's vol
+minus and plus the band: `quoter.notePriceBps(s, pricer, vol − volBandBps)` and
+`(…, vol + volBandBps)`. `lo` and `hi` are the lower and the higher of the two quotes,
+capped at maxBps; with no band there is one quote and `lo = hi`.
+
+| Call | The Desk | `priceBps` |
+|---|---|---|
+| `buy` | sells NOTE | `min(hi + askBps, maxBps)` |
+| `sell` | buys NOTE | `lo − bidBps`, floored at 0 |
+| `buyCover` | sells WRITER, ends up with NOTE | `maxBps − (lo − bidBps)` |
+| `sellCover` | buys WRITER | `maxBps − min(hi + askBps, maxBps)` |
+
+Cost and proceeds use `priceBps` exactly as in `IDesk`. The note is worth less at a
+higher vol, so the band makes the spread widest where the price depends most on vol;
+`bidBps`/`askBps` are a flat floor on top. To show the mid, quote at the listing's vol
+itself; the Desk's marks use that. All three are 0 until the curator calls
+`setSpread(series, bidBps, askBps, volBandBps)`. A band needs a model certified for a
+range of vols (`pricer.certifiedRange(2)`); `model/k2` pins 55%, so its band is 0. The risk budget is 0 until the curator calls `setRiskBudget(feed, bps)`:
+until then every trade that adds to the Desk's positions on that feed reverts.
 
 **LP.** Standard ERC-4626 on the Desk: `deposit`/`withdraw`/`redeem`. Check
 `maxDeposit`/`maxWithdraw` first: they return 0 while any held series can't be quoted
@@ -116,7 +151,8 @@ find the round (binary search over `feed.getRoundData`: the last round at or bef
 | Recorder | `FixingRecorded(obsTime, roundId, price, timestamp)` | price path chart |
 | Series | `Struck`, `ObservationProcessed`, `Settled` | lifecycle timeline |
 | Series | `Minted`, `PairRedeemed`, `Redeemed` | positions |
-| Desk | `NoteBought`, `NoteSold` (carry `priceBps`, `feeBps`, `weightsHash`) | trade history, "which model priced this" |
+| Desk | `NoteBought`, `NoteSold`, `CoverBought`, `CoverSold` (carry `priceBps`, `feeBps`, `weightsHash`) | trade history, "which model priced this" |
+| Desk | `SpreadSet(series, bidBps, askBps, volBandBps)`, `RiskBudgetSet(feed, budgetBps)` | the two prices, cover capacity |
 | Desk | `SeriesListed(series, pricer, weightsHash, vol, cap)` (also on updates), `SeriesDelisted`, ERC-4626 `Deposit`/`Withdraw` | admin + LP views, model changes |
 
 ## Errors worth a human message
@@ -133,7 +169,9 @@ pricer, so include `INoteQuoter` and `ISurrogatePricer` errors.
 | `Uncertified(region)` | region 0: "Too close to the autocall barrier on observation day"; region 1: "Too close to the knock-in barrier on observation day". The two places the value jumps at a fixing |
 | `Inconsistent(field)` | a bug in whoever built the inputs; never expected from our quoter |
 | `NotLive()` | not struck yet, or already settled |
-| `CapExceeded`, `Slippage`, `FeeTooHigh` | self-explanatory |
+| `RiskBudgetExceeded(atRisk, limit)` | "The Desk has reached its risk budget for this stock": the trade would add to its position. Trades that shrink the position still work |
+| `CapExceeded(requested, available)` | "Only `available` on offer": NOTE beyond the Desk's inventory and WRITER cap, or WRITER sold back beyond the cap |
+| `Slippage`, `FeeTooHigh` | self-explanatory |
 
 ## What is deliberately not here
 

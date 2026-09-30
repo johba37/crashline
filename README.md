@@ -11,6 +11,7 @@ no expiry and one token per stock, priced by a closed form plus a learned correc
 
 ```
 contracts/src/interfaces/  frozen v1 interfaces (factory, series, tokens, quoter, Desk, recorder, pricer)
+                           + IDeskCover: the Desk's WRITER leg, two prices, risk budget
 contracts/src/             SeriesFactory, NoteSeries, SeriesToken, AutocallPayout, NoteQuoter,
                            Desk (ERC-4626 on USDG), FixingsRecorder, MockChainlinkFeed, MockUSDG
 contracts/script/          Deploy.s.sol (Robinhood testnet), e2e-devnode.sh, export-abi.sh
@@ -36,8 +37,8 @@ docs/contracts-review.md   self-review: reentrancy, rounding, USDG freeze/pause,
 |---|---|---|
 | Teacher | Merton jump-diffusion calibrated to 10 years of TSLA daily closes (λ 72.2/yr, σJ 5.26%, jump vol 44.7% of the pinned 55% total); 8/8 checks pass, incl. λ=0 bit-identical to the K1 GBM teacher | `ml/test_teacher.py`, [docs/teacher-v2.md](docs/teacher-v2.md) |
 | Student `model/k2` | whole note life (observationsRemaining 1–26, timeToNextObs 0–7 days); **GATE PASS** on the held-out set vs the jump teacher: max 18.7 / p99 7.9 / mean 1.65 bps outside the two observation-day bands (gate 50), max label stderr 3.24 bps; fresh confirmation set T2: max 17.8 bps | `ml/round2_eval.py`, [docs/k2-round2.md](docs/k2-round2.md) |
-| Note core, quoter, Desk | 97 forge tests pass: 260 payout-conformity vectors, quoter vectors for k1-r1 and k2, fuzz at 1,000 runs, invariants at 512 runs × 100 calls (escrow ≥ claims, no foreign clones) | `forge test`, [docs/contracts-review.md](docs/contracts-review.md) |
-| End to end | local Nitro dev node with the Stylus k2 pricer: series struck in the past, buy, **mid-life sell at observationsRemaining 16 at the model's quote**, autocall, redeem, collect, LP withdraw | `contracts/script/e2e-devnode.sh`, [log](contracts/logs/e2e-devnode-k2.log) |
+| Note core, quoter, Desk | 127 forge tests pass: 260 payout-conformity vectors, quoter vectors for k1-r1 and k2, fuzz at 1,000 runs, invariants at 512 runs × 100 calls (escrow ≥ claims, no foreign clones). The Desk trades NOTE and WRITER (cover) at two prices and keeps NOTE, within a risk budget per stock | `forge test`, [docs/contracts-review.md](docs/contracts-review.md) |
+| End to end | local Nitro dev node with the Stylus k2 pricer: series struck in the past, NOTE buy, cover buy by a hedger, **mid-life sell at observationsRemaining 16 at the model's quote ± the spread**, autocall, redeem, collect, LP withdraw | `contracts/script/e2e-devnode.sh`, [log](contracts/logs/e2e-devnode-k2.log) |
 | Robinhood Chain testnet (46630) | `Deploy.s.sol` simulates cleanly; not broadcast yet (no deployer key set); `cargo stylus check` passes for k2 | |
 
 Known limit: the teacher's jump variance is pinned from history, so total vol must stay
@@ -53,7 +54,7 @@ above 44.7%. Listed TSLA options (6-month ATM ~43%) sit below that; see
 | `weightsHash()` | recomputed at build time; a flipped weight byte fails the build |
 | ABI | callable from Solidity through NoteQuoter's `ISurrogatePricer` / `PricerInputs` struct |
 | Activation on Robinhood Chain testnet (46630) | `cargo stylus check` passes for k2: 23,913 bytes compressed (limit 24,576; docs/k2-round2.md) |
-| Execution gas per quote | **~45,000** measured on the synthetic model (3,873 params; Solidity caller, `gasleft()` delta, uncached init included); not yet re-measured for k2. A whole Desk buy incl. the k2 quote is 497,983 L2 execution gas on the dev node |
+| Execution gas per quote | **~45,000** measured on the synthetic model (3,873 params; Solidity caller, `gasleft()` delta, uncached init included); not yet re-measured for k2. A whole Desk buy incl. the k2 quote and the risk-budget check is 647,750 L2 execution gas on the dev node (497,983 before the check) |
 | Quantization error (int16 vs float, synthetic) | p50 0.3 / p99 1.2 / max 3.2 bps |
 
 Default model: `model/k2` (K2 round 2, 7,465 params). CI runs all three:

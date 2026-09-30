@@ -9,15 +9,17 @@ research on Opyn, Pendle, Gnosis CTF, Siren and Cega (2026-09-29).
 ```
   buyer          LP          hedger                frontend / other protocols
     │             │             │                        │
-    ▼             ▼             ▼ (mints pairs directly)  ▼ (events + views)
+    ▼             ▼             ▼ (buys cover, or mints)   ▼ (events + views)
 ┌─ L3  INTEGRATIONS ─ opt-in; all policy lives here ─────────────────────────────────────┐
 │                                                                                        │
 │ Desk  (ERC-4626: LPs deposit USDG, shares are an ERC-20)                               │
 │   • listing per series: pricer (certified model per product) + vol + cap               │
-│   • buy / sell NOTE at quote ± fee  (the pricer's only in-path use)                    │
+│   • buy / sell NOTE and WRITER ("cover") at quote ± spread ± fee              [8]      │
+│     (the pricer's only in-path use); WRITER = maxPayout − NOTE                         │
 │   • quotes a curated grid only: 1 series / underlying / week                  [2]      │
-│   • keeps WRITER by default; no promise of WRITER liquidity                   [8]      │
-│   • caps per series + TVL, ε-bands at barriers, rounds vs trader              [9]      │
+│   • sells cover for the premium and keeps the NOTE; holds WRITER only up to            │
+│     the listing's cap; a risk budget per stock limits both                    [8]      │
+│   • ε-bands at barriers, rounds vs trader                                     [9]      │
 │   • fee ≤ maxFeeBps; a slice goes to the backstop                                      │
 │   • IS the market: no AMM pools for NOTE                                      [6]      │
 │                                                                                        │
@@ -83,7 +85,7 @@ research on Opyn, Pendle, Gnosis CTF, Siren and Cega (2026-09-29).
 | [5] | No lending-collateral oracle for NOTE yet | Pendle PT-reUSD: a $320k trade → 3% move → $36.4M of Morpho liquidations (Aug 2026) |
 | [6] | The Desk is the market; no AMM pools for NOTE | Pendle needed a purpose-built AMM; NOTE's value jumps at every fixing |
 | [7] | ERC-20 tokens, not ERC-1155 | Siren lost $3.5M to reentrancy through ERC-1155 receive hooks; CTF needed ERC-20 wrappers |
-| [8] | The Desk holds WRITER by default; no promise of WRITER liquidity | Siren, Ribbon and Cega all ended up with the vault as the writer |
+| [8] | The Desk sells WRITER (crash cover) to holders of the stock and keeps NOTE; it holds WRITER only up to a cap | In Siren, Ribbon and Cega the vault is the option seller: it collects the premium and posts the collateral. Here that side is NOTE; the WRITER token is the option buyer. Until 2026-09-30 the Desk kept WRITER and lost the premium on every autocall |
 | [9] | Caps, ε-band before observations, rounding against the trader | Ribbon auctions cleared 1.7–2.8 vol points below exchange prices |
 | [!] | Feed pauses detected by staleness | `oraclePaused()` is absent on the TSLA feed (probed), whatever Chainlink's docs say |
 
@@ -121,3 +123,11 @@ Sources: [Opyn Gamma OZ audit](https://www.openzeppelin.com/news/opyn-gamma-prot
   and uses series whose strike lies in the past.
 - **The Desk's LP flows pause while any held series can't be quoted** (weekends, pending
   fixing). Otherwise the share price would be unknown.
+- **The Desk trades both legs at two prices** (`IDeskCover`, additive to the frozen
+  `IDesk`). A USDG vault has nothing to insure, so WRITER belongs with holders of the
+  stock and NOTE with the vault. `buyCover` sells WRITER for the premium alone and the
+  Desk keeps the NOTE; a NOTE buyer takes that NOTE, and its risk, out of the inventory.
+  The Desk buys a leg below the model's quote and sells it above; the spread stays in
+  the vault. The spread is a vol band (the model is asked at the listing's vol −/+ the
+  band, once the model takes a range of vols) plus a flat floor. A risk budget per feed caps what its positions can lose, as a share of
+  vault assets. Same series, same model: nothing below L3 changed.
