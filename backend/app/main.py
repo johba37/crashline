@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse
 
 from .chain import Revert, RpcError
 from .service import SERVICE, ApiError
-from . import api_accounts, api_catalog, api_model, history
+from . import api_accounts, api_catalog, api_demo, api_model, history
 from .feeds import sync_rounds
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -37,6 +37,7 @@ app.include_router(api_catalog.router)
 app.include_router(api_accounts.router)
 app.include_router(history.router)
 app.include_router(api_model.router)
+app.include_router(api_demo.router)
 
 
 @app.exception_handler(ApiError)

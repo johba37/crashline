@@ -518,6 +518,71 @@ are replayed (`replayStepSecs`, 3600 s). Tables `samples`, `nav_samples`.
 - `/verify-quote` returns clean and accrued-inclusive prices and the `check`
   block; the cache is in memory (a restart clears it).
 
+## Demo control (WP5)
+
+`POST` only, when `config.json` has `demo.enabled: true` (the dev node; 403
+`DemoDisabled` otherwise), with the header `X-Demo-Token` (401
+`BadDemoToken` otherwise). The token is the env var `DEMO_TOKEN`; on the dev
+node it defaults to **`sp-devnode-demo`** when unset (set your own in
+`backend/.env`). Transactions are signed by the key in the env var `DEMO_KEY`,
+on the dev node by default Nitro's dev key (the curator, the mock feeds'
+owner). Each route waits until the indexer has its transactions (so the
+response and the next reads include them) and returns data at that block.
+
+| Route | Body | Returns |
+|---|---|---|
+| `/demo/faucet` | `{"address", "eth"?: 1, "usdg"?: 100000}` (whole units, numbers or decimal strings) | `{address, sent: {eth, usdg} (base units), balances: {eth, usdg}}` |
+| `/demo/feed` | `{"feed": name or address, "spotBps"}` | `{feed, name, initial, spotBps, round: {roundId, answer, updatedAt}, series: [<series>]}` |
+| `/demo/fixing` | `{"series", "fixingBps"}` | `{obsTime, pushed, fixing: {price, roundId, fixingBps}, series: <series with fixings, trades>}` |
+| `/demo/stage` | see below | the new `<series>` (with fixings, trades) |
+| `/demo/reset` | `{"leadSecs"?}` | `{addresses, deploymentBlock, series: [addr], secs}` |
+
+- **faucet** sends from the demo key: ETH by transfer, USDG by `mint`.
+- **feed** pushes `pushRound(initial × spotBps / 1e4)`, where `initial` is
+  the strike fixing of the feed's first struck series (else the feed's first
+  round). A round must be later than the feed's last one; the route first
+  moves the chain's clock past it.
+- **fixing** is the e2e script's "next observation" step: the series' next
+  observation must have passed (409 `ObservationNotPassed` with `until`
+  otherwise; the route pokes first, so "passed" is wall-clock time). It pushes
+  a round exactly at the observation time with `initial × fixingBps / 1e4`,
+  records the fixing and calls `advance()`. If the feed already has a round
+  after the observation (a `/demo/feed` after it passed), the fixing is the
+  round in force at the observation and `pushed` is false. A fixing at or
+  above the autocall barrier settles the series; one below the knock-in
+  barrier knocks it in.
+- **stage**: `{"feedName", "pathBps": [..], "spotBps", "observationsDone",
+  "leadSecs", "terms"?: {"ki", "ac", "coupon", "count"}, "list"?: {"volBps",
+  "capNotional" (NOTE, whole units), "bidBps", "askBps", "volBandBps",
+  "riskBudgetBps"}}` — the e2e steps 3–4 as one call: a new mock feed named
+  `feedName` (names must be new: 400 otherwise) with a round at the strike
+  and at each of the `observationsDone` past observations (`pathBps[i-1]` bps
+  of the initial $250.00) and the current spot; a series whose strike is
+  `observationsDone + 1` weeks before the next observation, `leadSecs`
+  (1..604799) from now; the fixings recorded, `advance()`. Terms default to
+  K2's (ki 6000, ac 10000, coupon 25, 26 weekly); K2 lists only those terms.
+  With `list` (any subset; defaults vol 5500, cap 100,000, 20/30/0, budget
+  2000) the series is listed, its spread set and the feed's risk budget set.
+  The feed is added to `config.json`'s `feeds`, so `/config` names it.
+- **reset** (dev node only): stops the node, `up.sh --recreate` (a new empty
+  chain), `deploy.py`'s `deploy_all` (new addresses: a fresh deployer key),
+  rewrites `config.json` (keeping the service settings) and
+  `deployments/412346.json`, restarts the indexer (the db is wiped: new
+  fingerprint). Takes about 30 s. A second reset while one runs gets 429.
+  Every other service reading the same `config.json` (e.g. the one on 8650
+  when the tests run on 8651) follows by itself.
+
+### Choices where the spec is silent (WP5)
+
+- Faucet amounts and `list.capNotional` in whole units; responses in base units.
+- `/demo/feed` takes a feed name or address and the "initial" of the feed's
+  first struck series; `/demo/fixing` falls back to the round in force when a
+  later round exists.
+- `/demo/stage` rejects a feed name that exists and records new names in
+  `config.json`.
+- The dev node's default demo token `sp-devnode-demo` (the tunnel is the
+  access control; override with `DEMO_TOKEN`).
+
 ### Choices where the spec is silent (WP1)
 
 - `before` in `/trades` is a block number (the dev node puts one tx in a block).
@@ -575,3 +640,13 @@ database), so a service on 8650 keeps running.
   `priceBps − spread`, the student's quote equal to the on-chain mid, the
   cache; `{inputs}` bodies, 429 on simultaneous runs, 400/404 errors; with
   `TEACHER_DEVICE=cuda` the torch backend with 2^18 paths (skipped without a GPU).
+- `test_wp5_demo.py`: the token (401) and `demo.enabled: false` (403);
+  faucet defaults and custom amounts change the balances (chain and
+  `/accounts`); `/demo/feed` moves the spot, the mid, `/feeds` and the
+  history; `/demo/stage` with 20 observations done: the knock-in path is
+  `knockedIn` with a lower mid than the same stage without it, listing,
+  spread and the new feed name in `/config`, custom terms unlisted
+  (NotListed), a bad stage 400; `/demo/fixing` 409 before the observation,
+  then `observationsDone` 10 → 11 with the new fixing; `/demo/reset` (runs
+  last): new addresses in `/config` and `config.json`, `/trades` empty, the
+  default series quotable, the vault at its seed.
