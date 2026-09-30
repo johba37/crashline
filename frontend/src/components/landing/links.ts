@@ -1,0 +1,16 @@
+// GitHub links for the landing page and the nav. Only files that exist on main.
+// After PR #2 merges: add docs/risk.md, docs/pitch.md, docs/user-stories.md and docs/market.md.
+const REPO = 'https://github.com/johba37/surrogate-pricer'
+const doc = (file: string) => `${REPO}/blob/main/docs/${file}`
+
+export const GITHUB = {
+  repo: REPO,
+  readme: `${REPO}#readme`,
+  docs: `${REPO}/tree/main/docs`,
+  architecture: doc('architecture.md'),
+  interfaces: doc('interfaces.md'),
+  accuracy: doc('k2-round2.md'),
+  simulation: doc('teacher-v2.md'),
+  contractsReview: doc('contracts-review.md'),
+  perpetualNote: doc('v2-perpetual-note.md'),
+}

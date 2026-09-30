@@ -1,0 +1,50 @@
+import ExternalLink from './ExternalLink.tsx'
+import { GITHUB } from './links.ts'
+import Section from './Section.tsx'
+
+// Sources: the README roadmap (PR #2 version: M1 external review of the core, M2 mainnet on
+// Robinhood Chain with real feeds and conservative caps), docs/interfaces.md and
+// docs/architecture.md (the model never sees which stock it prices; one model per product and vol
+// level), docs/v2-perpetual-note.md (no expiry, one token pair per stock, a share of the pool paid
+// out at every weekly fixing, closed form plus a learned correction).
+// After PR #2 merges: link the README's roadmap section.
+
+const NEXT = [
+  {
+    title: 'Mainnet',
+    text: 'After an outside review of the contracts, the notes, the model and the Desk move to Robinhood Chain’s main network. Real price feeds, with small limits at first.',
+  },
+  {
+    title: 'More stocks',
+    text: 'The model never sees which stock it prices, only moves relative to the starting price. So one model can serve any stock that swings about as much as TSLA. Others get a model of their own.',
+  },
+  {
+    title: 'A note that never ends',
+    text: 'The perpetual note has no end date: one Earn and one Protect token per stock, paying out a little at every weekly check. Its price comes from a formula plus a small learned correction.',
+    link: { href: GITHUB.perpetualNote, label: 'Read the perpetual note design' },
+  },
+]
+
+export default function WhatsNext() {
+  return (
+    <Section
+      id="roadmap"
+      title="What’s next"
+      intro="Today Surrogate Pricer runs on a test network with one stock, TSLA. Here is what comes next."
+    >
+      <div className="panel mt-10 grid divide-y divide-line rounded-lg md:grid-cols-3 md:divide-x md:divide-y-0">
+        {NEXT.map((item) => (
+          <div key={item.title} className="p-5 sm:p-6">
+            <h3 className="type-heading text-ink">{item.title}</h3>
+            <p className="mt-2 type-body text-ink-muted">{item.text}</p>
+            {item.link && (
+              <p className="mt-4 type-body">
+                <ExternalLink href={item.link.href}>{item.link.label}</ExternalLink>
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+    </Section>
+  )
+}

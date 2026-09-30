@@ -5,20 +5,20 @@
 
 @theme static {
   --color-*: initial;
-  --color-surface: #000000;
-  --color-surface-raised: #0a151a;
-  --color-surface-overlay: #122429;
-  --color-surface-well: #03080a;
-  --color-line: #273c46;
-  --color-line-strong: #5b7178;
-  --color-ink: #eef5f3;
+  --color-surface: #122636;
+  --color-surface-raised: #183044;
+  --color-surface-overlay: #1f3a50;
+  --color-surface-well: #0c1b27;
+  --color-line: #2b4960;
+  --color-line-strong: #6a8a9c;
+  --color-ink: #f2eee5;
   --color-ink-muted: #a3b8be;
   --color-ink-faint: #6a8184;
   --color-accent: #eb5d27;
   --color-accent-hover: #f47a45;
   --color-accent-pressed: #d9531f;
   --color-on-accent: #000000;
-  --color-accent-text: #f47a45;
+  --color-accent-text: #f88a5b;
   --color-accent-soft: #3a1409;
   --color-info: #8ac1d1;
   --color-info-soft: #0e2a35;
@@ -27,42 +27,54 @@
   --color-go-soft: #0b2b24;
   --color-hold: #ecb860;
   --color-hold-soft: #2e220b;
-  --color-abort: #ff6b7a;
+  --color-abort: #ff8a96;
   --color-abort-soft: #3a0d14;
-  --color-glass-fill: rgb(16 30 36 / 0.62);
-  --color-glass-fill-strong: rgb(16 30 36 / 0.84);
-  --color-glass-edge: rgb(238 245 243 / 0.14);
+  --color-glass-fill: rgb(24 44 62 / 0.62);
+  --color-glass-fill-strong: rgb(18 38 54 / 0.88);
+  --color-glass-edge: rgb(242 238 229 / 0.14);
   --color-glass-highlight: rgb(255 255 255 / 0.28);
-  --color-glass-solid: #122429;
-  --color-horizon-glow: rgb(138 193 209 / 0.18);
-  --color-scrim: rgb(0 0 0 / 0.56);
+  --color-glass-solid: #1f3a50;
+  --color-horizon-glow: rgb(138 193 209 / 0.2);
+  --color-scrim: rgb(8 18 26 / 0.6);
   --color-chart-reference: #5ca2be;
+  --color-nebula-core: #f2a866;
+  --color-nebula-arm: #9cc9d6;
+  --color-nebula-dust: #0a1621;
+  --color-panel: #2c3134;
+  --color-panel-top: #363c3f;
+  --color-panel-edge: #3a4145;
+  --color-panel-overlay: #363c3f;
+  --color-panel-well: #202528;
+  --color-panel-line: #3a4145;
+  --color-panel-line-strong: #879297;
+  --color-panel-ink-muted: #aab3b7;
+  --color-panel-ink-faint: #6f7a80;
 
-  --font-display: "Michroma", "Eurostile Extended", "Microgramma", "Arial", sans-serif;
-  --font-sans: "Barlow", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Syne", "Arial Black", sans-serif;
+  --font-sans: "Jost", "Futura", "Century Gothic", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, "SF Mono", "Menlo", "Consolas", monospace;
 
   --text-*: initial;
-  --text-display-xl: clamp(1.75rem, 0.8177rem + 3.9779vw, 4rem);
-  --text-display-xl--line-height: 1.06;
+  --text-display-xl: clamp(2.125rem, 1.3481rem + 3.3149vw, 4rem);
+  --text-display-xl--line-height: 1.02;
   --text-display-xl--letter-spacing: -0.02em;
-  --text-display-xl--font-weight: 400;
-  --text-display: clamp(1.5rem, 1.1892rem + 1.326vw, 2.25rem);
-  --text-display--line-height: 1.15;
-  --text-display--letter-spacing: -0.01em;
-  --text-display--font-weight: 400;
-  --text-title: 1.25rem;
-  --text-title--line-height: 1.3;
-  --text-title--letter-spacing: 0em;
-  --text-title--font-weight: 400;
+  --text-display-xl--font-weight: 800;
+  --text-display: clamp(1.5rem, 1.241rem + 1.105vw, 2.125rem);
+  --text-display--line-height: 1.08;
+  --text-display--letter-spacing: -0.015em;
+  --text-display--font-weight: 800;
+  --text-title: 1.375rem;
+  --text-title--line-height: 1.2;
+  --text-title--letter-spacing: -0.01em;
+  --text-title--font-weight: 800;
   --text-readout: clamp(2rem, 1.6892rem + 1.326vw, 2.75rem);
   --text-readout--line-height: 1.1;
   --text-readout--letter-spacing: -0.01em;
-  --text-readout--font-weight: 400;
-  --text-wordmark: 0.9375rem;
+  --text-readout--font-weight: 600;
+  --text-wordmark: 1rem;
   --text-wordmark--line-height: 1;
-  --text-wordmark--letter-spacing: 0.01em;
-  --text-wordmark--font-weight: 400;
+  --text-wordmark--letter-spacing: -0.01em;
+  --text-wordmark--font-weight: 800;
   --text-heading: 1.25rem;
   --text-heading--line-height: 1.3;
   --text-heading--letter-spacing: 0em;
@@ -72,13 +84,13 @@
   --text-body-lg--letter-spacing: 0em;
   --text-body-lg--font-weight: 400;
   --text-body: 1rem;
-  --text-body--line-height: 1.5;
+  --text-body--line-height: 1.55;
   --text-body--letter-spacing: 0em;
   --text-body--font-weight: 400;
   --text-button: 1rem;
   --text-button--line-height: 1.25;
   --text-button--letter-spacing: 0.01em;
-  --text-button--font-weight: 600;
+  --text-button--font-weight: 500;
   --text-label: 0.875rem;
   --text-label--line-height: 1.4;
   --text-label--letter-spacing: 0.01em;
@@ -108,6 +120,7 @@
   --shadow-glass-lifted: var(--elevation-glass-lifted);
   --shadow-raised: var(--elevation-raised);
   --shadow-ignition: var(--elevation-ignition);
+  --shadow-panel: var(--elevation-panel);
 
   --blur-glass: 24px;
   --blur-glass-strong: 40px;
@@ -133,6 +146,7 @@
   --elevation-glass-lifted: inset 0px 1px 0px 0px rgb(255 255 255 / 0.28), inset 0px -1px 0px 0px rgb(255 255 255 / 0.04), 0px 18px 48px -12px rgb(0 0 0 / 0.85);
   --elevation-raised: inset 0px 1px 0px 0px rgb(255 255 255 / 0.05);
   --elevation-ignition: 0px 8px 28px -6px rgb(235 93 39 / 0.55);
+  --elevation-panel: inset 0px 1px 0px 0px rgb(255 255 255 / 0.1), inset 0px -1px 0px 0px rgb(0 0 0 / 0.35), 0px 16px 32px -16px rgb(3 8 10 / 0.7);
   --duration-instant: 100ms;
   --duration-fast: 160ms;
   --duration-base: 240ms;
@@ -148,7 +162,11 @@
   --z-sheet: 50;
   --z-toast: 60;
   --z-tooltip: 70;
+  --z-grain: 80;
   --glass-saturate: 180%;
+  /* The page's own ground, resolved at the root: inside a forced-theme section (data-theme)
+     it still names the surrounding page's surface, so the section can fade into it. */
+  --page-surface: var(--color-surface);
   --grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
@@ -161,7 +179,7 @@
     --color-surface-well: #e6efed;
     --color-line: #d3e0dd;
     --color-line-strong: #6a8184;
-    --color-ink: #061217;
+    --color-ink: #0c1b27;
     --color-ink-muted: #48595d;
     --color-ink-faint: #89a3ab;
     --color-accent: #eb5d27;
@@ -187,13 +205,26 @@
     --color-horizon-glow: rgb(92 162 190 / 0.22);
     --color-scrim: rgb(6 18 23 / 0.32);
     --color-chart-reference: #2e6f8a;
+    --color-nebula-core: #f2a866;
+    --color-nebula-arm: #9cc9d6;
+    --color-nebula-dust: #0a1621;
+    --color-panel: #eceff0;
+    --color-panel-top: #f5f7f7;
+    --color-panel-edge: #aab3b7;
+    --color-panel-overlay: #f5f7f7;
+    --color-panel-well: #ffffff;
+    --color-panel-line: #c3cacd;
+    --color-panel-line-strong: #6f7a80;
+    --color-panel-ink-muted: #4c565b;
+    --color-panel-ink-faint: #879297;
     --elevation-glass: inset 0px 1px 0px 0px rgb(255 255 255 / 0.95), 0px 0px 0px 1px rgb(6 18 23 / 0.06), 0px 12px 32px -14px rgb(6 18 23 / 0.22);
     --elevation-glass-lifted: inset 0px 1px 0px 0px rgb(255 255 255 / 0.95), 0px 0px 0px 1px rgb(6 18 23 / 0.06), 0px 18px 44px -16px rgb(6 18 23 / 0.3);
     --elevation-raised: 0px 1px 2px 0px rgb(6 18 23 / 0.06), 0px 8px 24px -12px rgb(6 18 23 / 0.16);
     --elevation-ignition: 0px 8px 24px -8px rgb(235 93 39 / 0.45);
+    --elevation-panel: inset 0px 1px 0px 0px rgb(255 255 255 / 0.95), 0px 1px 2px 0px rgb(6 18 23 / 0.1), 0px 10px 24px -14px rgb(6 18 23 / 0.28);
   }
 }
-:root[data-theme="light"] {
+[data-theme="light"] {
   color-scheme: light;
   --color-surface: #f2f7f6;
   --color-surface-raised: #ffffff;
@@ -201,7 +232,7 @@
   --color-surface-well: #e6efed;
   --color-line: #d3e0dd;
   --color-line-strong: #6a8184;
-  --color-ink: #061217;
+  --color-ink: #0c1b27;
   --color-ink-muted: #48595d;
   --color-ink-faint: #89a3ab;
   --color-accent: #eb5d27;
@@ -227,13 +258,76 @@
   --color-horizon-glow: rgb(92 162 190 / 0.22);
   --color-scrim: rgb(6 18 23 / 0.32);
   --color-chart-reference: #2e6f8a;
+  --color-nebula-core: #f2a866;
+  --color-nebula-arm: #9cc9d6;
+  --color-nebula-dust: #0a1621;
+  --color-panel: #eceff0;
+  --color-panel-top: #f5f7f7;
+  --color-panel-edge: #aab3b7;
+  --color-panel-overlay: #f5f7f7;
+  --color-panel-well: #ffffff;
+  --color-panel-line: #c3cacd;
+  --color-panel-line-strong: #6f7a80;
+  --color-panel-ink-muted: #4c565b;
+  --color-panel-ink-faint: #879297;
   --elevation-glass: inset 0px 1px 0px 0px rgb(255 255 255 / 0.95), 0px 0px 0px 1px rgb(6 18 23 / 0.06), 0px 12px 32px -14px rgb(6 18 23 / 0.22);
   --elevation-glass-lifted: inset 0px 1px 0px 0px rgb(255 255 255 / 0.95), 0px 0px 0px 1px rgb(6 18 23 / 0.06), 0px 18px 44px -16px rgb(6 18 23 / 0.3);
   --elevation-raised: 0px 1px 2px 0px rgb(6 18 23 / 0.06), 0px 8px 24px -12px rgb(6 18 23 / 0.16);
   --elevation-ignition: 0px 8px 24px -8px rgb(235 93 39 / 0.45);
+  --elevation-panel: inset 0px 1px 0px 0px rgb(255 255 255 / 0.95), 0px 1px 2px 0px rgb(6 18 23 / 0.1), 0px 10px 24px -14px rgb(6 18 23 / 0.28);
 }
-:root[data-theme="dark"] {
+/* data-theme works on any element, so a section can force its theme (the landing hero is always dark). */
+[data-theme="dark"] {
   color-scheme: dark;
+  --color-surface: #122636;
+  --color-surface-raised: #183044;
+  --color-surface-overlay: #1f3a50;
+  --color-surface-well: #0c1b27;
+  --color-line: #2b4960;
+  --color-line-strong: #6a8a9c;
+  --color-ink: #f2eee5;
+  --color-ink-muted: #a3b8be;
+  --color-ink-faint: #6a8184;
+  --color-accent: #eb5d27;
+  --color-accent-hover: #f47a45;
+  --color-accent-pressed: #d9531f;
+  --color-on-accent: #000000;
+  --color-accent-text: #f88a5b;
+  --color-accent-soft: #3a1409;
+  --color-info: #8ac1d1;
+  --color-info-soft: #0e2a35;
+  --color-focus: #8ac1d1;
+  --color-go: #3dd6a8;
+  --color-go-soft: #0b2b24;
+  --color-hold: #ecb860;
+  --color-hold-soft: #2e220b;
+  --color-abort: #ff8a96;
+  --color-abort-soft: #3a0d14;
+  --color-glass-fill: rgb(24 44 62 / 0.62);
+  --color-glass-fill-strong: rgb(18 38 54 / 0.88);
+  --color-glass-edge: rgb(242 238 229 / 0.14);
+  --color-glass-highlight: rgb(255 255 255 / 0.28);
+  --color-glass-solid: #1f3a50;
+  --color-horizon-glow: rgb(138 193 209 / 0.2);
+  --color-scrim: rgb(8 18 26 / 0.6);
+  --color-chart-reference: #5ca2be;
+  --color-nebula-core: #f2a866;
+  --color-nebula-arm: #9cc9d6;
+  --color-nebula-dust: #0a1621;
+  --color-panel: #2c3134;
+  --color-panel-top: #363c3f;
+  --color-panel-edge: #3a4145;
+  --color-panel-overlay: #363c3f;
+  --color-panel-well: #202528;
+  --color-panel-line: #3a4145;
+  --color-panel-line-strong: #879297;
+  --color-panel-ink-muted: #aab3b7;
+  --color-panel-ink-faint: #6f7a80;
+  --elevation-glass: inset 0px 1px 0px 0px rgb(255 255 255 / 0.28), inset 0px -1px 0px 0px rgb(255 255 255 / 0.04), 0px 12px 32px -12px rgb(0 0 0 / 0.7);
+  --elevation-glass-lifted: inset 0px 1px 0px 0px rgb(255 255 255 / 0.28), inset 0px -1px 0px 0px rgb(255 255 255 / 0.04), 0px 18px 48px -12px rgb(0 0 0 / 0.85);
+  --elevation-raised: inset 0px 1px 0px 0px rgb(255 255 255 / 0.05);
+  --elevation-ignition: 0px 8px 28px -6px rgb(235 93 39 / 0.55);
+  --elevation-panel: inset 0px 1px 0px 0px rgb(255 255 255 / 0.1), inset 0px -1px 0px 0px rgb(0 0 0 / 0.35), 0px 16px 32px -16px rgb(3 8 10 / 0.7);
 }
 
 @layer base {
@@ -326,20 +420,40 @@
   background-attachment: fixed;
 }
 
-/* 70s print grain over a landing section's background, under its content. Landing hero only. */
-@utility grain {
-  position: relative;
-  isolation: isolate;
-  &::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    border-radius: inherit;
-    background-image: var(--grain-image);
-    opacity: 0.07;
-    mix-blend-mode: overlay;
+/* Steel, after the ship's hull: the material of cards and app components. Gunmetal on dark,
+   silver on light. Inside a panel, overlay, well, lines and muted text re-point to steel values,
+   so rows, fields and dividers in it need no extra classes. Content, not glass: never both. */
+@utility panel {
+  --color-surface-overlay: var(--color-panel-overlay);
+  --color-surface-well: var(--color-panel-well);
+  --color-line: var(--color-panel-line);
+  --color-line-strong: var(--color-panel-line-strong);
+  --color-ink-muted: var(--color-panel-ink-muted);
+  --color-ink-faint: var(--color-panel-ink-faint);
+  background-color: var(--color-panel);
+  background-image: linear-gradient(to bottom, var(--color-panel-top), var(--color-panel));
+  border: 1px solid var(--color-panel-edge);
+  box-shadow: var(--elevation-panel);
+  @media (forced-colors: active) {
+    border-color: CanvasText;
+  }
+}
+
+/* Film grain over the whole landing page, nav included. Fixed to the viewport, so the page
+   scrolls under a still grain, like film. Put it on one empty, aria-hidden element. */
+@utility film-grain {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-grain);
+  pointer-events: none;
+  background-image: var(--grain-image);
+  opacity: 0.1;
+  mix-blend-mode: overlay;
+  @media (prefers-contrast: more) {
+    display: none;
+  }
+  @media (forced-colors: active) {
+    display: none;
   }
 }
 
@@ -368,11 +482,12 @@
 }
 
 @utility type-readout {
-  font-family: var(--font-display);
+  font-family: var(--font-sans);
   font-size: var(--text-readout);
   line-height: var(--text-readout--line-height);
   letter-spacing: var(--text-readout--letter-spacing);
   font-weight: var(--text-readout--font-weight);
+  font-variant-numeric: tabular-nums;
 }
 
 @utility type-wordmark {
