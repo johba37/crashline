@@ -1,0 +1,7 @@
+fastapi==0.142.2
+httpx==0.28.1
+numpy==2.5.3
+pycryptodome==3.23.0
+pytest==9.1.1
+uvicorn[standard]==0.54.0
+web3==8.0.0
