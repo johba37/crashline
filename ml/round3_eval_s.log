@@ -1,0 +1,58 @@
+model model/k3: weightsHash 0x745cd5f814984c9433d1055e47248d2cfd6a5ecfe0ae5d5e24fbc8b21303523f, 7465 params, layers [64, 48, 40, 40, 1]
+labels /opt/ai/surrogate-pricer-k3/ml/k3_spread_labels.npz: set S, 45000 points, label seed 1530724354, base paths 262144, top-up rounds 0
+teacher at labelling: {'teacher.py': '5a6f79b3c2e06057107ffe8af7ba1420407a85500e934b25d558d0eeceec86bf', 'teacher_config_v3.json': '24e4871a15b9522eefa012024045045119651a9f23ac6cec9ce70bd7f4eae13b', 'teacher_torch.py': 'b341f77016aab4334ce223c54e8751bb8bf55bb96c2933b669380a3f56b56fbb'}
+teacher now:          {'teacher.py': '5a6f79b3c2e06057107ffe8af7ba1420407a85500e934b25d558d0eeceec86bf', 'teacher_config_v3.json': '24e4871a15b9522eefa012024045045119651a9f23ac6cec9ce70bd7f4eae13b', 'teacher_torch.py': 'b341f77016aab4334ce223c54e8751bb8bf55bb96c2933b669380a3f56b56fbb'}
+label stderr bps: mean 1.20, p99 3.41, MAX 3.83 (limit 4.0); paths min 262144 (limit 262144)
+
+domain: 45000 points certified, 0 refused (Uncertified) by ['acObservationDay', 'kiObservationDay', 'kiLowVolLastWeek', 'kiLowVolWeeks2to4', 'kiMidVolLastWeeks']
+
+== S: integer student (pq.forward) - teacher, bps ==
+region (outside exclusions unless stated)        n      max      p99    mean
+outside exclusions (GATE)                    45000     41.0     13.1    2.73
+near ki (5500-6500)                           6750     41.0     14.0    2.87
+near ac (9500-10500)                          5508     18.0     11.0    3.02
+obs 1-2                                       3981     22.9     11.0    2.38
+obs 3-6                                       7236     25.0     13.8    2.68
+obs 7-13                                     12120     41.0     12.6    2.65
+obs 14-20                                    11592     24.4     13.2    2.82
+obs 21-26                                    10071     29.4     13.6    2.89
+tNext (0,1d]                                  4629     24.1     13.2    2.41
+tNext (1d,2d]                                 6786     24.0     13.2    2.74
+tNext (2d,4d]                                13344     29.1     12.6    2.65
+tNext (4d,7d]                                20241     41.0     13.5    2.85
+knockedIn 0                                  22638     41.0     15.2    3.53
+knockedIn 1                                  22362     17.1      7.6    1.92
+vol 15-30%                                    5521     29.4     13.2    2.23
+vol 30-45%                                   10070     41.0     13.4    2.44
+vol 45-60%                                   10192     25.0     13.3    2.72
+vol 60-75%                                   10202     24.7     12.7    2.93
+vol 75-90%                                    9015     22.3     13.0    3.13
+
+worst points outside the exclusions:
+  spot  6161 vol  3601 tNext 570845 obs 12 knockedIn 0  err   +41.0
+  spot  6161 vol  3401 tNext 570845 obs 12 knockedIn 0  err   +37.1
+  spot  8338 vol  2535 tNext 505354 obs 26 knockedIn 0  err   +29.4
+  spot  7669 vol  3666 tNext 233660 obs 21 knockedIn 0  err   -29.1
+  spot  6161 vol  3801 tNext 570845 obs 12 knockedIn 0  err   +26.4
+  spot  8195 vol  2437 tNext 222974 obs 26 knockedIn 0  err   +25.0
+  spot  7567 vol  5172 tNext 216308 obs  5 knockedIn 0  err   +25.0
+  spot  8569 vol  6829 tNext 536948 obs 12 knockedIn 0  err   +24.7
+  spot  6642 vol  2690 tNext 394303 obs 14 knockedIn 0  err   +24.4
+  spot  8140 vol  7414 tNext  46926 obs  3 knockedIn 0  err   +24.1
+
+max |student - teacher| outside exclusions: 41.0 bps (gate 50); max label stderr 3.83 bps
+
+== S: vol-band spread ask - bid = P(vol - 200) - P(vol + 200), bps ==
+triplets 15000 (all three certified); teacher spread mean 35.0, p99 219.1, max 347.6; label noise on it mean 1.70, max 5.35
+student spread error: max 38.5, p99 13.7, mean 2.70
+student spread < 0 (bid above ask before the Desk's min/max): 1046; teacher spread < -3 noise: 845
+mid (vol) error on S: max 41.0, p99 12.9, mean 2.75
+  spot  7948 vol  3660 tNext  80538 obs 25 knockedIn 0  teacher spread  +219.5 student  +258.0 err  +38.5
+  spot  6647 vol  2443 tNext 599266 obs 13 knockedIn 0  teacher spread  +304.9 student  +273.0 err  -31.9
+  spot  8338 vol  2735 tNext 505354 obs 26 knockedIn 0  teacher spread  +196.5 student  +226.0 err  +29.5
+  spot  7669 vol  3866 tNext 233660 obs 21 knockedIn 0  teacher spread  +229.2 student  +201.0 err  -28.2
+  spot  6351 vol  3098 tNext 117268 obs  7 knockedIn 0  teacher spread  +198.3 student  +171.0 err  -27.3
+  spot  7141 vol  6146 tNext 534071 obs 22 knockedIn 0  teacher spread   +99.8 student  +125.0 err  +25.2
+  spot  8157 vol  3202 tNext 591257 obs 26 knockedIn 0  teacher spread  +235.0 student  +210.0 err  -25.0
+  spot  7605 vol  4347 tNext 568117 obs 26 knockedIn 0  teacher spread  +197.2 student  +222.0 err  +24.8
+S REPORT (not the gate) OK

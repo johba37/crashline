@@ -2,6 +2,7 @@
 
   python ml/round3_eval.py --model model/k3            # the gate, on T
   python ml/round3_eval.py --model model/k3 --set T2   # confirmation set T2 (labelled once, at the end)
+  python ml/round3_eval.py --model model/k3 --set T3   # confirmation at the vol endpoints (after the first T)
   python ml/round3_eval.py --model model/k3 --set S    # vol-band spread (reported, not gated)
 
 Checks, in order, as round2_eval (any failure ends with GATE FAIL):
@@ -40,8 +41,9 @@ from round2 import gate_table  # noqa: E402
 GATE_BPS = 50.0
 MAX_SE_BPS = 4.0
 MIN_PATHS = 2**18
-LABELS = {"T": "k3_test_labels.npz", "T2": "k3_test2_labels.npz", "S": "k3_spread_labels.npz"}
-POINTS = {"T": sets.test_points, "T2": sets.test2_points, "S": sets.spread_points}
+LABELS = {"T": "k3_test_labels.npz", "T2": "k3_test2_labels.npz", "T3": "k3_test3_labels.npz",
+          "S": "k3_spread_labels.npz"}
+POINTS = {"T": sets.test_points, "T2": sets.test2_points, "T3": sets.test3_points, "S": sets.spread_points}
 
 _EXPORT = None
 
@@ -87,7 +89,7 @@ def spread_report(X, y, se, pred, ok):
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", required=True, help="dir holding the certified student_export.json")
-    ap.add_argument("--set", choices=("T", "T2", "S"), default="T")
+    ap.add_argument("--set", choices=("T", "T2", "T3", "S"), default="T")
     ap.add_argument("--labels", default=None)
     ap.add_argument("--workers", type=int, default=6)
     args = ap.parse_args()
@@ -148,7 +150,7 @@ def main() -> int:
         fails.append(f"max error {mx:.1f} > {GATE_BPS:.0f} bps")
     for f in fails:
         print(f"FAIL: {f}")
-    word = "GATE" if args.set == "T" else "T2 CONFIRMATION (not the gate)"
+    word = "GATE" if args.set == "T" else f"{args.set} CONFIRMATION (not the gate)"
     print(f"{word} PASS" if not fails else f"{word} FAIL (measured max {mx:.1f} bps)")
     return 0 if not fails else 1
 

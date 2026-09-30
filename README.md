@@ -21,6 +21,7 @@ tools/payout_vectors.py    scalar payout reference → shared payout vectors (fo
 tools/quoter_vectors.py    pricer inputs + quotes per model → quoter vectors
 tools/make_synthetic.py    synthetic student + golden vectors (toy target, NOT the teacher)
 model/k2/                  K2 round-2 student, whole note life (default build, docs/k2-round2.md)
+model/k3/                  K3 student, vol a live input 20-90% (teacher v3, docs/k3-vol-input.md)
 model/k1-r1/               K1 round-1 student (first week only; CI target)
 model/synthetic/           toy student + vectors (CI target)
 ml/                        jump-diffusion teacher (docs/teacher-v2.md), student training, evals
@@ -36,12 +37,14 @@ docs/contracts-review.md   self-review: reentrancy, rounding, USDG freeze/pause,
 |---|---|---|
 | Teacher | Merton jump-diffusion calibrated to 10 years of TSLA daily closes (λ 72.2/yr, σJ 5.26%, jump vol 44.7% of the pinned 55% total); 8/8 checks pass, incl. λ=0 bit-identical to the K1 GBM teacher | `ml/test_teacher.py`, [docs/teacher-v2.md](docs/teacher-v2.md) |
 | Student `model/k2` | whole note life (observationsRemaining 1–26, timeToNextObs 0–7 days); **GATE PASS** on the held-out set vs the jump teacher: max 18.7 / p99 7.9 / mean 1.65 bps outside the two observation-day bands (gate 50), max label stderr 3.24 bps; fresh confirmation set T2: max 17.8 bps | `ml/round2_eval.py`, [docs/k2-round2.md](docs/k2-round2.md) |
+| Teacher v3 | jump sizes scale with vol (TSLA's shape, 57% jump share at every vol: nothing refused), payouts discounted at `rDiscount` 0 (the escrow earns nothing); 16/16 checks, incl. the v2 path bit-identical to the frozen K2 teacher (`ml/reference/k2/`) | `ml/test_teacher.py`, [docs/k3-vol-input.md](docs/k3-vol-input.md) |
+| Student `model/k3` | the K2 product at any vol 20–90%; **GATE PASS** vs teacher v3: max 37.9 / p99 14.1 / mean 2.65 bps (gate 50; the first model failed at the vol floor, 71.2); clean confirmations T2 34.7 and T3 (vol endpoints) 38.0; vol-band spread P(vol − 2) − P(vol + 2) within 38.5 bps of the teacher's; 23,901 bytes, testnet activation check passes | `ml/round3_eval.py`, [docs/k3-vol-input.md](docs/k3-vol-input.md) |
 | Note core, quoter, Desk | 97 forge tests pass: 260 payout-conformity vectors, quoter vectors for k1-r1 and k2, fuzz at 1,000 runs, invariants at 512 runs × 100 calls (escrow ≥ claims, no foreign clones) | `forge test`, [docs/contracts-review.md](docs/contracts-review.md) |
 | End to end | local Nitro dev node with the Stylus k2 pricer: series struck in the past, buy, **mid-life sell at observationsRemaining 16 at the model's quote**, autocall, redeem, collect, LP withdraw | `contracts/script/e2e-devnode.sh`, [log](contracts/logs/e2e-devnode-k2.log) |
 | Robinhood Chain testnet (46630) | `Deploy.s.sol` simulates cleanly; not broadcast yet (no deployer key set); `cargo stylus check` passes for k2 | |
 
-Known limit: the teacher's jump variance is pinned from history, so total vol must stay
-above 44.7%. Listed TSLA options (6-month ATM ~43%) sit below that; see
+Known limit (teacher v2 / model/k2; lifted by teacher v3 / model/k3, which certifies 20–90%):
+the teacher's jump variance is pinned from history, so total vol must stay above 44.7%. Listed TSLA options (6-month ATM ~43%) sit below that; see
 [docs/teacher-v2.md](docs/teacher-v2.md) "Listed options". Across 12 more stocks (v2 input,
 [docs/multi-stock-jumps.md](docs/multi-stock-jumps.md)), 7 sit below it; a fixed jump share
 of variance lands within 7.6 bps of each large cap's own fit, and misses by 16–27 bps on
