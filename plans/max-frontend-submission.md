@@ -1,6 +1,7 @@
 # Plan: frontend, landing page, submission text, videos (Max)
 
-> Owner: Max · Created: 2026-09-30 · Updated 2026-09-30 after the contracts and `model/k2` landed on `main`.
+> Owner: Max · Created: 2026-09-30 · Updated 2026-09-30 after the contracts and `model/k2` landed on `main`,
+> and again for the two-leg Desk (`IDeskCover`) and the LP redemption queue (`IDeskQueue`).
 > johba owns the contracts, backend and model.
 > Repo: `johba37/surrogate-pricer`. Work branch: **`max/frontend`**, based on `main`.
 > Hard dates (SGT):
@@ -16,6 +17,10 @@ whether this file stays.
 - **Contracts done:** SeriesFactory, NoteSeries, SeriesToken, AutocallPayout, NoteQuoter, Desk (ERC-4626),
   FixingsRecorder, MockUSDG, MockChainlinkFeed. They pass `forge test` (including invariants) and the
   end-to-end run on a Nitro dev node ([contracts-review.md](../docs/contracts-review.md)).
+- **The Desk trades both legs (added later on Sep 30):** NOTE (`buy`/`sell`) and **cover = WRITER**
+  (`buyCover`/`sellCover`: the protection buyer pays only the premium), at **two prices** (bid/ask from a
+  per-series spread), within a **risk budget per stock**. LPs get a **redemption queue** (`IDeskQueue`) that
+  works when `withdraw` can't. `IDesk`'s ABI is unchanged; `IDeskCover` extends it.
 - **Model:** the default is **`model/k2`**, certified over the **whole life of the note** (max error 18.7 bps,
   [k2-round2.md](../docs/k2-round2.md)). It's distilled from a **jump-diffusion teacher calibrated to TSLA**
   ([teacher-v2.md](../docs/teacher-v2.md)). `model/k1-r1` (first week only) stays as a second certified model.
@@ -42,16 +47,27 @@ whether this file stays.
   - a stale feed
 
   A refusal is a feature to show, not a bug to hide.
-- **Fees:** the integrator fee is capped at **2%** (`MAX_FEE_BPS` = 200), and **20% of every fee funds the
-  backstop** (`BACKSTOP_SHARE_BPS` = 2000). The fee on a sell is capped at its gross proceeds.
+- **Fees:** the integrator fee is capped at **2% of notional** on NOTE trades (`MAX_FEE_BPS` = 200) and at
+  **10% of the premium** on cover trades (`MAX_COVER_FEE_BPS` = 1000). **Half of every fee stays in the vault**
+  as the backstop (`BACKSTOP_SHARE_BPS` = 5000). The fee on a sell is capped at its gross proceeds. The
+  Desk's spread also stays in the vault; the fee comes on top of it.
 - Screens, calls, events and error messages are in [docs/interfaces.md](../docs/interfaces.md). Build to that.
-  ABIs are in `abi/`, and they must be merged for error decoding (the Desk bubbles up quoter and pricer errors).
+  ABIs are in `abi/`: use `IDeskCover.json` (it contains all of `IDesk`) plus `IDeskQueue.json`, merged with
+  the others for error decoding (the Desk bubbles up quoter and pricer errors).
 - **Implementation notes** (from interfaces.md):
   - `desk.listedSeries()` also returns delisted series, so filter by `desk.listing(s)`.
   - `desk.heldSeries()` exists (not in `IDesk`) for the LP view.
   - `FixingPending` starts as soon as `obsTime < block.timestamp`.
-  - LP `maxDeposit`/`maxWithdraw` are 0 on weekends, while a fixing is pending, and in the final week of a
-    knocked-in note.
+  - `listing.capNotional` is the most WRITER the Desk may hold, `listing.soldNotional` the WRITER it holds
+    now. NOTE on offer = the Desk's NOTE balance + `capNotional − soldNotional`.
+  - **Quotes don't check the risk budget or the LP queue.** Before offering a trade that adds to the Desk's
+    position (`buyCover`; a `buy` beyond its NOTE inventory; a `sell` of NOTE it can't pair; a `sellCover`
+    that leaves it holding WRITER), read `desk.risk(feed)` (room left = `limit − atRisk`) and
+    `desk.queuedShares()`. Disable the button with the reason, and still handle `RiskBudgetExceeded` and
+    `QueuePending` (another trade can land first). A feed without a budget has `limit` = 0.
+  - LP `maxDeposit`/`maxWithdraw` are 0 while any held series can't be quoted (weekends, a pending fixing),
+    in the final week of a knocked-in note, and (`maxWithdraw`) for everyone while redemptions are queued.
+    Then offer the queue, which works in every state.
 - No claims beyond what's built. Lending/collateral is roadmap. The v2 perpetual note
   ([v2-perpetual-note.md](../docs/v2-perpetual-note.md)) is roadmap too.
 
@@ -60,14 +76,16 @@ whether this file stays.
 - [ ] **0.1 Both of you are registered on HackQuest.** It closes Oct 3, 01:01 SGT and needs the ≤300-char idea pitch and an Arbitrum One wallet.
   → verify: both registrations show on the HackQuest dashboard.
 - [x] **0.2 Branch `max/frontend`** created from `main` (this file is its first commit). PR #2 (judge-facing docs)
-  is still open. Once it merges, `git rebase origin/main`.
+  is still open. Once it merges, `git rebase origin/main`. (Rebased onto `main` on Sep 30 for `IDeskCover`.)
 - [ ] **0.3 Unblock the testnet deploy (the critical path for everything live):**
   1. Create a **fresh deployer wallet** used for nothing else, and fund it from the Robinhood testnet faucet (ETH).
      Keep the key **out of the repo**, in an env var or keystore.
   2. johba (or you, with the key): `cargo stylus deploy` for the pricer, then
      `forge script Deploy.s.sol --broadcast`, which writes `deployments/46630.json`. Commit that file.
   3. Seed the demo state: staged history on the mock feed, a series with a past strike (so mid-life states
-     exist), an LP deposit, and a listing.
+     exist), an LP deposit, a listing, and **a risk budget on the feed** (`desk.setRiskBudget(feed, bps)`).
+     Without the budget, buying NOTE beyond the Desk's inventory and every cover trade revert. Optionally a
+     spread (`desk.setSpread`), so the demo shows two prices; `e2e-devnode.sh` sets both.
   → verify: `deployments/46630.json` is on `main`; `desk.listedSeries()` returns a live series on the explorer.
 - [ ] **0.4 15-minute sync with johba.** Agree on and write down (as a GitHub issue):
   1. Who runs the deploy (0.3) and **when**.
@@ -105,7 +123,7 @@ Sections and their sources (every number must come from these):
 4. **Who it's for:** yield seeker (NOTE) and protection buyer (WRITER), with one short example each, using the **real terms**.
 5. **Verify every quote:** what the model saw, `weightsHash`, the certified range, the teacher calibrated to TSLA, and **max error 18.7 bps over the note's life** ([k2-round2.md](../docs/k2-round2.md)).
 6. **Why it matters:** €100.1B in German listed certificates, stock tokens EU-only, hidden markups of 1–3%, the lessons from Ribbon and Cega (`docs/market.md`, from PR #2).
-7. **Honest risks and fees:** the model can be wrong, and here's how that's bounded; refusals; the fee cap of 2% with 20% to the backstop; testnet with a staged feed; not financial advice (`docs/risk.md`, from PR #2).
+7. **Honest risks and fees:** the model can be wrong, and here's how that's bounded; refusals; the fee caps (2% of notional on NOTE, 10% of the premium on cover) with half of every fee to the backstop, and the Desk's spread; testnet with a staged feed; not financial advice (`docs/risk.md`, from PR #2).
 8. **Roadmap:** mainnet milestones, the collateral oracle, the v2 perpetual note.
 9. **Footer:** repo, docs, both videos, the team.
 
@@ -118,22 +136,37 @@ Sections and their sources (every number must come from these):
 
 Build P0 first, and don't start P1 until P0 works in `testnet` mode (or `devnode` until then).
 
+**The dashboard at `/app`.** One page, organised by the two sides of a note, with the Desk's state visible
+before anyone signs:
+- **Market list** (the dashboard itself, no wallet needed): one row per listed series with the stock, where
+  the note is in its life (observations left), the **NOTE ask** (earn the coupon), the **cover ask** (the crash
+  insurance), and **cover available** on that stock. A series that can't be quoted stays in the list with the
+  reason.
+- **Series detail** (route or sheet): the transparency pitch plus one trade panel with two modes, **Earn**
+  (NOTE: buy/sell) and **Protect** (cover: buy/sell). Each shows the price applied, the spread, the fee and the
+  total.
+- **Portfolio** (when connected): NOTE and WRITER held, valued at what the Desk pays for them now (the bids),
+  redeem after settlement, and (P2) LP shares and queue requests.
+- **Desk status**, shown wherever it disables a button: "cover available" (`risk(feed)`) and "LP redemptions
+  waiting" (`queuedShares()`), both of which stop trades that add to the Desk's position.
+
 | Priority | Screen / flow | Calls ([interfaces.md](../docs/interfaces.md)) |
 |---|---|---|
-| **P0** | **Market list**, no wallet needed | `desk.listedSeries` filtered by `listing`, `series.terms/state`, `quoter.notePriceBps`. Show the *reason* when a quote reverts |
-| **P0** | **Note detail**: terms, lifecycle timeline (26 observations + maturity), fixing chart, quote breakdown (fair value · fee · total), **what the model saw** (`quoter.inputs`), **model card** (which pricer, its `weightsHash`, `certifiedRange`, and the bands in plain words) | This screen **is** the transparency pitch |
-| **P0** | **Buy NOTE** | `quoteBuy` → `USDG.approve` → `desk.buy` (slippage bound, explorer link) |
-| **P0** | **Human error messages** | The table in interfaces.md, including `Uncertified` region 0 (autocall band) vs region 1 (knock-in band) |
+| **P0** | **Market list**, no wallet needed | `desk.listedSeries` filtered by `listing`, `series.terms/state`. Prices: `quoteBuy` and `quoteBuyCover` for 1 unit (the asks, spread included); the mid is `quoter.notePriceBps` at the listing's vol. Cover available: `desk.risk(feed)` → `limit − atRisk`. Show the *reason* when a quote reverts |
+| **P0** | **Series detail**: terms, lifecycle timeline (26 observations + maturity), fixing chart, **both legs' prices** (NOTE bid/ask; cover bid/ask = `maxBps` − the NOTE ask/bid; the mid; `desk.spread(s)`), quote breakdown (price applied · fee · total), **what the model saw** (`quoter.inputs`), **model card** (which pricer, its `weightsHash`, `certifiedRange`, and the bands in plain words) | This screen **is** the transparency pitch |
+| **P0** | **Buy NOTE** (Earn) | `quoteBuy` → `USDG.approve` → `desk.buy` (slippage bound, explorer link). Beyond the Desk's NOTE inventory the trade mints pairs, so check `risk(feed)` and `queuedShares()` first |
+| **P0** | **Buy cover** (Protect, the hero's "crash insurance that pays") | `quoteBuyCover` → `USDG.approve` → `desk.buyCover`. Show the premium, the fee on the premium, and in plain words what it pays at settlement (`maxPayout − NOTE payout`: it collects the NOTE's loss after a knock-in at 60%, and funds the coupons in exchange). Disable with the reason when the amount exceeds cover available or `queuedShares() > 0`. Same flow as Buy NOTE, so it costs little once that works |
+| **P0** | **Human error messages** | The table in interfaces.md, including `Uncertified` region 0 (autocall band) vs region 1 (knock-in band), and the Desk's `RiskBudgetExceeded`, `QueuePending`, `CapExceeded(requested, available)`, `ReservedForClaims` |
 | **P0** | **"Try it" panel** | Add the network, faucets (ETH: faucet.testnet.chain.robinhood.com; USDG: faucet.paxos.com) |
-| P1 | Sell NOTE (early exit, mid-life) | `quoteSell` → `NOTE.approve` → `desk.sell` |
-| P1 | Portfolio + redeem after settlement | NOTE/WRITER balances, current value, `previewRedeem`, `redeem` (auto-advance) |
-| P1 | Protect (hedger) | `previewMint` → approve → `series.mint` → sell NOTE → keep WRITER; `redeemPair` |
-| P2 | LP deposit/withdraw | ERC-4626 + `heldSeries()`; explain why `maxDeposit` is 0 instead of letting the transaction revert |
-| P2 | Keeper button | `feed.getRoundData` binary search → `recorder.recordFixing` → `series.advance` |
-| P2 | Trade history | `NoteBought`/`NoteSold` via `getLogs` (carries `weightsHash`) |
+| P1 | Sell NOTE and sell cover (early exit, mid-life) | `quoteSell` → `NOTE.approve` → `desk.sell`; `quoteSellCover` → `WRITER.approve` → `desk.sellCover`. A sell the Desk can't pair adds to its position: same checks as the buys |
+| P1 | Portfolio + redeem after settlement | NOTE/WRITER balances valued at the bids (`quoteSell`, `quoteSellCover`), `previewRedeem`, `redeem` (auto-advance). Minting a pair directly (`series.mint`, `redeemPair`) still works but gets no screen: buy cover replaces that hedger flow |
+| P2 | LP: deposit, withdraw, **redemption queue** | ERC-4626 + `heldSeries()`. When `maxWithdraw` is 0 or too small, offer `requestRedeem(shares)` (≥ `MIN_REQUEST_SHARES`), the place in line (`queue()`, `redeemRequest(id)`), `claim(to)` for `claimableAssets`, `cancelRedeem(id)`. Explain every 0 instead of letting the transaction revert |
+| P2 | Keeper buttons | Fixings: `feed.getRoundData` binary search → `recorder.recordFixing` → `series.advance`. Queue: `desk.processQueue(n)` |
+| P2 | Trade history | `NoteBought`/`NoteSold`/`CoverBought`/`CoverSold` via `getLogs` (carry `priceBps`, `feeBps`, `weightsHash`) |
 
-→ verify each screen: it works in `fixtures` and in `testnet` mode, every error path shows its message, and
-a judge **without a wallet** can see the list, the detail and the model card.
+→ verify each screen: it works in `fixtures` and in `testnet` mode, every error path shows its message, every
+disabled trade says why before anyone signs, and a judge **without a wallet** can see the list, the detail and
+the model card.
 
 ## Phase 4: submission text (draft Thu Oct 1, final Sun Oct 4)
 
@@ -168,7 +201,8 @@ on a series with a past strike, so mid-life states are real, and **not** in an o
 3. **Buy NOTE**: the quote breakdown with the visible fee, the tx on the explorer.
 4. **Sell NOTE mid-life** at the model's quote (the e2e run already does this at 16 observations remaining).
 5. **Show a refusal** (`Uncertified` near a barrier on observation day, or `TooCloseToObservation`): "the model refuses rather than guesses".
-6. Optional: the hedger mints a pair, sells the NOTE, keeps the WRITER.
+6. **Buy cover** as a protection buyer (the hero's "crash insurance that pays"): the premium, the fee on the
+   premium, cover available on TSLA, the tx on the explorer.
 
 - [ ] Write both scripts first (Fri), rehearse on the seeded testnet state, then record (Sat).
 - [ ] Tools: QuickTime/OBS to record, CapCut/iMovie/Descript to edit, captions on, 1080p.
@@ -197,10 +231,11 @@ Judges may open the app any day until the winners are announced (Oct 12, 14:00 S
 |---|---|---|
 | **Testnet broadcast** + `deployments/46630.json` (blocked only on a funded deployer key) | **Wed** | Develop in `fixtures`/`devnode`; the hedge submission uses the addresses as soon as they exist |
 | Demo seed on testnet (a series with a past strike, LP deposit, listing) | Thu | Record the demo on the dev node and say so in the video |
+| **Risk budget on the TSLA feed** (`setRiskBudget`), optionally a spread (`setSpread`) | Thu, with the seed | Without it, buy NOTE beyond inventory and all cover trades revert: build against `devnode` (the e2e script sets both) |
 | Mock-feed keeper (≤ 26h) through Oct 12 | Sun Oct 4 | A manual push each morning, then the landing page + demo video carry it |
 | Fee receiver address | Thu | `feeBps = 0` |
 
 ## Cut list (in this order if behind)
 
-P2 screens → hedger flow → portfolio/redeem → landing sections 6–8 shortened.
-**Never cut:** the market list, the note detail with the model card, buy, human error messages, both videos, the hedge submission.
+P2 screens → sell NOTE/cover → portfolio/redeem → landing sections 6–8 shortened.
+**Never cut:** the market list, the series detail with the model card, buy NOTE, buy cover, human error messages, both videos, the hedge submission.
