@@ -181,3 +181,44 @@ def trades(ctx: Ctx, series: str | None = None, account: str | None = None, limi
     rows = ctx.db.query(f"SELECT * FROM trades WHERE {' AND '.join(where)} ORDER BY block DESC, log_index DESC "
                         "LIMIT ?", (*params, limit))
     return [trade_json(r) for r in rows]
+
+
+ZERO = "0x" + "00" * 20
+
+
+def mark_inputs(ctx: Ctx, rows: list[dict]) -> dict[str, dict]:
+    """series -> {row, state, maxPayout, listing, noteBps}: what Desk._position needs.
+    noteBps is the quoter's mid at the listing's vol, None if not listed or it reverts."""
+    if not rows:
+        return {}
+    chain = ctx.chain
+    calls = []
+    for r in rows:
+        sr = chain.at("series", r["address"])
+        calls += [(sr, "state", ()), (sr, "maxPayoutPerNote", ()), (ctx.desk, "listing", (r["address"],))]
+    res = ctx.calls(calls)
+    out, need = {}, []
+    for i, r in enumerate(rows):
+        st, maxp, lst = res[3 * i:3 * i + 3]
+        out[r["address"]] = {"row": r, "state": st, "maxPayout": maxp, "listing": lst, "noteBps": None}
+        if lst["pricer"] != ZERO:
+            need.append(r["address"])
+    mids = ctx.calls([(ctx.quoter, "notePriceBps", (a, out[a]["listing"]["pricer"],
+                                                     out[a]["listing"]["volBpsAnnual"])) for a in need])
+    for a, m in zip(need, mids):
+        if not isinstance(m, Revert):
+            out[a]["noteBps"] = m[0]
+    return out
+
+
+def share_price(total_assets: int, total_supply: int) -> str:
+    """USDG per share (OpenZeppelin's conversion with the Desk's 6-decimal offset), 12 places."""
+    scaled = UNIT * (total_assets + 1) * 10**12 // (total_supply + 10**6)
+    return f"{scaled // 10**12}.{scaled % 10**12:012d}"
+
+
+def known_feeds(ctx: Ctx) -> list[str]:
+    feeds = {r["feed"] for r in ctx.db.query("SELECT DISTINCT feed FROM series WHERE created_block <= ?",
+                                             (ctx.block,))}
+    feeds |= {a.lower() for a in ctx.cfg["addresses"].get("feeds", {}).values()}
+    return sorted(feeds)

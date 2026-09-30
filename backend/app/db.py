@@ -13,7 +13,7 @@ import sqlite3
 import threading
 from pathlib import Path
 
-SCHEMA_VERSION = "1"
+SCHEMA_VERSION = "2"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
@@ -41,9 +41,15 @@ CREATE INDEX IF NOT EXISTS events_name ON events (name, block, log_index);
 CREATE INDEX IF NOT EXISTS events_series ON events (series, block, log_index);
 CREATE INDEX IF NOT EXISTS events_account ON events (account, block, log_index);
 CREATE INDEX IF NOT EXISTS events_address ON events (address, name);
+-- feed rounds (the mock and Chainlink feeds emit no events): synced from latestRound()/getRoundData()
+CREATE TABLE IF NOT EXISTS rounds (
+    feed TEXT NOT NULL, n INTEGER NOT NULL, round_id TEXT NOT NULL, answer TEXT NOT NULL,
+    updated_at INTEGER NOT NULL, block INTEGER NOT NULL,
+    PRIMARY KEY (feed, n));
+CREATE INDEX IF NOT EXISTS rounds_time ON rounds (feed, updated_at);
 """
 
-TABLES = ("blocks", "series", "trades", "events")
+TABLES = ("blocks", "series", "trades", "events", "rounds")
 
 
 class DB:

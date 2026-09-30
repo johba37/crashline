@@ -275,6 +275,96 @@ event's owner/recipient or its sender/caller.
   "args": { "caller": "0xab0f…f4ce", "to": "0xab0f…f4ce", "amount": "100000000", "collateralIn": "106750000" } }
 ```
 
+## Accounts, vault, feeds (WP2)
+
+`GET /accounts/{addr}`
+
+```json
+{ "usdg": "97867680000", "shares": "0", "sharesValue": "0",
+  "positions": [ { "series": "0x32fb…eab8", "note": "2400000000", "writer": "0",
+                   "noteMark": "2121120000", "coverMark": "0",
+                   "costBasis": { "note": "2132320000", "writer": "0" }, "realized": "0" } ],
+  "queue": [ { "id": 3, "shares": "20000000000000000", "requestedAt": 1790801031, "position": 0 } ],
+  "claimable": "0",
+  "trades": [ <trade>, … ],
+  "block": 436, "time": 1790800907 }
+```
+
+- `usdg`: USDG balance. `shares`: Desk shares held (12 decimals; shares in the
+  queue are held by the Desk and not counted). `sharesValue`:
+  `convertToAssets(shares)`, null while the vault's NAV is unknown (a held
+  series can't be quoted).
+- `positions`: every series where the account holds NOTE or WRITER or has
+  trade history. `noteMark`/`coverMark`: the holding at the Desk's marks
+  (the quoter's mid capped at the max payout; the payout itself once it is
+  certain), null when that needs a quote and there is none.
+- `costBasis` and `realized` (USDG base units, `realized` may be negative) are
+  FIFO over the account's Desk trades: a buy or buyCover whose recipient is
+  the account opens a lot at the USDG paid (fee included); a sell or
+  sellCover by the account closes lots at the proceeds (net of fee); a
+  settlement `redeem` by the account closes lots at each leg's payout (from
+  the series' `Settled` event). Tokens that arrived another way (mint,
+  transfer) have no lot; selling more than the lots hold realizes the rest at
+  zero cost. Mints and pair redemptions are not trades and don't move the basis.
+- `queue`: the account's open redemption requests (unfilled shares > 0;
+  `redeemRequest(id)` at the response's block); `position` is the number of
+  open requests ahead of it. `claimable`: USDG set aside for filled requests.
+- `trades`: the last 50 where the account traded or received.
+
+`GET /vault`
+
+```json
+{ "totalAssets": "100009200000", "totalSupply": "100000000000000000", "sharePrice": "1.000091999999",
+  "navError": null, "idle": "99568320000", "reserved": "0", "queuedShares": "0",
+  "queue": { "head": 0, "length": 0 },
+  "feeds": { "0xc646…839d": { "atRisk": "440880000", "limit": "20001840000", "room": "19560960000" }, … },
+  "inventory": [ { "series": "0x32fb…eab8", "noteHeld": "0", "writerHeld": "1200000000",
+                   "mark": "440880000", "atRisk": "440880000", "quotable": true } ],
+  "block": 436, "time": 1790800907 }
+```
+
+- `sharePrice`: USDG per share, OpenZeppelin's conversion with the Desk's
+  6-decimal offset, `1e6 * (totalAssets + 1) / (totalSupply + 1e6)`, 12
+  decimal places.
+- `totalAssets` reverts on-chain while a held series can't be quoted (a
+  pending fixing, a stale feed, an observation-day band): then `totalAssets`
+  and `sharePrice` are null and `navError` is the revert
+  (`{"error": "FixingPending", "args": {...}}`). Deposits and ERC-4626
+  withdrawals are closed in that state; queue requests are not.
+- `idle` = USDG balance − `reserved` (USDG set aside for claims).
+- `feeds`: `risk(feed)` for every feed of an indexed series; `room =
+  limit − atRisk`, negative when the feed is over its budget (vault assets
+  fell). Quotes don't check it: read it before offering a trade that adds to
+  the Desk's position (IDeskCover).
+- `inventory`: `heldSeries()`, each with the Desk's balances, its mark and
+  what it can lose (Desk._position in Python, `app/accounting.py`);
+  `quotable: false` rows are valued at the NOTE's coupons, with both legs
+  fully at risk, as the risk check does.
+
+`GET /feeds/{addr}?from=&to=`
+
+```json
+{ "address": "0xc646…839d", "name": "RHTSLA", "decimals": 8,
+  "latest": { "roundId": "18446744073709551628", "answer": "21250000000", "updatedAt": 1790800620 },
+  "risk": { "atRisk": "440880000", "limit": "20001840000", "room": "19560960000", "budgetBps": 2000 },
+  "series": [ "0x32fb…eab8" ],
+  "rounds": [ { "roundId": "18446744073709551617", "answer": "25000000000", "updatedAt": 1784407017 }, … ],
+  "block": 436, "time": 1790800907 }
+```
+
+`rounds`: the last 200 (oldest first), or every round with `from <=
+updatedAt <= to`. The feeds emit no events: after every indexed chunk the
+indexer compares `latestRound()` with the stored rounds and fetches the new
+ones (`app/feeds.py`, table `rounds`). 404 `UnknownFeed` for a feed no series uses.
+
+### Choices where the spec is silent (WP2)
+
+- FIFO lots belong to the trade's recipient (buys) and to the seller (sells);
+  settlement redemptions close lots; mints, pair redemptions and transfers
+  are outside the basis.
+- `room` is signed; `navError` reports why the NAV is unknown; inventory rows
+  carry `quotable`.
+
 ### Choices where the spec is silent (WP1)
 
 - `before` in `/trades` is a block number (the dev node puts one tx in a block).
@@ -304,3 +394,12 @@ database), so a service on 8650 keeps running.
   a service restart leaves `/trades` unchanged; every `quotable` reason on a
   purpose-staged series (NotListed, TooCloseToObservation with `until`,
   Uncertified, OutOfRange, FeedStale, Settled, FixingPending); `/events`.
+- `test_wp2_accounts.py`: the e2e lifecycle replayed on a freshly staged
+  series (LP deposit, buy, buyCover, mid-life sell, the observation passes,
+  the LP queues 20 % while the fixing is pending, autocall, redeem, collect,
+  processQueue, claim) with `/accounts` NOTE amounts, FIFO cost basis and
+  realized P&L after each step, `/feeds` risk (`room = limit − atRisk`, equal
+  to `risk(feed)` at the response block) and rounds, `/vault` inventory marks
+  adding up to `totalAssets`, `queuedShares` non-zero while the request is
+  open (with `navError` FixingPending) and zero after `processQueue`; FIFO and
+  `position` unit checks.
