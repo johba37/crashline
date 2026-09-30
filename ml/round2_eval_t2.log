@@ -1,0 +1,41 @@
+model model/k2: weightsHash 0xaf76ddf21ca24495bf0540bd54d3d65bef81ea81ddacb55c3e79d64b1266cd8a, 7465 params, layers [64, 48, 40, 40, 1]
+labels /opt/ai/sp-worktrees/student/ml/k2_test2_labels.npz: set T2, 79400 points, label seed 2119303170, base paths 262144, top-up rounds 0
+teacher at labelling: {'teacher.py': '3e3ff8c33c91887544f6e959beaade8b780db505e6d171e9eadfb31c0f140910', 'teacher_config.json': '463782fbc14f5f6d53d5dd44a75fd4ad0dd4305f9e31f2d114a8be10fd020638', 'teacher_torch.py': '242f89d3c7360e5935f2ba7c7165867707906a493f1f8c412f891419ae1bd2ba'}
+teacher now:          {'teacher.py': '3e3ff8c33c91887544f6e959beaade8b780db505e6d171e9eadfb31c0f140910', 'teacher_config.json': '463782fbc14f5f6d53d5dd44a75fd4ad0dd4305f9e31f2d114a8be10fd020638', 'teacher_torch.py': '242f89d3c7360e5935f2ba7c7165867707906a493f1f8c412f891419ae1bd2ba'}
+label stderr bps: mean 1.04, p99 3.14, MAX 3.24 (limit 4.0); paths min 262144 (limit 262144)
+
+domain: 64484 points certified, 14916 refused (Uncertified) by ['acObservationDay', 'kiObservationDay']
+
+== T2: integer student (pq.forward) - teacher, bps ==
+region (outside exclusions unless stated)        n      max      p99    mean
+outside exclusions (GATE)                    64484     17.8      7.9    1.65
+inside exclusions (refused on-chain)         14916   1603.0     80.1    9.46
+near ki (5500-6500)                          18154     17.8      8.5    1.50
+near ac (9500-10500)                         13469     13.8      7.7    2.01
+obs 1-2                                       9714     17.3      7.5    1.32
+obs 3-6                                      15323     15.6      7.7    1.50
+obs 7-13                                     13346     17.8      8.1    1.68
+obs 14-20                                     9294     13.5      7.5    1.78
+obs 21-26                                    16807     14.3      8.1    1.89
+tNext 0                                       3080     15.1      6.7    1.31
+tNext (0,1d]                                 11248     14.7      7.2    1.33
+tNext (1d,2d]                                22675     17.8      8.4    1.75
+tNext (2d,4d]                                12283     13.7      7.3    1.63
+tNext (4d,7d]                                15198     15.0      8.0    1.83
+knockedIn 0                                  29387     17.8      9.1    2.12
+knockedIn 1                                  35097     10.9      5.6    1.26
+
+worst points outside the exclusions:
+  spot  6083 tNext  86401 obs 13 knockedIn 0  err   -17.8
+  spot  6093 tNext  86401 obs 13 knockedIn 0  err   -17.5
+  spot  6113 tNext  86401 obs  1 knockedIn 0  err   -17.3
+  spot  6463 tNext  86401 obs  2 knockedIn 0  err   +15.8
+  spot  6133 tNext  86401 obs  6 knockedIn 0  err   -15.6
+  spot  7860 tNext 172800 obs  9 knockedIn 0  err   -15.6
+  spot  7660 tNext  90000 obs 13 knockedIn 0  err   +15.4
+  spot  5943 tNext  86401 obs  3 knockedIn 0  err   +15.4
+  spot  6113 tNext  90000 obs  1 knockedIn 0  err   -15.4
+  spot  7810 tNext      0 obs  9 knockedIn 0  err   -15.1
+
+max |student - teacher| outside exclusions: 17.8 bps (gate 50); max label stderr 3.24 bps
+T2 CONFIRMATION (not the gate) PASS
