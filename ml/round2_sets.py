@@ -11,6 +11,9 @@ Sets (seeds are fixed here and used nowhere else):
      points. Point seed TEST_POINT_SEED, label seed TEST_LABEL_SEED. Labels at
      >= 2^18 paths, topped up until max stderr <= 4 bps. Generated once;
      never used for training or model selection.
+  T2 confirmation set, added after the final model was selected: T's
+     construction with new seeds and a shifted spot grid (test2_points),
+     labelled and evaluated once on the final model, like T.
   V  validation set, model selection only. Same structure with disjoint
      values: spots offset by 25 / 5 bps, other obs and tNext values, 20,000
      uniform points from another seed.
@@ -56,6 +59,8 @@ OBS_MAX = 26
 
 TEST_POINT_SEED = 0x7E57_0001      # T: points (uniform part)
 TEST_LABEL_SEED = 0x7E57_0002      # T: teacher paths
+TEST2_POINT_SEED = 0x7E52_0001     # T2: points (uniform part)
+TEST2_LABEL_SEED = 0x7E52_0002     # T2: teacher paths
 VAL_POINT_SEED = 0x7A11_0001       # V: points
 VAL_LABEL_SEED = 0x7A11_0002       # V: teacher paths
 
@@ -128,6 +133,21 @@ def test_points() -> np.ndarray:
     g = _grid(spots, obs, tn)
     u = uniform_points(20_000, np.random.default_rng(TEST_POINT_SEED))
     return np.vstack([g, u])
+
+
+def test2_points() -> np.ndarray:
+    """Confirmation set T2, fixed before any T2 result was seen: T's
+    construction (same obs and tNext values, spot step 50 bps over the domain
+    and 10 bps within +-500 of ki and ac, both knockedIn, 20,000 uniform
+    points) with the spot grid shifted (+10 / +3 bps) and a new uniform seed,
+    so no point is shared with T or V."""
+    spots = np.concatenate([[SPOT_LO, SPOT_HI], np.arange(SPOT_LO + 10, SPOT_HI, 50),
+                            np.arange(KI - 497, KI + 500, 10), np.arange(AC - 497, AC + 500, 10)])
+    obs = (1, 2, 3, 4, 6, 9, 13, 17, 21, 25, 26)
+    tn = (0, 3600, 43200, 86400, 86401, 90000, 172800, 345600, 604800)
+    X = np.vstack([_grid(spots, obs, tn), uniform_points(20_000, np.random.default_rng(TEST2_POINT_SEED))])
+    seen = set(map(tuple, test_points().tolist())) | set(map(tuple, val_points().tolist()))
+    return X[np.array([tuple(r) not in seen for r in X.tolist()])]
 
 
 def val_points() -> np.ndarray:
@@ -255,7 +275,7 @@ def _device_name(backend: str) -> str:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--set", choices=("T", "V", "train", "steep"), required=True)
+    ap.add_argument("--set", choices=("T", "T2", "V", "train", "steep"), required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--paths", type=int, default=2**18)
     ap.add_argument("--max-se", type=float, default=None,
@@ -269,6 +289,8 @@ def main() -> None:
 
     if args.set == "T":
         X, lseed = test_points(), TEST_LABEL_SEED
+    elif args.set == "T2":
+        X, lseed = test2_points(), TEST2_LABEL_SEED
     elif args.set == "V":
         X, lseed = val_points(), VAL_LABEL_SEED
     elif args.set == "train":

@@ -1,7 +1,8 @@
 """K2 round 2 gate: the certified integer student vs the frozen teacher on the
 held-out test set T.
 
-  python ml/round2_eval.py --model model/k2
+  python ml/round2_eval.py --model model/k2            # the gate, on T
+  python ml/round2_eval.py --model model/k2 --set T2   # confirmation set T2
 
 Checks, in order (any failure ends with GATE FAIL):
   1. the label cache was produced by the current teacher (sha256 of
@@ -57,10 +58,14 @@ def _price(row):
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", required=True, help="dir holding the certified student_export.json")
-    ap.add_argument("--labels", default=str(HERE / "k2_test_labels.npz"))
+    ap.add_argument("--set", choices=("T", "T2"), default="T",
+                    help="T = the gate; T2 = the confirmation set (reported, not the gate)")
+    ap.add_argument("--labels", default=None, help="default ml/k2_test_labels.npz (T) / ml/k2_test2_labels.npz (T2)")
     ap.add_argument("--workers", type=int, default=6)
     args = ap.parse_args()
 
+    points = {"T": sets.test_points, "T2": sets.test2_points}[args.set]
+    args.labels = args.labels or str(HERE / {"T": "k2_test_labels.npz", "T2": "k2_test2_labels.npz"}[args.set])
     export = json.loads((pathlib.Path(args.model) / "student_export.json").read_text())
     pq.validate_domain(export["certifiedDomain"])
     assert export["weightsHash"] == pq.weights_hash(export), "weightsHash mismatch"
@@ -79,8 +84,8 @@ def main() -> int:
     print(f"teacher now:          {fp}")
     if meta["teacher"] != fp:
         fails.append("labels were not produced by the current teacher")
-    if meta["set"] != "T" or not np.array_equal(X, sets.test_points()):
-        fails.append("label points are not round2_sets.test_points()")
+    if meta["set"] != args.set or not np.array_equal(X, points()):
+        fails.append(f"label points are not round2_sets.{points.__name__}()")
     print(f"label stderr bps: mean {se.mean():.2f}, p99 {np.percentile(se, 99):.2f}, MAX {se.max():.2f} "
           f"(limit {MAX_SE_BPS}); paths min {paths.min()} (limit {MIN_PATHS})")
     if se.max() > MAX_SE_BPS or paths.min() < MIN_PATHS:
@@ -95,7 +100,7 @@ def main() -> int:
     err = pred - y
     print(f"\ndomain: {out_band.sum()} points certified, {(~out_band).sum()} refused (Uncertified) by "
           f"{[e['name'] for e in export['certifiedDomain']['exclusions']]}")
-    print("\n== T: integer student (pq.forward) - teacher, bps ==")
+    print(f"\n== {args.set}: integer student (pq.forward) - teacher, bps ==")
     tab = gate_table(X, err, out_band)
     print_table(tab)
     print("\nworst points outside the exclusions:")
@@ -109,7 +114,8 @@ def main() -> int:
         fails.append(f"max error {mx:.1f} > {GATE_BPS:.0f} bps")
     for f in fails:
         print(f"FAIL: {f}")
-    print("GATE PASS" if not fails else f"GATE FAIL (measured max {mx:.1f} bps)")
+    word = "GATE" if args.set == "T" else "T2 CONFIRMATION (not the gate)"
+    print(f"{word} PASS" if not fails else f"{word} FAIL (measured max {mx:.1f} bps)")
     return 0 if not fails else 1
 
 
