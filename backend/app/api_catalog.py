@@ -22,6 +22,7 @@ def health():
     snap = SERVICE.indexer.snap
     ok = snap is not None and snap.head is not None and snap.status == "ok"
     body = {"ok": ok, "status": snap.status if snap else "starting", "error": SERVICE.indexer.error,
+            "rollbacks": SERVICE.indexer.rollbacks,
             "block": snap.head["number"] if snap and snap.head else None,
             "time": snap.head["time"] if snap and snap.head else None}
     if not ok:

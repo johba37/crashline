@@ -1,20 +1,99 @@
 # Backend for the frontend
 
 What runs on the host for the frontend and the demo video, and how to use it.
-Spec: [backend-spec.md](backend-spec.md). Everything binds to 127.0.0.1; the
-frontend reaches it through an SSH tunnel.
+Spec: [backend-spec.md](backend-spec.md).
 
-| Port | What | Started by |
-|---|---|---|
-| 8647 | Nitro dev node, JSON-RPC (chain id 412346) | `backend/devnode/up.sh` |
-| 8650 | the REST service (this doc) | `backend/run.sh` |
+## For the frontend: start here
 
-From your machine:
+Two things run on the host, both bound to 127.0.0.1 and reached through an SSH tunnel:
+
+| Port | What |
+|---|---|
+| **8647** | the Nitro dev node, JSON-RPC, **chain id 412346** (a local Arbitrum chain: 1 block per transaction) |
+| **8650** | the REST service: catalog, history, accounts, the off-chain model, demo control |
 
 ```sh
 ssh -N -L 8647:127.0.0.1:8647 -L 8650:127.0.0.1:8650 max@<host>
-curl localhost:8650/config
+curl localhost:8650/config          # everything below starts here
 ```
+
+**Reads and writes.** Live quotes, balances and every transaction go to the
+node over JSON-RPC (wagmi/viem, the ABIs in `abi/`). The service gives what
+the RPC can't give cheaply: the series catalog with its state and mid
+(`/series`), trades and events, history for charts, per-wallet positions with
+cost basis (`/accounts/{addr}`), the vault (`/vault`), feeds and risk room
+(`/feeds/{addr}`), the model's curves and a teacher check (`/verify-quote`),
+and demo control (`/demo/*`). Every response says which block it reflects
+(`block`, `time`); poll it (every few seconds is fine), there are no
+websockets.
+
+**Addresses come from `GET /config`**, never from constants: the dev node's
+addresses change with every `/demo/reset`. `/config` also has the model's
+certified domain and the Desk's fee caps and queue constants.
+
+**wagmi.** A chain entry for the dev node, next to Robinhood testnet, chosen by env:
+
+```ts
+// frontend/src/wagmi.ts
+import { defineChain } from 'viem'
+import { robinhoodTestnet } from 'wagmi/chains'
+
+export const surrogateDevnode = defineChain({
+  id: 412346,
+  name: 'Surrogate Pricer dev node',
+  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+  rpcUrls: { default: { http: [import.meta.env.VITE_RPC_URL ?? 'http://localhost:8647'] } },
+  testnet: true,
+})
+
+const chainId = Number(import.meta.env.VITE_CHAIN_ID ?? robinhoodTestnet.id)
+const chain = chainId === surrogateDevnode.id ? surrogateDevnode : robinhoodTestnet
+export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8650'
+// getDefaultConfig({ ..., chains: [chain], transports: { [chain.id]: http(import.meta.env.VITE_RPC_URL) } })
+```
+
+```sh
+# frontend/.env.local for the dev node
+VITE_CHAIN_ID=412346
+VITE_RPC_URL=http://localhost:8647
+VITE_API_URL=http://localhost:8650
+```
+
+**Wallets.** In MetaMask (or Rabby): add a network with chain id 412346, RPC
+`http://localhost:8647`, currency ETH, and import the test accounts' keys.
+They are funded at every deploy with 1 ETH and 100,000 USDG (MockUSDG, 6
+decimals; its `mint(to, amount)` is public, and `/demo/faucet` tops up any
+address):
+
+| Account | Address | Private key |
+|---|---|---|
+| LP (anvil #1) | `0x70997970c51812dc3a010c7d01b50e0d17dc79c8` | `0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d` |
+| buyer (anvil #2) | `0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc` | `0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a` |
+| hedger (anvil #3) | `0x90f79bf6eb2c4f870365e785982e1f101e93b906` | `0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6` |
+
+MetaMask caches nonces per network: after a `/demo/reset` use "Clear activity
+tab data" (Settings → Advanced) or transactions stay pending.
+
+**Demo control** (`POST /demo/faucet|feed|fixing|stage|reset`, below) takes
+the header **`X-Demo-Token: sp-devnode-demo`** on the dev node (the host's
+operator can change it in `backend/.env`).
+
+**What the dev node looks like after a deploy or a reset**: one series on the
+feed `RHTSLA` (initial $250.00) with the K2 terms (knock-in 60 %, autocall
+100 %, 25 bps a week, 26 weekly observations), 10 observations done (it
+knocked in at the 3rd), 16 to go, the next one 3 days out, spot 85 %,
+listed at vol 5500 with a 20/30 bps spread and a 20 % risk budget; the vault
+holds 100,000 USDG. The chain's clock moves only with transactions (each
+`/demo/*` call moves it to now). Quotes stop when the feed is more than 26 h
+old (`/demo/feed` pushes a round) and when the next observation has passed
+(`/demo/fixing` records it).
+
+**The testnet** (Robinhood Chain testnet, 46630) uses the same service with a
+`config.json` made from `deployments/46630.json` (`backend/ops/make-config.py`,
+below), the testnet RPC, and the demo routes off (403). The frontend then uses
+`VITE_CHAIN_ID=46630`, the testnet RPC and wherever that service runs; the
+routes and fields are the same. The public demo on GitHub Pages targets the
+testnet.
 
 ## Setup (once per host)
 
@@ -50,8 +129,9 @@ backend/devnode/up.sh --recreate                        # start over with an emp
   kill** (SIGKILL, power loss) keeps the blocks but can leave the dev
   sequencer unable to sequence (`wrong msgIdx got N expected 1`). `up.sh`
   checks this with a 0-value transfer and exits 3; then
-  `up.sh --recreate && deploy.py` starts over (`backend/ops/start.sh` does it
-  on its own, WP6).
+  `up.sh --recreate && deploy.py` starts over (the `sp-devnode` unit does it
+  on its own, WP6). It can also lose the last few blocks (the service rolls
+  back, WP6).
 - Blocks are made only by transactions: views (`eth_call` at `latest`) see the
   time of the last block. A 0-value transfer ("poke") moves the chain's clock
   to now; the deploy script and the demo routes poke before they read.
@@ -274,6 +354,13 @@ event's owner/recipient or its sender/caller.
   "address": "0x32fb…eab8", "name": "Minted", "series": "0x32fb…eab8", "feed": "0xc646…839d",
   "args": { "caller": "0xab0f…f4ce", "to": "0xab0f…f4ce", "amount": "100000000", "collateralIn": "106750000" } }
 ```
+
+### Choices where the spec is silent (WP1)
+
+- `before` in `/trades` is a block number (the dev node puts one tx in a block).
+- `quotable` treats `CapExceeded` as quotable (above).
+- `/events` also takes `name` and `before`; `/health` exists for scripts and the tests.
+- Amounts in `/events` args follow the 53-bit rule above.
 
 ## Accounts, vault, feeds (WP2)
 
@@ -583,14 +670,74 @@ response and the next reads include them) and returns data at that block.
 - The dev node's default demo token `sp-devnode-demo` (the tunnel is the
   access control; override with `DEMO_TOKEN`).
 
-### Choices where the spec is silent (WP1)
+## Operations (WP6)
 
-- `before` in `/trades` is a block number (the dev node puts one tx in a block).
-- `quotable` treats `CapExceeded` as quotable (above).
-- `/events` also takes `name` and `before`; `/health` exists for scripts and the tests.
-- Amounts in `/events` args follow the 53-bit rule above.
+The node and the service run as **systemd user units** (the host has
+lingering on, so the user's units start at boot without a login):
 
-### Tests
+```sh
+backend/ops/install.sh                    # once: installs and enables sp-devnode + sp-backend, installs sp-reset
+backend/ops/start.sh                      # bring both up, wait until /config answers
+backend/ops/stop.sh                       # stop both (the node gracefully: the chain stays)
+systemctl --user start sp-reset           # new chain + default scenario (same as POST /demo/reset)
+systemctl --user status sp-devnode sp-backend
+journalctl --user -u sp-backend -f        # the service's log (sp-devnode: the node unit's)
+docker logs -f sp-devnode                 # the node itself
+```
+
+| Unit | Does |
+|---|---|
+| `sp-devnode` | oneshot, `backend/ops/node.sh`: waits for docker, `up.sh` (start or create the container), `up.sh --recreate` if the node can't sequence after a hard kill, `deploy.py --if-missing`. Stop: `down.sh` (graceful, 60 s). |
+| `sp-backend` | `backend/run.sh` on 8650, restarted if it exits; after `sp-devnode`. |
+| `sp-reset` | oneshot, `backend/ops/reset.sh`: `POST /demo/reset` to the service, or `up.sh --recreate` + `deploy.py` when it is down. Not enabled: run it by hand. |
+
+`start.sh` and `stop.sh` use the units when they are installed and fall back
+to `nohup` with a pid file in `backend/run/` when they are not (no systemd
+--user). After a reboot the units bring both up by themselves; `start.sh`
+does the same by hand (and restarts the node unit if its container died).
+
+**After a crash** (power loss, `docker kill`): the node comes back from its
+last flush, which can lose the last blocks, and sometimes can't sequence at
+all (`wrong msgIdx`). `node.sh` detects the latter and recreates the chain
+and redeploys (new addresses in `/config`); the service detects the former
+(the stored hash of its last block no longer matches), rolls back to the
+last block the chain still has and re-indexes (`/health` counts
+`rollbacks`).
+
+**Settings** go in `backend/.env` (read by `run.sh` and the ops scripts):
+`DEMO_TOKEN` (default `sp-devnode-demo` on the dev node), `DEMO_KEY` (default
+Nitro's dev key on the dev node), `TEACHER_DEVICE=cuda` (the GPU teacher),
+`TEACHER_PYTHON`, `TEACHER_SEED`, `TEACHER_PATHS`, `BACKEND_PORT`,
+`DEVNODE_PORT` (then re-run `deploy.py` so `config.json` has the RPC port).
+The SQLite db is `backend/data/<chainId>.sqlite`; deleting it while the
+service is stopped just makes it rescan.
+
+**Testnet.** On a host that serves the testnet:
+
+```sh
+backend/.venv/bin/python backend/ops/make-config.py deployments/46630.json \
+    --rpc https://rpc.testnet.chain.robinhood.com --out backend/config.json   # demo off; --deployment-block N if the RPC has no old state
+backend/run.sh
+```
+
+`make-config.py` takes the addresses from the file `Deploy.s.sol` writes
+(`mockFeed` becomes the feed `RHTSLA`), finds the deployment block by
+bisecting `eth_getCode(seriesFactory)` (or takes `--deployment-block`), and
+records the genesis and deployment block hashes. The history backfill needs
+`eth_call` at past blocks; on an RPC without archive state the backfill of
+past slots logs errors and the history holds only what was sampled live.
+Nothing else changes: the same routes, `/config` reports the testnet
+addresses, `demo: false`, and `/demo/*` answers 403.
+
+### Choices where the spec is silent (WP6)
+
+- systemd user units (available here) with `start.sh`/`stop.sh` wrappers that
+  also work without them; `sp-reset` is a unit you start by hand.
+- The node unit recovers from a broken sequencer by recreating the chain; the
+  indexer rolls back lost blocks instead of trusting its db.
+- `backend/ops/make-config.py` writes the testnet variant of `config.json`.
+
+## Tests
 
 ```sh
 cd backend && .venv/bin/python -m pytest tests -q                # against the dev node; skipped if it is down
@@ -650,3 +797,12 @@ database), so a service on 8650 keeps running.
   then `observationsDone` 10 → 11 with the new fixing; `/demo/reset` (runs
   last): new addresses in `/config` and `config.json`, `/trades` empty, the
   default series quotable, the vault at its seed.
+- `test_wp6_ops.py`: the units are installed, enabled, point at this
+  checkout, lingering is on; `stop.sh` takes the node and the service down
+  (nothing answers) and `start.sh` brings both up with the same chain and
+  deployment, `/config` answering on 8650 (the reboot path without the
+  reboot); the indexer rolls back a block whose hash changed and drops what
+  it had indexed from it; after a `docker kill -s KILL sp-devnode`,
+  `start.sh` brings back a node that sequences and holds `config.json`'s
+  deployment (recreated if needed), and the service on 8650 follows with
+  only blocks the chain has.

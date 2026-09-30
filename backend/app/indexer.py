@@ -8,6 +8,12 @@ the factory's series, their feeds' recorders and the Desk. Rows and the new
 head go in one transaction; (txHash, logIndex) is the primary key, so a
 restart resumes from the stored head and never duplicates a row.
 
+Lost blocks. Every poll compares the stored hash of the last indexed block with
+the chain's; a hard-killed dev node comes back from its last flush and rebuilds
+the blocks after it with other hashes. Then the indexer walks back to the last
+stored block the chain still has, deletes everything indexed after it and
+resumes from there.
+
 Resets. The fingerprint (chain id, genesis hash, deployment block and its hash,
 Desk address) is stored with the data; if `config.json` describes another
 deployment, every table is wiped and the scan restarts. The genesis hash
@@ -35,7 +41,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from . import config as cfgmod
-from .chain import REGISTRY, Chain
+from .chain import REGISTRY, Chain, RpcError
 from .db import DB, SCHEMA_VERSION
 
 log = logging.getLogger("indexer")
@@ -91,6 +97,7 @@ class Indexer:
         self.cfg_mtime = 0.0
         self.error: str | None = None
         self.caught_up = threading.Event()
+        self.rollbacks = 0
 
     # --- setup -------------------------------------------------------------------
     def setup(self) -> None:
@@ -171,6 +178,8 @@ class Indexer:
                 if not self.deployment_ok():
                     self._set_status("DeploymentMissing")
                     return False
+            if self._lost_blocks(n):
+                self._rollback()
             if n <= self.last:
                 if self.snap.head is None:  # fresh start with nothing new: read the head once
                     b = self.chain.block(self.last)
@@ -192,6 +201,44 @@ class Indexer:
             if not more:
                 self.caught_up.set()
             return more
+
+    # --- lost blocks ------------------------------------------------------------------------
+    def _lost_blocks(self, n: int) -> bool:
+        """The last indexed block is gone or has another hash: a hard-killed dev node comes
+        back from its last flush and rebuilds the blocks after it differently."""
+        row = self.db.one("SELECT hash FROM blocks WHERE number = ?", (self.last,))
+        if row is None:
+            return False
+        return n < self.last or self.chain.block(self.last)["hash"] != row[0]
+
+    def _rollback(self) -> None:
+        """Delete what was indexed from blocks the chain no longer has and resume after the
+        last stored block it still has."""
+        anc = self.cfg["deploymentBlock"] - 1
+        for r in self.db.query("SELECT number, hash FROM blocks WHERE number <= ? ORDER BY number DESC",
+                               (self.last,)):
+            try:
+                if self.chain.block(r["number"])["hash"] == r["hash"]:
+                    anc = r["number"]
+                    break
+            except RpcError:  # beyond the chain's head now
+                continue
+        log.warning("the chain lost blocks after %d (indexed up to %d): rolling back", anc, self.last)
+        c = self.db.conn()
+        c.execute("BEGIN IMMEDIATE")
+        for table, col in (("trades", "block"), ("events", "block"), ("blocks", "number"),
+                           ("series", "created_block"), ("rounds", "block"), ("samples", "block"),
+                           ("nav_samples", "block")):
+            c.execute(f"DELETE FROM {table} WHERE {col} > ?", (anc,))
+        self.db.set_meta("last_block", anc, c)
+        c.execute("COMMIT")
+        self.last = anc
+        self.series = {r["address"]: dict(r) for r in self.db.query("SELECT * FROM series")}
+        self.recorders = {r["address"]: r["feed"] for r in
+                          self.db.query("SELECT address, feed FROM events WHERE name = 'RecorderDeployed'")}
+        row = self.db.one("SELECT number, hash, time FROM blocks WHERE number = ?", (anc,))
+        self._set_status("ok", dict(row) if row else None)
+        self.rollbacks += 1
 
     # --- one chunk --------------------------------------------------------------------------
     def _index_range(self, frm: int, to: int) -> dict:
