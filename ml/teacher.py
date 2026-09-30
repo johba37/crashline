@@ -23,8 +23,16 @@ carry a fixed share of the variance at every vol, jump_var_year / vol_ref^2, and
 no vol is refused. `load_config(CONFIG_V3_PATH)` is TSLA's 10-year shape at its
 fitted total vol (57% share); vol_ref = 0 is exactly the v2 code path.
 
+Rates: `r` is the risk-neutral drift of the stock; `r_disc` discounts the
+payouts. They are separate because the pair's escrow earns nothing on chain:
+a pair redeems for maxPayout at any time, so NOTE + WRITER = maxPayout holds
+only if payouts are discounted at what the escrow earns (config `rDiscount`).
+`r_disc` None (no `rDiscount` in the config, as in the pinned v2 teacher)
+discounts at `r` and takes the v2 code path unchanged. The v3 config sets
+rDiscount 0.
+
 Configs: `load_config()` (default, the pinned v2 jump teacher),
-`load_config(CONFIG_V3_PATH)` (v3) and `GBM` (lam = 0).
+`load_config(CONFIG_V3_PATH)` (v3: vol-scaled jumps, rDiscount 0) and `GBM` (lam = 0).
 With lam = 0 the code takes the original K1 GBM path and is bit-identical to
 ml/reference/teacher_gbm_k1.py for the same seed (checked by ml/test_teacher.py),
 except where K1 was wrong: a spot exactly on a barrier at tNext = 0 (below).
@@ -87,7 +95,8 @@ FEATURE_KEYS = (
 class TeacherConfig:
     """Pinned teacher constants. Rates are per calendar year (365 d)."""
     name: str
-    r: float = R_FREE
+    r: float = R_FREE          # risk-neutral drift
+    r_disc: float | None = None  # discount rate of the payouts; None = r
     lambda_year: float = 0.0   # jumps per year
     mu_j: float = 0.0          # mean log jump size (at vol_ref when vol_ref > 0)
     sigma_j: float = 0.0       # std of log jump size (at vol_ref when vol_ref > 0)
@@ -96,6 +105,10 @@ class TeacherConfig:
     @property
     def jumps(self) -> bool:
         return self.lambda_year > 0.0
+
+    @property
+    def disc(self) -> float:
+        return self.r if self.r_disc is None else self.r_disc
 
     @property
     def jump_share(self) -> float:
@@ -147,7 +160,8 @@ def load_config(path: str = CONFIG_PATH) -> TeacherConfig:
         return _PINNED
     with open(path) as f:
         c = json.load(f)
-    cfg = TeacherConfig(name=c["name"], r=c["rFree"], lambda_year=c["jumps"]["lambdaYear"],
+    cfg = TeacherConfig(name=c["name"], r=c["rFree"], r_disc=c.get("rDiscount"),
+                        lambda_year=c["jumps"]["lambdaYear"],
                         mu_j=c["jumps"]["muJ"], sigma_j=c["jumps"]["sigmaJ"],
                         vol_ref=c["jumps"].get("volRef", 0.0))
     assert c["yearSecs"] == YEAR_SECS and c["weekSecs"] == WEEK_SECS
@@ -265,7 +279,8 @@ def _simulate(F, idx: np.ndarray, N: int, total_paths: int, rng, smooth: bool,
     t_next = F["tNext"][idx].astype(np.float64)
     T = F["ttm"][idx].astype(np.float64)
     ki0 = F["knockedIn"][idx].astype(bool)
-    r = cfg.r
+    r = cfg.r                                         # drift (the steps use cfg.r too)
+    rd = cfg.disc                                     # discounting
 
     x = np.repeat(np.log(s0)[:, None], 2 * P, axis=1).astype(np.float32)
     redeemed = np.zeros((G, 2 * P), dtype=bool)
@@ -291,7 +306,7 @@ def _simulate(F, idx: np.ndarray, N: int, total_paths: int, rng, smooth: bool,
                 hit[now] = (s0[now] >= ac[now])[:, None]
                 kin[now] = (s0[now] < ki[now])[:, None]
         if hit.any():
-            val = np.exp(-r * tau / YEAR_SECS) * (1e4 + cpn * tau / WEEK_SECS)
+            val = np.exp(-rd * tau / YEAR_SECS) * (1e4 + cpn * tau / WEEK_SECS)
             pay[hit] = np.broadcast_to(val[:, None], pay.shape)[hit]
         redeemed |= hit
         ki_latch |= kin
@@ -302,15 +317,18 @@ def _simulate(F, idx: np.ndarray, N: int, total_paths: int, rng, smooth: bool,
         dY = np.maximum((T - tau_last) / YEAR_SECS, 1e-9)
         s_last = np.exp(x).astype(np.float64)
         strike = np.ones(G)                            # initial fixing (teacher-spec s5)
-        disc = np.exp(-r * dY[:, None])
+        disc = np.exp(-rd * dY[:, None])
         if smooth and not cfg.jumps:                   # K1 GBM closed form (bit-identical path)
             sq = sig[:, None] * np.sqrt(dY[:, None])
             d2 = (np.log(s_last / strike[:, None])
                   + (r - 0.5 * sig[:, None] ** 2) * dY[:, None]) / sq
             d1 = d2 + sq
+            # disc * E[min(S_T, 1)]; with rd = r the forward factor e^(r dY) cancels disc
+            capped = (disc * _phi(d2) + s_last * _phi(-d1) if cfg.r_disc is None
+                      else disc * (_phi(d2) + s_last * np.exp(r * dY[:, None]) * _phi(-d1)))
             cont = np.where(
                 ki_latch,
-                1e4 * (disc * _phi(d2) + s_last * _phi(-d1)),
+                1e4 * capped,
                 1e4 * disc,
             )
         elif smooth:                                   # exact Poisson-lognormal sum
@@ -327,7 +345,7 @@ def _simulate(F, idx: np.ndarray, N: int, total_paths: int, rng, smooth: bool,
             sT = s_last * np.exp(inc)
             cont = disc * np.where(ki_latch & (sT < strike[:, None]), 1e4 * sT, 1e4)
         cont = cont + disc * (cpn[:, None] * T[:, None] / WEEK_SECS)
-        fv = np.exp(-r * tau_last[:, None] / YEAR_SECS) * cont
+        fv = np.exp(-rd * tau_last[:, None] / YEAR_SECS) * cont
         pay[live] = fv[live]
 
     pair_mean = 0.5 * (pay[:, :P] + pay[:, P:])

@@ -2,6 +2,7 @@
   "name": "merton-tsla-share-2016-2026",
   "teacherVersion": 3,
   "rFree": 0.04,
+  "rDiscount": 0.0,
   "yearSecs": 31536000,
   "weekSecs": 604800,
   "clock": "calendar time, 365-day year, uniform diffusion and jump intensity",
@@ -16,7 +17,7 @@
     "derived_jumpShare": 0.572809
   },
   "volConvention": "volBpsAnnual is TOTAL vol; jump sizes scale with vol / volRef (muJ, sigmaJ are the sizes at volRef, lambdaYear is fixed), so jump variance = derived_jumpShare * vol^2 and diffusion variance = (1 - derived_jumpShare) * vol^2",
-  "riskNeutral": "drift r - lambdaYear*kappa(vol), kappa(vol) = exp(muJ(vol) + sigmaJ(vol)^2/2) - 1; Q jump parameters = fitted P parameters (no jump risk premium)",
+  "riskNeutral": "drift rFree - lambdaYear*kappa(vol), kappa(vol) = exp(muJ(vol) + sigmaJ(vol)^2/2) - 1; payouts discounted at rDiscount (the escrow earns nothing, so NOTE + WRITER = maxPayout); Q jump parameters = fitted P parameters (no jump risk premium)",
   "maturityStrike": "initial fixing (10000 bps)",
   "smoothingPoissonTerms": 24,
   "calibration": {

@@ -127,7 +127,8 @@ def _simulate(F, idx, N, total_paths, gen, smooth, cfg, dev):
     t_next = g("tNext")
     Tm = g("ttm")
     ki0 = g("knockedIn") != 0
-    r = cfg.r
+    r = cfg.r        # drift
+    rd = cfg.disc    # discounting (teacher.py, "Rates")
     sd_d = torch.as_tensor(cfg.diffusion_vol(sig.cpu().numpy()), **f64)
 
     x = torch.log(s0).to(torch.float32)[:, None].repeat(1, 2 * P)
@@ -151,7 +152,7 @@ def _simulate(F, idx, N, total_paths, gen, smooth, cfg, dev):
                 hit[now] = (s0[now] >= ac[now])[:, None].expand(-1, 2 * P)
                 kin[now] = (s0[now] < ki[now])[:, None].expand(-1, 2 * P)
         if bool(hit.any()):
-            val = torch.exp(-r * tau / T.YEAR_SECS) * (1e4 + cpn * tau / T.WEEK_SECS)
+            val = torch.exp(-rd * tau / T.YEAR_SECS) * (1e4 + cpn * tau / T.WEEK_SECS)
             pay = torch.where(hit, val[:, None], pay)
         redeemed |= hit
         ki_latch |= kin
@@ -161,13 +162,14 @@ def _simulate(F, idx, N, total_paths, gen, smooth, cfg, dev):
         tau_last = t_prev
         dY = torch.clamp((Tm - tau_last) / T.YEAR_SECS, min=1e-9)
         s_last = torch.exp(x.to(torch.float64))
-        disc = torch.exp(-r * dY)[:, None]
+        disc = torch.exp(-rd * dY)[:, None]
         if smooth and not cfg.jumps:
             sq = (sig * torch.sqrt(dY))[:, None]
             d2 = (torch.log(s_last) + ((r - 0.5 * sig**2) * dY)[:, None]) / sq
             d1 = d2 + sq
+            fwd = 1.0 if cfg.r_disc is None else torch.exp(r * dY)[:, None] * disc
             cont = torch.where(ki_latch,
-                               1e4 * (disc * torch.special.ndtr(d2) + s_last * torch.special.ndtr(-d1)),
+                               1e4 * (disc * torch.special.ndtr(d2) + fwd * s_last * torch.special.ndtr(-d1)),
                                1e4 * disc)
         elif smooth:
             cont = (1e4 * disc).expand(G, 2 * P).clone()
@@ -181,7 +183,7 @@ def _simulate(F, idx, N, total_paths, gen, smooth, cfg, dev):
             sT = s_last * torch.exp(inc)
             cont = disc * torch.where(ki_latch & (sT < 1.0), 1e4 * sT, torch.full_like(sT, 1e4))
         cont = cont + disc * (cpn * Tm / T.WEEK_SECS)[:, None]
-        fv = torch.exp(-r * tau_last / T.YEAR_SECS)[:, None] * cont
+        fv = torch.exp(-rd * tau_last / T.YEAR_SECS)[:, None] * cont
         pay = torch.where(live, fv, pay)
 
     pair_mean = 0.5 * (pay[:, :P] + pay[:, P:])
