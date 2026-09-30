@@ -238,6 +238,18 @@ def steep_points(n: int, rng: np.random.Generator, domain: dict | None = None, b
     return np.vstack(out)
 
 
+def edge_points(n: int, rng: np.random.Generator, domain: dict | None = None) -> np.ndarray:
+    """The corner where the certified teacher is steepest: not knocked in, spot
+    5700-6400, obs 1-3, tNext within 12 hours past the knock-in band edge at the
+    row's own vol, vol uniform (run a's worst V points all sit here)."""
+    domain = domain or load_domain()
+    vol = _vols(n, rng, domain)
+    obs = rng.integers(1, 4, n)
+    e = band_edge(domain, np.full(n, KI), vol, obs, np.zeros(n, np.int64))
+    tn = np.minimum(e + 1 + rng.integers(0, 12 * 3600 + 1, n), WEEK)
+    return rows(rng.integers(KI - 300, KI + 401, n), tn, obs, 0, vol)
+
+
 def train_points(n: int, rng: np.random.Generator, domain: dict | None = None) -> np.ndarray:
     """K2's mixture with vol uniform over the domain and each band edge taken at
     the row's own vol: 30% uniform, 10% tNext <= 4 days, 25% just past the ki
@@ -275,6 +287,10 @@ TEST_POINT_SEED, TEST_LABEL_SEED = 0x7E53_0001, 0x7E53_0002      # T, the gate
 TEST2_POINT_SEED, TEST2_LABEL_SEED = 0x7E54_0001, 0x7E54_0002    # T2, confirmation, labelled once at the end
 VAL_POINT_SEED, VAL_LABEL_SEED = 0x7A13_0001, 0x7A13_0002        # V, selection
 SPREAD_POINT_SEED, SPREAD_LABEL_SEED = 0x5B3D_0001, 0x5B3D_0002  # S, vol-band spread
+# Added after the first T evaluation (GATE FAIL, 71.2 bps at vol exactly 2000; ml/round3_eval_first.log),
+# before any model trained on the fix: V's grid never reached the vol endpoints.
+TEST3_POINT_SEED, TEST3_LABEL_SEED = 0x7E55_0001, 0x7E55_0002    # T3, held out: the vol endpoints
+VEDGE_POINT_SEED, VEDGE_LABEL_SEED = 0x7A14_0001, 0x7A14_0002    # V_edge, selection: the vol endpoints
 SPREAD_DVOL = 200                                                # 2 vol points either side
 
 
@@ -346,6 +362,61 @@ def test2_points(domain: dict | None = None) -> np.ndarray:
     return X[np.array([tuple(r) not in seen for r in X.tolist()])]
 
 
+def _end_uniform(n, rng, domain, width=100):
+    """Uniform points with vol within `width` bps of either end of the range, half exactly at an end."""
+    lo, hi = vol_range(domain)
+    X = uniform_points(n, rng, domain)
+    at_lo = rng.random(n) < 0.6
+    near = np.where(at_lo, lo + rng.integers(0, width + 1, n), hi - rng.integers(0, width + 1, n))
+    X[:, 2] = np.where(rng.random(n) < 0.5, np.where(at_lo, lo, hi), near)
+    return X
+
+
+def test3_points(domain: dict | None = None) -> np.ndarray:
+    """T3, held out, fixed after the first T evaluation and before any model trained on
+    the fix: T's construction at the vol endpoints only (both ends), spots +40 / +4 bps,
+    plus 10,000 uniform points within 1 vol point of an end; no point shared with T, T2, V."""
+    domain = domain or load_domain()
+    lo, hi = vol_range(domain)
+    g = _grid(domain, (lo, hi), _spots(40, 4), T_OBS, T_TN)
+    X = np.vstack([g, _end_uniform(10_000, np.random.default_rng(TEST3_POINT_SEED), domain)])
+    seen = set(map(tuple, test_points(domain).tolist())) | set(map(tuple, val_points(domain).tolist())) \
+        | set(map(tuple, test2_points(domain).tolist()))
+    return X[np.array([tuple(r) not in seen for r in X.tolist()])]
+
+
+def val_edge_points(domain: dict | None = None) -> np.ndarray:
+    """V_edge, selection only, used with V: the vol endpoints V's grid missed. Grid at
+    both ends with spots +60 / +12, V's obs and tNext values, 10,000 near-end uniform
+    and 10,000 steep-ki points at vol exactly 2000; disjoint from T, T2, T3."""
+    domain = domain or load_domain()
+    lo, hi = vol_range(domain)
+    g = _grid(domain, (lo, hi), _spots(60, 12), (1, 2, 4, 7, 11, 16, 23, 25),
+              (1800, 21600, 64800, 129600, 259200, 475200, 604800), edge_offsets=(1, 1801))
+    rng = np.random.default_rng(VEDGE_POINT_SEED)
+    st = steep_points(10_000, rng, {**domain, "ranges": [r if r["name"] != "volBpsAnnual" else
+                                                          {**r, "max": lo} for r in domain["ranges"]]}, "ki")
+    X = np.vstack([g, _end_uniform(10_000, rng, domain), st])
+    seen = set(map(tuple, test_points(domain).tolist())) | set(map(tuple, test2_points(domain).tolist())) \
+        | set(map(tuple, test3_points(domain).tolist()))
+    return X[np.array([tuple(r) not in seen for r in X.tolist()])]
+
+
+def ends_points(n: int, rng: np.random.Generator, domain: dict | None = None) -> np.ndarray:
+    """Training: the mixture restricted to the ends of the vol range (70% within 2 vol
+    points of the floor, 30% of the ceiling), a third of those rows exactly at the end."""
+    domain = domain or load_domain()
+    lo, hi = vol_range(domain)
+    def narrow(a, b):
+        return {**domain, "ranges": [r if r["name"] != "volBpsAnnual" else {**r, "min": a, "max": b}
+                                     for r in domain["ranges"]]}
+    k = int(n * 0.7)
+    X = np.vstack([train_points(k, rng, narrow(lo, lo + 200)), train_points(n - k, rng, narrow(hi - 200, hi))])
+    exact = rng.random(len(X)) < 1 / 3
+    X[exact, 2] = np.where(X[exact, 2] <= (lo + hi) // 2, lo, hi)
+    return X[rng.permutation(len(X))]
+
+
 def spread_points(domain: dict | None = None, n: int = 15_000) -> np.ndarray:
     """S: n states, each at vol - 200, vol, vol + 200 (rows 3i, 3i+1, 3i+2), all
     three certified; half uniform, half steep-ki. For the Desk's vol-band quote
@@ -388,11 +459,20 @@ def build(name: str, n: int, seed: int):
         return val_points(), VAL_LABEL_SEED
     if name == "S":
         return spread_points(), SPREAD_LABEL_SEED
-    tag = {"train": 0x7EA3, "steep_ki": 0x57E3, "steep_ac": 0x57E4, "pilot_val": 0x9170}[name]
+    if name == "T3":
+        return test3_points(), TEST3_LABEL_SEED
+    if name == "V_edge":
+        return val_edge_points(), VEDGE_LABEL_SEED
+    tag = {"train": 0x7EA3, "steep_ki": 0x57E3, "steep_ac": 0x57E4, "edge_ki": 0xED9E, "ends": 0xE7D5,
+           "pilot_val": 0x9170}[name]
     rng = np.random.default_rng([tag, seed])
     lseed = int(np.random.SeedSequence([tag, seed, 1]).generate_state(1)[0])
     if name == "train":
         return train_points(n, rng), lseed
+    if name == "edge_ki":
+        return edge_points(n, rng), lseed
+    if name == "ends":
+        return ends_points(n, rng), lseed
     if name == "pilot_val":   # small selection set for the feasibility pilot: uniform + steep
         return np.vstack([uniform_points(n // 2, rng), steep_points(n - n // 2, rng, None, "ki")]), lseed
     return steep_points(n, rng, None, name[-2:]), lseed
@@ -400,7 +480,8 @@ def build(name: str, n: int, seed: int):
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--set", choices=("T", "T2", "V", "S", "train", "steep_ki", "steep_ac", "pilot_val"), required=True)
+    ap.add_argument("--set", choices=("T", "T2", "T3", "V", "V_edge", "S", "train", "steep_ki", "steep_ac", "edge_ki",
+                                      "ends", "pilot_val"), required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--paths", type=int, default=2**18)
     ap.add_argument("--max-se", type=float, default=None,
@@ -436,7 +517,8 @@ def main() -> None:
     np.savez_compressed(args.out, X=X.astype(np.int32), y=y, se=se, paths=paths.astype(np.int32),
                         meta=json.dumps({"set": args.set, "label_seed": lseed, "paths": args.paths,
                                          "max_se_target": args.max_se, "topup_rounds": rnd, "n": len(X),
-                                         "seed": args.seed if args.set not in ("T", "T2", "V", "S") else None,
+                                         "seed": args.seed if args.set not in ("T", "T2", "T3", "V", "V_edge", "S")
+                                         else None,
                                          "teacher": fp, "domain_sha256": dom_sha, "backend": args.backend,
                                          "device": _device_name(args.backend), "shard": SHARD,
                                          "cuda_max_elems": CUDA_MAX_ELEMS, "seconds": round(dt),

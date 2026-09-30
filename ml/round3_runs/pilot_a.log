@@ -1,0 +1,54 @@
+# K3 sets (ml/round3.py -> round2.main)
+# python ml/round2.py --train /opt/ai/cache/sp-k3/pilot_train.npz --val /opt/ai/cache/sp-k3/pilot_val.npz --widths 64,48,40,40 --epochs 1500 --seed 0 --device cuda:1 --out-dir /opt/ai/cache/sp-k3/runs/pilot_a
+train 400000 rows (4.1% in bands, label se mean 4.9 max 15.5); val 40000 rows (39138 outside bands, se max 7.68); params 7465; device cuda:1
+mse ep   100 loss 4.471e-04  V out-band max   401.1 p99  180.8 mean 53.77  best   401.1@('mse', 100)  (49s)
+mse ep   200 loss 9.914e-04  V out-band max   233.9 p99   81.4 mean 16.75  best   233.9@('mse', 200)  (105s)
+mse ep   300 loss 1.776e-04  V out-band max   184.5 p99   61.2 mean 12.92  best   184.5@('mse', 300)  (152s)
+mse ep   400 loss 1.088e-04  V out-band max   142.8 p99   50.6 mean 10.90  best   142.8@('mse', 400)  (194s)
+mse ep   500 loss 2.152e-04  V out-band max   118.4 p99   43.9 mean  9.42  best   118.4@('mse', 500)  (238s)
+mse ep   600 loss 2.703e-04  V out-band max    95.4 p99   38.6 mean  8.30  best    95.4@('mse', 600)  (281s)
+mse ep   700 loss 6.656e-05  V out-band max    82.3 p99   34.4 mean  7.50  best    82.3@('mse', 700)  (324s)
+mse ep   800 loss 3.745e-05  V out-band max    72.3 p99   31.4 mean  6.95  best    72.3@('mse', 800)  (366s)
+mse ep   900 loss 3.703e-05  V out-band max    64.5 p99   29.7 mean  6.52  best    64.5@('mse', 900)  (406s)
+mse ep  1000 loss 2.856e-05  V out-band max    66.8 p99   28.1 mean  6.13  best    64.0@('mse', 910)  (438s)
+mse ep  1100 loss 2.642e-05  V out-band max    70.0 p99   27.1 mean  5.85  best    64.0@('mse', 910)  (478s)
+mse ep  1200 loss 2.504e-05  V out-band max    68.7 p99   26.2 mean  5.67  best    64.0@('mse', 910)  (523s)
+mse ep  1300 loss 2.382e-05  V out-band max    68.4 p99   25.7 mean  5.56  best    64.0@('mse', 910)  (562s)
+mse ep  1400 loss 2.328e-05  V out-band max    68.5 p99   25.6 mean  5.51  best    64.0@('mse', 910)  (604s)
+mse ep  1500 loss 2.297e-05  V out-band max    68.1 p99   25.5 mean  5.49  best    64.0@('mse', 910)  (643s)
+
+selected ('mse', 910) (V float out-band max 64.0); quantization |int - float| max 2.61 bps
+== V, INTEGER student vs teacher ==
+region (outside exclusions unless stated)        n      max      p99    mean
+outside exclusions (GATE)                    39138     65.2     29.4    6.49
+inside exclusions (refused on-chain)           862    663.6    141.2   18.10
+near ki (5500-6500)                          11057     65.2     36.5    8.83
+near ac (9500-10500)                          2434     37.2     22.5    5.84
+obs 1-2                                      10241     63.4     32.1    6.92
+obs 3-6                                       9529     65.2     32.9    7.10
+obs 7-13                                      9873     59.3     26.7    6.19
+obs 14-20                                     5097     38.8     23.7    5.59
+obs 21-26                                     4398     38.8     24.9    5.83
+tNext (0,1d]                                  2072     38.8     22.6    5.11
+tNext (1d,2d]                                 7597     65.2     33.9    7.21
+tNext (2d,4d]                                13577     45.8     28.0    6.46
+tNext (4d,7d]                                15892     58.4     28.6    6.35
+knockedIn 0                                  29367     65.2     31.3    7.23
+knockedIn 1                                   9771     35.6     16.9    4.25
+vol 15-30%                                    8098     65.2     30.0    5.83
+vol 30-45%                                    8695     58.4     28.5    6.01
+vol 45-60%                                    7754     55.9     27.5    6.27
+vol 60-75%                                    7406     51.9     28.4    6.82
+vol 75-90%                                    7185     63.4     32.8    7.70
+  worst {'spot': 6035, 'vol': 2096, 'tNext': 101951, 'obs': 5, 'knockedIn': 0, 'err': -65.17036561394161}
+  worst {'spot': 6044, 'vol': 8832, 'tNext': 111614, 'obs': 2, 'knockedIn': 0, 'err': 63.422796536699025}
+  worst {'spot': 5844, 'vol': 8373, 'tNext': 102840, 'obs': 2, 'knockedIn': 0, 'err': 59.30462117674324}
+  worst {'spot': 5984, 'vol': 2028, 'tNext': 97680, 'obs': 10, 'knockedIn': 0, 'err': 59.29179939905953}
+  worst {'spot': 6070, 'vol': 2498, 'tNext': 88661, 'obs': 6, 'knockedIn': 0, 'err': -58.40634755681094}
+  worst {'spot': 6203, 'vol': 3233, 'tNext': 482519, 'obs': 2, 'knockedIn': 0, 'err': -58.39283835686001}
+  worst {'spot': 5970, 'vol': 2036, 'tNext': 97794, 'obs': 9, 'knockedIn': 0, 'err': 56.58478774929972}
+  worst {'spot': 5884, 'vol': 5270, 'tNext': 107279, 'obs': 1, 'knockedIn': 0, 'err': 55.944682822383584}
+  worst {'spot': 6011, 'vol': 4614, 'tNext': 105387, 'obs': 5, 'knockedIn': 0, 'err': -55.401784022705215}
+  worst {'spot': 6283, 'vol': 7551, 'tNext': 364477, 'obs': 2, 'knockedIn': 0, 'err': -54.26105893086424}
+done in 650s -> /opt/ai/cache/sp-k3/runs/pilot_a
+exit 0
