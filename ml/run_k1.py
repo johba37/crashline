@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-import teacher
+from reference import teacher_gbm_k1 as teacher  # K1 labels: the GBM teacher, frozen copy (docs/teacher-v2.md)
 from train_student import Student, RANGES, normalize
 
 WEEK = teacher.WEEK_SECS

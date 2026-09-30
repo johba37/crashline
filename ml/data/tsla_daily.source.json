@@ -1,0 +1,32 @@
+{
+  "symbol": "TSLA",
+  "fetchedAtUtc": "2026-09-29T20:46:28+00:00",
+  "endExclusiveUtc": "2026-09-29",
+  "primary": {
+    "file": "tsla_daily.csv",
+    "source": "Yahoo Finance chart API (v8)",
+    "url": "https://query1.finance.yahoo.com/v8/finance/chart/TSLA?period1=1262304000&period2=1790640000&interval=1d&events=split",
+    "columns": "close = split-adjusted close; adjclose = split+dividend adjusted",
+    "rows": 4087,
+    "first": "2010-06-29",
+    "last": "2026-09-28",
+    "splits": [
+      {
+        "date": "2020-08-31",
+        "ratio": "5.0:1.0"
+      },
+      {
+        "date": "2022-08-25",
+        "ratio": "3.0:1.0"
+      }
+    ]
+  },
+  "crossCheck": {
+    "file": "tsla_daily_nasdaq.csv",
+    "source": "Nasdaq historical quotes API",
+    "url": "https://api.nasdaq.com/api/quote/TSLA/historical?assetclass=stocks&fromdate=2015-09-01&todate=2026-09-28&limit=9999",
+    "rows": 2513,
+    "first": "2016-09-28",
+    "last": "2026-09-28"
+  }
+}

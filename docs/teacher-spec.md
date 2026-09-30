@@ -1,6 +1,6 @@
 # Teacher Spec — Monte Carlo reference pricer
 
-Status: v0.2, 2026-09-29 (§5 payoff decided). Normative counterparts: `contracts/src/interfaces/INoteSeries.sol` (payout), `contracts/src/NoteQuoter.sol`
+Status: v0.3, 2026-09-30 (§2 jump-diffusion teacher v2; §5 maturity reference = initial). v0.2, 2026-09-29: §5 payoff decided. Normative counterparts: `contracts/src/interfaces/INoteSeries.sol` (payout), `contracts/src/NoteQuoter.sol`
 (feature vector + ranges), `contracts/src/FixingsRecorder.sol` (fixing rule),
 `DESIGN.md` (Decisions 1–2). The teacher defines the instrument the student
 learns — **if teacher and contract disagree on semantics, fidelity is void.**
@@ -18,9 +18,13 @@ generator with boundary-weighted sampling.
   Splits/dividends are absorbed by the oracle multiplier (DESIGN.md, Decision 1);
   the series is continuous across cosmetic corporate actions, so the teacher
   never models them.
-- **Dynamics:** risk-neutral GBM, `dS/S = r dt + σ dW`.
+- **Dynamics (teacher v2, [teacher-v2.md](teacher-v2.md)):** risk-neutral Merton
+  jump-diffusion, `dS/S = (r − λκ) dt + σ_d dW + (e^Y − 1) dN`, jump parameters
+  fitted to TSLA daily history and pinned in `ml/teacher_config.json`. (K1 used
+  GBM, `dS/S = r dt + σ dW`; λ = 0 reproduces it.)
   - `σ` = `volBpsAnnual` — a note term (writer-quoted implied vol), an *input*,
-    never estimated.
+    never estimated. It is the **total** vol: the pinned jump variance is
+    carved out of it, `σ_d² = σ² − λ(μJ² + σJ²)`.
   - `r` = USDG risk-free proxy, a teacher config constant (v0: 4% annualized;
     sensitivity-check ±200 bps in the eval harness).
   - No dividend yield term: the feed series is total-return-ish by construction
@@ -90,10 +94,16 @@ keeps the knock-in barrier smooth (K1 round 0: no measurable jump at KI).
 (`c·τ/I`); the coupon accrued since strike is certain, and the quoter adds it.
 Label = clean value.
 
-**Open alignment item:** `ml/teacher.py` uses `strike = acBarrierBps` for the
-loss comparison at maturity; the contracts use the initial fixing. Identical
-for the pinned K1 terms (ac = 10000); change the teacher before training any
-template with ac ≠ 100%.
+**Maturity reference = initial fixing (resolved 2026-09-30, teacher v2).** The
+K1 teacher compared the maturity fixing with `acBarrierBps`; `ml/teacher.py`
+now compares it with the initial fixing (10000 bps), as the contracts do.
+Identical on the K1 grid (ac = 10000); the frozen K1 copy
+`ml/reference/teacher_gbm_k1.py` keeps the old rule for reproducing K1 labels.
+
+**Fixing at an observation that is now (`timeToNextObsSecs = 0`)** uses the
+exact current spot: a spot exactly on a barrier does not knock in
+(`< ki` is false) and autocalls at `>= ac`. (K1 compared a float32 log round
+trip, which knocked in at spot == ki; test (h) in `ml/test_teacher.py`.)
 
 ## 6. MC settings
 

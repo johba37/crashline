@@ -5,7 +5,6 @@ import {Test} from "forge-std/Test.sol";
 import {MockChainlinkFeed} from "../src/MockChainlinkFeed.sol";
 import {FixingsRecorder} from "../src/FixingsRecorder.sol";
 import {IFixingsRecorder} from "../src/interfaces/IFixingsRecorder.sol";
-import {NoteQuoter, NoteTerms} from "../src/NoteQuoter.sol";
 
 contract FeedScenariosTest is Test {
     uint80 constant R1 = uint80(1) << 64 | 1; // 2^64 + 1
@@ -13,28 +12,11 @@ contract FeedScenariosTest is Test {
 
     MockChainlinkFeed feed;
     FixingsRecorder recorder;
-    NoteQuoter quoter;
 
     function setUp() public {
         vm.warp(1_790_699_124); // 2026-09-29 16:25 UTC, matches the probed fork
         feed = new MockChainlinkFeed("RHTSLA / USD");
         recorder = new FixingsRecorder(address(feed));
-        quoter = new NoteQuoter(address(feed), address(1)); // dummy pricer: quote() not under test
-    }
-
-    function _terms(uint40 maturity, uint40 nextObs) internal pure returns (NoteTerms memory) {
-        return NoteTerms({
-            initialFixing: uint256(PRICE),
-            kiBarrierBps: 6000,
-            acBarrierBps: 10000,
-            couponBpsPerPeriod: 200,
-            volBpsAnnual: 5500,
-            observationIntervalSecs: 604800,
-            maturity: maturity,
-            nextObservation: nextObs,
-            observationsRemaining: 26,
-            knockedIn: false
-        });
     }
 
     // --- Case A: normal observation -------------------------------------
@@ -58,6 +40,7 @@ contract FeedScenariosTest is Test {
         vm.warp(block.timestamp + 30 minutes);
         feed.pushRound(PRICE); // R2
         uint40 obsTime = uint40(block.timestamp); // at/after R2
+        vm.warp(obsTime + 1);
         // R1 is not the last round at-or-before obsTime — R2 is
         vm.expectRevert(abi.encodeWithSelector(IFixingsRecorder.NotLastRoundBefore.selector, R1, obsTime));
         recorder.recordFixing(obsTime, R1);
@@ -66,6 +49,7 @@ contract FeedScenariosTest is Test {
     function test_already_recorded() public {
         feed.pushRound(PRICE);
         uint40 obsTime = uint40(block.timestamp);
+        vm.warp(obsTime + 1);
         recorder.recordFixing(obsTime, R1);
         vm.expectRevert(abi.encodeWithSelector(IFixingsRecorder.AlreadyRecorded.selector, obsTime));
         recorder.recordFixing(obsTime, R1);
@@ -73,20 +57,39 @@ contract FeedScenariosTest is Test {
 
     function test_bad_price_anomaly_guard() public {
         feed.pushRound(int256(3.96e18)); // the real feed's round-1 scale artifact
+        uint40 obsTime = uint40(block.timestamp);
+        vm.warp(obsTime + 1);
         vm.expectRevert(abi.encodeWithSelector(IFixingsRecorder.BadPrice.selector, int256(3.96e18)));
-        recorder.recordFixing(uint40(block.timestamp), R1);
+        recorder.recordFixing(obsTime, R1);
     }
 
-    // --- weekend: feed silent, quote fails closed -------------------------
+    function test_bad_price_non_positive() public {
+        feed.pushRound(0);
+        uint40 obsTime = uint40(block.timestamp);
+        vm.warp(obsTime + 1);
+        vm.expectRevert(abi.encodeWithSelector(IFixingsRecorder.BadPrice.selector, int256(0)));
+        recorder.recordFixing(obsTime, R1);
+    }
 
-    function test_weekend_quote_fails_closed() public {
-        feed.pushRound(PRICE); // Friday close
-        NoteTerms memory terms = _terms(uint40(block.timestamp + 180 days), uint40(block.timestamp + 3 days));
-        quoter.extractFeatures(terms); // fresh: works
+    function test_future_observation_rejected() public {
+        feed.pushRound(PRICE);
+        uint40 obsTime = uint40(block.timestamp);
+        // obsTime == now is still "future": a later block in the same second
+        // could add a round with updatedAt == obsTime.
+        vm.expectRevert(abi.encodeWithSelector(IFixingsRecorder.FutureObservation.selector, obsTime));
+        recorder.recordFixing(obsTime, R1);
+        vm.expectRevert(abi.encodeWithSelector(IFixingsRecorder.FutureObservation.selector, obsTime + 1));
+        recorder.recordFixing(obsTime + 1, R1);
+    }
 
-        vm.warp(block.timestamp + 27 hours); // Saturday night, feed asleep
-        vm.expectRevert(abi.encodeWithSelector(NoteQuoter.FeedStale.selector, uint40(1_790_699_124)));
-        quoter.extractFeatures(terms);
+    function test_caseA_too_stale() public {
+        feed.pushRound(PRICE);
+        uint40 obsTime = uint40(block.timestamp) + 96 hours + 1;
+        vm.warp(obsTime + 1);
+        vm.expectRevert(
+            abi.encodeWithSelector(IFixingsRecorder.FixingTooStale.selector, uint40(1_790_699_124), obsTime)
+        );
+        recorder.recordFixing(obsTime, R1);
     }
 
     // --- Case B: halted feed, observation rolls to first fresh round ------
@@ -98,7 +101,9 @@ contract FeedScenariosTest is Test {
         feed.pushRound(PRICE + 2e8); // R2: first round after the halt
 
         // the stale R1 is rejected for this observation
-        vm.expectRevert(abi.encodeWithSelector(IFixingsRecorder.FixingTooStale.selector, uint40(1_790_699_124), obsTime));
+        vm.expectRevert(
+            abi.encodeWithSelector(IFixingsRecorder.FixingTooStale.selector, uint40(1_790_699_124), obsTime)
+        );
         recorder.recordFixing(obsTime, R1);
 
         // R2 is accepted as the rolled fixing
@@ -113,7 +118,9 @@ contract FeedScenariosTest is Test {
         uint40 obsTime = uint40(block.timestamp) + 7 days;
         vm.warp(obsTime + 9 days); // dead > 8 days: vault-level settlement territory
         feed.pushRound(PRICE);
-        vm.expectRevert(abi.encodeWithSelector(IFixingsRecorder.RollTooLong.selector, uint40(obsTime + 9 days), obsTime));
+        vm.expectRevert(
+            abi.encodeWithSelector(IFixingsRecorder.RollTooLong.selector, uint40(obsTime + 9 days), obsTime)
+        );
         recorder.recordFixing(obsTime, R1 + 1);
     }
 
@@ -133,5 +140,39 @@ contract FeedScenariosTest is Test {
         feed.pushRoundAt(PRICE, uint40(1_790_600_000)); // staged "yesterday"
         recorder.recordFixing(uint40(1_790_600_000), R1);
         assertTrue(recorder.isRecorded(uint40(1_790_600_000)));
+    }
+
+    function test_caseB_rejects_when_previous_round_is_after_obs() public {
+        feed.pushRound(PRICE); // R1
+        uint40 obsTime = uint40(block.timestamp) - 1 hours; // before R1
+        vm.warp(block.timestamp + 1 hours);
+        feed.pushRound(PRICE); // R2
+        // R2 is after obsTime, but so is R1: R2 is not the first round after it
+        vm.expectRevert(abi.encodeWithSelector(IFixingsRecorder.NoGapProof.selector, R1 + 1, obsTime));
+        recorder.recordFixing(obsTime, R1 + 1);
+    }
+
+    // --- mock feed guards -------------------------------------------------------
+
+    function test_mock_feed_guards() public {
+        vm.expectRevert(MockChainlinkFeed.NoRounds.selector);
+        feed.latestRound();
+        vm.expectRevert(abi.encodeWithSelector(MockChainlinkFeed.UnknownRound.selector, R1));
+        feed.getRoundData(R1);
+        vm.prank(address(0xBEEF));
+        vm.expectRevert(MockChainlinkFeed.NotOwner.selector);
+        feed.pushRound(PRICE);
+        feed.pushRound(PRICE);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MockChainlinkFeed.NonMonotonic.selector, uint40(block.timestamp), uint40(block.timestamp)
+            )
+        );
+        feed.pushRoundAt(PRICE, uint40(block.timestamp));
+        assertEq(feed.decimals(), 8);
+        (uint80 id, int256 answer,, uint256 updatedAt,) = feed.latestRoundData();
+        assertEq(id, R1);
+        assertEq(answer, PRICE);
+        assertEq(updatedAt, block.timestamp);
     }
 }

@@ -1,0 +1,53 @@
+data: /opt/ai/sp-worktrees/teacher/ml/data/tsla_daily.csv
+window: 2016-09-28 .. 2026-09-28  closes 2513  returns 2512  calendar years 10.0055  returns/yr D = 251.062
+sample: mean 1.296919e-03/day  std 0.037438/day  ann. vol (sqrt(D)*std) 0.5932  skew -0.0662  excess kurtosis 4.1335
+largest moves: min -0.2365 on 2020-09-08  max +0.2045 on 2025-04-09
+cross-check vs Nasdaq (tsla_daily_nasdaq.csv): same 2513 dates; |log-return diff| max 2.25e-05, returns differing by > 1e-3: 0
+
+Merton MLE (12 starts, NMAX 30): -logL -4875.1512   GBM -logL -4688.2199   LR stat 373.9 (3 extra params)
+param                                estimate       stderr
+m (drift/day)                        0.001299     0.000724
+sigma_d (/sqrt day)                  0.024369     0.001231
+lambda (jumps/trading day)           0.287697     0.069345
+muJ (mean log jump)                 -0.000006     0.002705
+sigmaJ (std log jump)                0.052610     0.005155
+correlations:
+  m (drift/day)                  +1.00 +0.03 -0.03 -0.51 +0.02
+  sigma_d (/sqrt day)            +0.03 +1.00 -0.88 -0.03 +0.78
+  lambda (jumps/trading day)     -0.03 -0.88 +1.00 +0.02 -0.91
+  muJ (mean log jump)            -0.51 -0.03 +0.02 +1.00 -0.02
+  sigmaJ (std log jump)          +0.02 +0.78 -0.91 -0.02 +1.00
+
+calendar-year quantities (D = 251.062 returns/yr):
+lambda_year (jumps/yr)              72.229922    17.410045
+jump variance /yr                    0.199922     0.020136
+diffusion variance /yr               0.149097     0.015065
+total vol /yr (model)                0.590779     0.013809
+kappa = E[e^Y]-1                     0.001379     0.002716
+jump share of variance               0.572811     0.044209
+jump vol /yr sqrt(lambda_year (muJ^2+sigJ^2)) = 0.4471
+at total vol 0.55: diffusion variance = 0.302500 - 0.199922 = 0.102578 -> sigma_d 0.3203 (OK > 0)
+
+goodness of fit (daily log returns):
+statistic            data     Merton        GBM
+std               0.03744    0.03728    0.03743
+skew              -0.0662    -0.0003     0.0000
+ex. kurtosis       4.1335     3.4214     0.0000
+q 0.1%           -0.18146   -0.16735   -0.11437
+q 1%             -0.09752   -0.10600   -0.08578
+q 99%             0.10424    0.10858    0.08837
+q 99.9%           0.18036    0.16993    0.11697
+
+tail counts |r - mean| > k*std (data / Merton expected / GBM expected):
+  k=3:    41 /     42.3 /     6.77
+  k=4:    15 /     10.6 /     0.16
+  k=5:     5 /      2.4 /     0.00
+  k=6:     1 /      0.5 /     0.00
+
+wrote ml/jump_fit.json
+
+sensitivity (other windows; reported, not pinned):
+window                         n       D   lam_yr      muJ    sigJ   sd_yr  jumpVol  totVol
+2010-06-29..2026-09-28      4086  251.29   63.165  +0.0002  0.0540  0.3711   0.4295  0.5677
+2021-09-28..2026-09-28      1254  250.66   56.404  -0.0038  0.0515  0.4518   0.3879  0.5955
+2016-09-28..2026-09-28      2512  251.06   72.230  -0.0000  0.0526  0.3861   0.4471  0.5908

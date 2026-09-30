@@ -14,8 +14,8 @@ import {IFixingsRecorder} from "./interfaces/IFixingsRecorder.sol";
 ///                     round proves a >96h gap (disrupted day).
 contract FixingsRecorder is IFixingsRecorder {
     uint40 public constant MAX_FIX_AGE = 96 hours; // holiday-weekend coverage
-    uint40 public constant MAX_ROLL = 8 days;      // beyond: settle at last good fix (vault logic)
-    int256 public constant PRICE_MAX = 1e13;       // $100k @ 8dec — kills early-round scale anomaly
+    uint40 public constant MAX_ROLL = 8 days; // beyond: settle at last good fix (vault logic)
+    int256 public constant PRICE_MAX = 1e13; // $100k @ 8dec — kills early-round scale anomaly
 
     IAggregatorV3 public immutable feed;
 
@@ -26,7 +26,9 @@ contract FixingsRecorder is IFixingsRecorder {
     }
 
     function recordFixing(uint40 obsTime, uint80 roundId) external {
-        if (obsTime > block.timestamp) revert FutureObservation(obsTime);
+        // Strictly in the past: several blocks share a timestamp, so a round
+        // with updatedAt == obsTime can still arrive after this call.
+        if (obsTime >= block.timestamp) revert FutureObservation(obsTime);
         if (fixings[obsTime].timestamp != 0) revert AlreadyRecorded(obsTime);
 
         (, int256 answer,, uint40 updatedAt,) = _round(roundId);
@@ -53,8 +55,11 @@ contract FixingsRecorder is IFixingsRecorder {
             }
         }
 
-        fixings[obsTime] = Fixing({timestamp: updatedAt, price: uint96(uint256(answer)), roundId: roundId});
-        emit FixingRecorded(obsTime, roundId, uint96(uint256(answer)), updatedAt);
+        // 0 < answer <= PRICE_MAX (1e13) fits uint96
+        // forge-lint: disable-next-line(unsafe-typecast)
+        uint96 price = uint96(uint256(answer));
+        fixings[obsTime] = Fixing({timestamp: updatedAt, price: price, roundId: roundId});
+        emit FixingRecorded(obsTime, roundId, price, updatedAt);
     }
 
     function fixingOf(uint40 obsTime) external view returns (Fixing memory) {
@@ -72,6 +77,8 @@ contract FixingsRecorder is IFixingsRecorder {
     {
         uint256 u;
         (id, answer, startedAt, u, answeredInRound) = feed.getRoundData(roundId);
+        // unix seconds fit uint40 until the year 36812
+        // forge-lint: disable-next-line(unsafe-typecast)
         updatedAt = uint40(u);
     }
 }

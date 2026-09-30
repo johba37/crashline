@@ -8,8 +8,9 @@
 //!     in-range input (checked from the weights, worst case),
 //!   * the certified domain lies inside the normalization ranges.
 //!
-//! Model selection: env `PRICER_MODEL_DIR` (default `../../model/k1-r1`, the
-//! K1 round-1 student; `../../model/synthetic` is the toy model).
+//! Model selection: env `PRICER_MODEL_DIR` (default `../../model/k2`, the
+//! K2 round-2 student certified over the whole life of the note;
+//! `../../model/k1-r1` is the round-1 student, `../../model/synthetic` the toy model).
 
 use serde_json::Value;
 use std::{env, fmt::Write as _, fs, path::PathBuf};
@@ -36,7 +37,7 @@ fn main() {
     let manifest = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     let model_dir = env::var("PRICER_MODEL_DIR")
         .map(PathBuf::from)
-        .unwrap_or_else(|_| manifest.join("../../model/k1-r1"));
+        .unwrap_or_else(|_| manifest.join("../../model/k2"));
     let model_dir = fs::canonicalize(&model_dir)
         .unwrap_or_else(|e| panic!("model dir {}: {e}", model_dir.display()));
     let export_path = model_dir.join("student_export.json");
