@@ -16,7 +16,7 @@ updates the interface, the ABI and this file together. Layer picture:
 | FixingsRecorder | `IFixingsRecorder` | done; records only observation times strictly in the past |
 | SeriesFactory, NoteSeries, SeriesToken | `ISeriesFactory`, `INoteSeries`, `ISeriesToken` | done (`contracts/src/`), payout via the `AutocallPayout` library |
 | NoteQuoter | `INoteQuoter` | done, series-based; one quoter for every model |
-| Desk | `IDesk` (ERC-4626) + `IDeskCover` | done; `MAX_FEE_BPS` = 200, `BACKSTOP_SHARE_BPS` = 2000, `MAX_SPREAD_BPS` = 1000. Use `abi/IDeskCover.json`: it contains all of `IDesk` |
+| Desk | `IDesk` (ERC-4626) + `IDeskCover` | done; `MAX_FEE_BPS` = 200 (of notional, NOTE), `MAX_COVER_FEE_BPS` = 1000 (of the premium, cover), `BACKSTOP_SHARE_BPS` = 5000, `MAX_SPREAD_BPS` = 1000. Use `abi/IDeskCover.json`: it contains all of `IDesk` |
 
 All of the above pass `forge test` and the dev node end-to-end run
 (`contracts/script/e2e-devnode.sh`); see [contracts-review.md](contracts-review.md).
@@ -35,6 +35,15 @@ Implementation notes beyond the interfaces:
 - The Desk has one extra view not in `IDesk`: `heldSeries()`.
 - The integrator fee on a sell is capped at the gross proceeds.
 - `FixingPending(obsTime)` starts once `obsTime < block.timestamp`.
+
+> **Check `desk.risk(feed)` before offering a trade.** The quote functions do not apply
+> the Desk's risk budget. A trade that adds to the Desk's position reverts
+> `RiskBudgetExceeded` even right after a successful quote: `buyCover`, a `sell` of NOTE
+> the Desk can't pair with WRITER it holds, and a `buy` or `sellCover` that leave it with
+> WRITER. `desk.risk(feed)` → `(atRisk, limit)`, in USDG base units; the room left is
+> `limit − atRisk`. Show it as "cover available", disable the button when the trade
+> doesn't fit, and handle the revert anyway (another trade can land first). A feed whose
+> budget was never set has `limit` = 0.
 
 ## Units
 
@@ -89,7 +98,10 @@ region 1).
 2. `USDG.approve(desk, maxCost)` with `maxCost = cost + slippage`.
 3. `desk.buy(s, amount, maxCost, feeBps, feeReceiver, to)`.
 
-`feeBps`/`feeReceiver` are the integrator fee: our frontend can charge one (≤ `MAX_FEE_BPS`) or pass 0.
+`feeBps`/`feeReceiver` are the integrator fee: our frontend can charge one or pass 0. On NOTE
+trades it is a share of the notional (≤ `MAX_FEE_BPS`, 2%); on cover trades a share of the
+premium (≤ `MAX_COVER_FEE_BPS`, 10%). Half of it (`BACKSTOP_SHARE_BPS`) stays in the vault,
+`feeReceiver` gets the other half.
 `CapExceeded(requested, available)` now means: the Desk's NOTE inventory plus its WRITER
 cap covers only `available`.
 
@@ -105,12 +117,13 @@ risk budget (`RiskBudgetExceeded`).
 
 **Hedger: buy cover.** WRITER is crash cover: it pays `maxPayout − NOTE payout`.
 1. `desk.quoteBuyCover(s, amount, feeBps)` → `(cost, priceBps)`: the premium, not the pair's collateral.
+   `feeBps` is of that premium: `fee = ceil(ceil(amount × priceBps / 1e4) × feeBps / 1e4)`.
 2. `USDG.approve(desk, maxCost)`.
 3. `desk.buyCover(s, amount, maxCost, feeBps, feeReceiver, to)`: `amount` WRITER arrives at `to`.
 
 Exit: `desk.quoteSellCover` → `WRITER.approve(desk, amount)` → `desk.sellCover(..., minProceeds, ...)`.
 After settlement: `series.redeem(0, writerAmount, to)`. `desk.risk(feed)` → `(atRisk, limit)`
-shows how much more cover the Desk can sell on that stock. Minting a pair directly
+shows how much more cover the Desk can sell on that stock (see the note above Units). Minting a pair directly
 (`series.mint`, `series.redeemPair`) still works and needs no Desk.
 
 **Cover and the two prices.** `desk.spread(s)` → `(bidBps, askBps, volBandBps)`,

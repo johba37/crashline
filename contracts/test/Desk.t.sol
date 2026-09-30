@@ -31,7 +31,7 @@ contract DeskTest is DeskFixture {
         assertEq(address(desk.factory()), address(factory));
         assertEq(address(desk.quoter()), address(quoter));
         assertEq(desk.MAX_FEE_BPS(), 200);
-        assertEq(desk.BACKSTOP_SHARE_BPS(), 2000);
+        assertEq(desk.BACKSTOP_SHARE_BPS(), 5000);
         assertEq(desk.minSecsToObservation(), 1 hours);
         assertEq(desk.asset(), address(usdg));
         assertEq(desk.decimals(), 12);
@@ -141,7 +141,7 @@ contract DeskTest is DeskFixture {
         assertEq(_note(s).balanceOf(bob), n);
         assertEq(_writer(s).balanceOf(address(desk)), n);
         assertEq(desk.listing(address(s)).soldNotional, n);
-        uint256 slice = (fee * 2000 + 9999) / 10_000;
+        uint256 slice = (fee * 5000 + 9999) / 10_000;
         assertEq(usdg.balanceOf(integrator), fee - slice);
         assertEq(desk.heldSeries().length, 1);
     }
@@ -226,7 +226,7 @@ contract DeskTest is DeskFixture {
         assertEq(_writer(s).balanceOf(address(desk)), 600e6);
         assertEq(_note(s).balanceOf(address(desk)), 0);
         // the Desk got 400 pairs' collateral back and paid proceeds + fee share
-        assertEq(usdg.balanceOf(address(desk)), usdgBefore + 400 * 1_067_500 - proceeds - (4e6 - 0.8e6));
+        assertEq(usdg.balanceOf(address(desk)), usdgBefore + 400 * 1_067_500 - proceeds - (4e6 - 2e6));
     }
 
     function test_sell_slippage_and_zero_proceeds() public {
@@ -252,7 +252,7 @@ contract DeskTest is DeskFixture {
         uint256 navBefore = desk.totalAssets();
         uint256 proceeds = _sell(alice, 100, 200); // fee 2 units > gross 1 unit
         assertEq(proceeds, 0);
-        assertEq(usdg.balanceOf(integrator), 0, "fee capped at gross 1, 20% slice rounds up to all of it");
+        assertEq(usdg.balanceOf(integrator), 0, "fee capped at gross 1, the LPs' half rounds up to all of it");
         assertGe(desk.totalAssets() + 1, navBefore);
     }
 
@@ -282,9 +282,9 @@ contract DeskTest is DeskFixture {
 
     function test_fees_accrue_to_lps() public {
         uint256 before = desk.totalAssets();
-        _buy(alice, 1_000e6, 100); // fee 10 USDG, 2 stay in the vault
-        assertEq(desk.totalAssets(), before + 2e6);
-        assertEq(usdg.balanceOf(integrator), 8e6);
+        _buy(alice, 1_000e6, 100); // fee 10 USDG, 5 stay in the vault
+        assertEq(desk.totalAssets(), before + 5e6);
+        assertEq(usdg.balanceOf(integrator), 5e6);
         // no receiver: the whole fee stays with the LPs
         (uint256 quoted,) = desk.quoteBuy(address(s), 1_000e6, 100);
         usdg.mint(alice, quoted);
@@ -292,7 +292,7 @@ contract DeskTest is DeskFixture {
         usdg.approve(address(desk), quoted);
         desk.buy(address(s), 1_000e6, quoted, 100, address(0), alice);
         vm.stopPrank();
-        assertEq(desk.totalAssets(), before + 12e6);
+        assertEq(desk.totalAssets(), before + 15e6);
     }
 
     function test_maxDeposit_maxWithdraw_zero_while_unquotable() public {

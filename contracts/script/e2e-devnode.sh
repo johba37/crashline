@@ -53,7 +53,8 @@ LP_DEPOSIT=100000000000 # 100,000 USDG
 BUY_NOTE=10000000000    # 10,000 NOTE
 SELL_NOTE=4000000000    # 4,000 NOTE
 BUY_COVER=12000000000   # 12,000 WRITER: 10,000 from the Desk's inventory, 2,000 from fresh pairs
-FEE_BPS=20
+FEE_BPS=20              # integrator fee on NOTE trades, of the notional
+COVER_FEE_BPS=500       # integrator fee on cover trades, of the premium
 BID_BPS=20              # the Desk buys NOTE / sells cover this far below the model's quote
 ASK_BPS=30              # and sells NOTE / buys cover back this far above it
 RISK_BUDGET_BPS=2000    # at most 20% of the vault at risk on this feed
@@ -246,13 +247,15 @@ desk_pos
 
 # --- 7b. buy cover ------------------------------------------------------------------------
 step "7b. Hedger buys $(usd $BUY_COVER) WRITER as cover: pays the premium, the Desk funds the pairs"
+read -r AT_RISK LIMIT < <(call "$DESK" "risk(address)(uint256,uint256)" "$FEED" | num | xargs)
+echo "risk budget first (quotes don't check it): $(usd $((LIMIT - AT_RISK))) USDG of room"
 send "$HEDGER_KEY" "$USDG" "mint(address,uint256)" "$HEDGER" 5000000000 >/dev/null
 poke
-read -r COST PRICE < <(call "$DESK" "quoteBuyCover(address,uint256,uint16)(uint256,uint16)" "$SERIES" "$BUY_COVER" "$FEE_BPS" | num | xargs)
+read -r COST PRICE < <(call "$DESK" "quoteBuyCover(address,uint256,uint16)(uint256,uint16)" "$SERIES" "$BUY_COVER" "$COVER_FEE_BPS" | num | xargs)
 MAX_COST=$((COST + COST / 50))
-echo "quoteBuyCover: $(usd "$COST") USDG at $PRICE bps (a pair locks $(usd $((BUY_COVER * MAX_BPS / 10000)))); maxCost $(usd $MAX_COST)"
+echo "quoteBuyCover: $(usd "$COST") USDG at $PRICE bps incl. a fee of $COVER_FEE_BPS bps of the premium (a pair locks $(usd $((BUY_COVER * MAX_BPS / 10000)))); maxCost $(usd $MAX_COST)"
 send "$HEDGER_KEY" "$USDG" "approve(address,uint256)" "$DESK" "$MAX_COST" >/dev/null
-TX=$(send "$HEDGER_KEY" "$DESK" "buyCover(address,uint256,uint256,uint16,address,address)" "$SERIES" "$BUY_COVER" "$MAX_COST" "$FEE_BPS" "$DEV" "$HEDGER")
+TX=$(send "$HEDGER_KEY" "$DESK" "buyCover(address,uint256,uint256,uint16,address,address)" "$SERIES" "$BUY_COVER" "$MAX_COST" "$COVER_FEE_BPS" "$DEV" "$HEDGER")
 check_trade "$TX" "$("$CAST" keccak "CoverBought(address,address,address,uint256,uint16,uint256,uint16,address,bytes32)")" buyCover
 [ "$(call "$WRITER" "balanceOf(address)(uint256)" "$HEDGER" | num)" = "$BUY_COVER" ] || fail "hedger WRITER"
 desk_pos

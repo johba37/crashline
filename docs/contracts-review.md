@@ -48,7 +48,8 @@ Every rounding goes against the party that asks, and in favor of the escrow and 
 | Desk buy cost (NOTE or WRITER) | `ceil(n * price / 1e4) + ceil(n * fee / 1e4)` | Desk |
 | Desk sell proceeds (NOTE or WRITER) | `floor(n * price / 1e4) - fee`, with the fee capped at the gross amount | Desk |
 | Desk prices | NOTE ask `min(hi + ask, max)`, NOTE bid `min(lo, max) - bid` floored at 0, cover = `max - NOTE` of the other side; `lo`/`hi` = the lower/higher of the model's quotes at the two ends of the vol band | Desk |
-| Backstop slice of a fee | rounded up (stays with the LPs) | Desk |
+| Integrator fee | NOTE: `ceil(n * fee / 1e4)` of notional; cover: `ceil(premium * fee / 1e4)`, premium = the price term of the cost or proceeds | Desk |
+| Backstop slice of a fee (half) | rounded up (stays with the LPs) | Desk |
 | Desk marks (NOTE, WRITER) | floor per position; WRITER = max - NOTE, with NOTE capped at max | Desk |
 | ERC-4626 | OZ defaults (shares down on deposit, up on withdraw) with virtual shares, offset 6 | Desk |
 

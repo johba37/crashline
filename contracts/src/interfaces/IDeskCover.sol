@@ -30,11 +30,17 @@ import {IDesk} from "./IDesk.sol";
 /// is a single value takes no band (ModelMismatch(2)).
 /// NOTE bid + cover bid <= maxBps <= NOTE ask + cover ask: minting a pair to
 /// sell both legs, or buying both legs to redeem the pair, never pays. The
-/// spread stays in the vault; the integrator fee of IDesk is charged on top.
+/// spread stays in the vault; the integrator fee is charged on top.
 /// Marks (totalAssets, risk) use the quote at the listing's vol itself.
 /// `priceBps` in quotes and trade events is the price applied, spread included:
 ///   buy, buyCover:   cost     = ceil(amount * priceBps / 1e4)  + fee
 ///   sell, sellCover: proceeds = floor(amount * priceBps / 1e4) - fee
+///
+/// Integrator fee. For NOTE it is a share of the notional, as in IDesk:
+/// fee = ceil(noteAmount * feeBps / 1e4), feeBps <= MAX_FEE_BPS. For cover it
+/// is a share of the premium, the first term of cost or proceeds above:
+/// fee = ceil(premium * feeBps / 1e4), feeBps <= MAX_COVER_FEE_BPS. On both
+/// legs the feeReceiver gets the fee minus the BACKSTOP_SHARE_BPS slice.
 ///
 /// Inventory. Every trade is served from inventory first. The Desk mints a
 /// pair only for the shortfall and keeps the other leg; a leg handed in is
@@ -53,7 +59,12 @@ import {IDesk} from "./IDesk.sol";
 /// be quoted its NOTE and WRITER count 1 USDG per unit at risk (the most
 /// either can lose) and its NOTE counts only its coupons as an asset, so the
 /// check never reverts with a quoter error and errs against new risk.
-/// Quotes don't apply the budget: read `risk(feed)`.
+///
+/// FRONTENDS: the quote functions do NOT apply the risk budget. A trade that
+/// adds to the Desk's position (buyCover; sell of NOTE the Desk can't pair;
+/// buy or sellCover that leave it with WRITER) reverts RiskBudgetExceeded even
+/// right after a successful quote. Read `risk(feed)` before offering it: the
+/// room left is `limit - atRisk`.
 interface IDeskCover is IDesk {
     struct Spread {
         uint16 bidBps; // below the model's lower NOTE quote when the Desk buys NOTE / sells cover
@@ -93,11 +104,14 @@ interface IDeskCover is IDesk {
     error RiskBudgetExceeded(uint256 atRisk, uint256 limit);
 
     function MAX_SPREAD_BPS() external view returns (uint16);
+    /// Cap of the integrator fee on cover trades, in bps of the premium.
+    function MAX_COVER_FEE_BPS() external view returns (uint16);
 
     function spread(address series) external view returns (Spread memory);
     function riskBudgetBps(address feed) external view returns (uint16);
 
     /// What the Desk's positions on `feed` can lose, and the budget's limit, in USDG base units.
+    /// Quotes don't check it: a frontend must, before offering a trade that adds to a position.
     function risk(address feed) external view returns (uint256 atRisk, uint256 limit);
 
     function quoteBuyCover(address series, uint256 writerAmount, uint16 feeBps)

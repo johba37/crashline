@@ -46,12 +46,13 @@ contract DeskCoverTest is DeskFixture {
 
     function test_buyCover_pays_the_premium_and_desk_keeps_note() public {
         uint256 n = 1_000e6 + 3; // odd amount to exercise rounding
-        uint16 feeBps = 50;
+        uint16 feeBps = 500; // 5% of the premium
         uint256 navBefore = desk.totalAssets();
         (uint256 quoted, uint16 priceBps) = desk.quoteBuyCover(address(s), n, feeBps);
         assertEq(priceBps, 10_675 - 9500);
-        uint256 fee = (n * feeBps + 9999) / 10_000;
-        assertEq(quoted, (n * 1175 + 9999) / 10_000 + fee);
+        uint256 premium = (n * 1175 + 9999) / 10_000;
+        uint256 fee = (premium * feeBps + 9999) / 10_000;
+        assertEq(quoted, premium + fee);
 
         usdg.mint(bob, quoted);
         vm.startPrank(bob);
@@ -68,7 +69,7 @@ contract DeskCoverTest is DeskFixture {
         assertEq(_writer(s).balanceOf(address(desk)), 0);
         assertEq(desk.listing(address(s)).soldNotional, 0, "no WRITER held");
         assertEq(desk.heldSeries().length, 1);
-        uint256 slice = (fee * 2000 + 9999) / 10_000;
+        uint256 slice = (fee * 5000 + 9999) / 10_000;
         assertEq(usdg.balanceOf(integrator), fee - slice);
         assertEq(usdg.balanceOf(address(desk)), LP_CAPITAL + cost - s.previewMint(n) - (fee - slice));
         _approxNav(navBefore + slice); // sold at the mark: only the fee slice moves the NAV
@@ -77,8 +78,14 @@ contract DeskCoverTest is DeskFixture {
     function test_buyCover_errors() public {
         vm.expectRevert(INoteSeries.ZeroAmount.selector);
         desk.quoteBuyCover(address(s), 0, 0);
+        assertEq(desk.MAX_COVER_FEE_BPS(), 1_000);
+        vm.expectRevert(abi.encodeWithSelector(IDesk.FeeTooHigh.selector, uint16(1_001)));
+        desk.quoteBuyCover(address(s), 1e6, 1_001);
+        vm.expectRevert(abi.encodeWithSelector(IDesk.FeeTooHigh.selector, uint16(1_001)));
+        desk.quoteSellCover(address(s), 1e6, 1_001);
+        desk.quoteBuyCover(address(s), 1e6, 1_000); // the cover cap, 5x the NOTE cap
         vm.expectRevert(abi.encodeWithSelector(IDesk.FeeTooHigh.selector, uint16(201)));
-        desk.quoteBuyCover(address(s), 1e6, 201);
+        desk.quoteBuy(address(s), 1e6, 201);
         vm.expectRevert(abi.encodeWithSelector(IDesk.NotListed.selector, alice));
         desk.quoteBuyCover(alice, 1e6, 0);
 
@@ -97,6 +104,21 @@ contract DeskCoverTest is DeskFixture {
         desk.quoteBuyCover(address(s), 1e6, 0);
         vm.expectRevert(abi.encodeWithSelector(IDesk.TooCloseToObservation.selector, obs1));
         desk.quoteSellCover(address(s), 1e6, 0);
+    }
+
+    /// The integrator fee on cover is a share of the premium; half of it stays with the LPs.
+    function test_cover_fee_is_taken_on_the_premium() public {
+        (uint256 cost,) = desk.quoteBuyCover(address(s), 1_000e6, 1_000);
+        assertEq(cost, 117.5e6 + 11.75e6, "10% of the 117.50 premium, not of the 1,000 notional");
+        _buyCover(bob, 1_000e6, 1_000);
+        assertEq(usdg.balanceOf(integrator), 5.875e6);
+        assertEq(desk.totalAssets(), LP_CAPITAL + 5.875e6);
+
+        (uint256 proceeds,) = desk.quoteSellCover(address(s), 1_000e6, 1_000);
+        assertEq(proceeds, 117.5e6 - 11.75e6);
+        // the same 1,000 of NOTE at the NOTE cap: 2% of notional
+        (uint256 noteCost,) = desk.quoteBuy(address(s), 1_000e6, 200);
+        assertEq(noteCost, 950e6 + 20e6);
     }
 
     function test_delist_stops_cover_buys_not_sells() public {
@@ -129,11 +151,13 @@ contract DeskCoverTest is DeskFixture {
         uint256 proceeds = desk.sellCover(address(s), 400e6, quoted, 100, integrator, bob);
         vm.stopPrank();
 
-        assertEq(proceeds, 400e6 * uint256(priceBps) / 10_000 - 4e6);
+        uint256 gross = 400e6 * uint256(priceBps) / 10_000;
+        uint256 fee = (gross + 99) / 100; // 1% of what the cover fetches, not of its notional
+        assertEq(proceeds, gross - fee);
         assertEq(_note(s).balanceOf(address(desk)), 600e6);
         assertEq(_writer(s).balanceOf(address(desk)), 0);
-        // the Desk got 400 pairs' collateral back and paid the proceeds + the integrator's fee share
-        assertEq(usdg.balanceOf(address(desk)), idleBefore + 400 * MAX - proceeds - (4e6 - 0.8e6));
+        // the Desk got 400 pairs' collateral back and paid the proceeds + the integrator's half of the fee
+        assertEq(usdg.balanceOf(address(desk)), idleBefore + 400 * MAX - proceeds - (fee - (fee + 1) / 2));
     }
 
     function test_sellCover_unpaired_counts_against_the_cap() public {
@@ -578,7 +602,7 @@ contract DeskCoverTest is DeskFixture {
         int16 slope
     ) public {
         n = bound(n, 1, 50_000e6);
-        feeBps = uint16(bound(feeBps, 0, 200));
+        feeBps = uint16(bound(feeBps, 0, 1_000));
         price = uint16(bound(price, 1, 10_675));
         _volModel(int16(bound(slope, -30, 30)));
         desk.setSpread(

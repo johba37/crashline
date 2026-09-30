@@ -20,7 +20,7 @@ research on Opyn, Pendle, Gnosis CTF, Siren and Cega (2026-09-29).
 │   • sells cover for the premium and keeps the NOTE; holds WRITER only up to            │
 │     the listing's cap; a risk budget per stock limits both                    [8]      │
 │   • ε-bands at barriers, rounds vs trader                                     [9]      │
-│   • fee ≤ maxFeeBps; a slice goes to the backstop                                      │
+│   • integrator fee, capped (NOTE: of notional, cover: of premium); half stays here     │
 │   • IS the market: no AMM pools for NOTE                                      [6]      │
 │                                                                                        │
 │ NoteOracle  (roadmap)  AggregatorV3 price per NOTE for lenders                [5]      │

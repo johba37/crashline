@@ -54,7 +54,8 @@ contract Desk is IDeskCover, ERC4626, Ownable, ReentrancyGuard {
     uint256 internal constant UNIT_PER_BPS = UNIT / BPS;
 
     uint16 public constant MAX_FEE_BPS = 200;
-    uint16 public constant BACKSTOP_SHARE_BPS = 2_000; // 20% of every fee stays with the LPs
+    uint16 public constant MAX_COVER_FEE_BPS = 1_000; // of the premium (MAX_FEE_BPS is of notional)
+    uint16 public constant BACKSTOP_SHARE_BPS = 5_000; // half of every fee stays with the LPs
     uint256 public constant MAX_HELD_SERIES = 64; // bounds the totalAssets loop
     uint16 public constant MAX_SPREAD_BPS = 1_000;
 
@@ -449,10 +450,29 @@ contract Desk is IDeskCover, ERC4626, Ownable, ReentrancyGuard {
         returns (uint16 priceBps, bytes32 weightsHash, uint256 fee, uint256 growth)
     {
         if (legAmount == 0) revert INoteSeries.ZeroAmount();
-        if (feeBps > MAX_FEE_BPS) revert FeeTooHigh(feeBps);
+        bool isCover = side == Side.BuyCover || side == Side.SellCover;
+        if (feeBps > (isCover ? MAX_COVER_FEE_BPS : MAX_FEE_BPS)) revert FeeTooHigh(feeBps);
         Listing memory l = _listings[series];
         bool isBuy = side == Side.BuyNote || side == Side.BuyCover;
         if (isBuy ? !l.active : address(l.pricer) == address(0)) revert NotListed(series);
+        (priceBps, weightsHash) = _sidePrice(series, l, side);
+        uint40 next = INoteSeries(series).state().nextObservation;
+        if (uint256(next) < block.timestamp + minSecsToObservation) revert TooCloseToObservation(next);
+        // the integrator fee is a share of the notional for NOTE, of the premium for cover
+        uint256 feeBase = legAmount;
+        if (isCover) feeBase = Math.mulDiv(legAmount, priceBps, BPS, isBuy ? Math.Rounding.Ceil : Math.Rounding.Floor);
+        fee = Math.mulDiv(feeBase, feeBps, BPS, Math.Rounding.Ceil);
+        growth = _growth(series, legAmount, side, l.capNotional);
+    }
+
+    /// The model's lower or higher NOTE quote (at the two ends of the vol
+    /// band) moved by the flat spread, against the trader; the cover price is
+    /// what is left of a pair (IDeskCover).
+    function _sidePrice(address series, Listing memory l, Side side)
+        internal
+        view
+        returns (uint16 priceBps, bytes32 weightsHash)
+    {
         Spread memory sp = _spreads[series];
         uint256 lo;
         uint256 hi;
@@ -464,21 +484,6 @@ contract Desk is IDeskCover, ERC4626, Ownable, ReentrancyGuard {
             (hi,) = quoter.notePriceBps(INoteSeries(series), l.pricer, l.volBpsAnnual + sp.volBandBps);
             if (hi < lo) (lo, hi) = (hi, lo);
         }
-        uint40 next = INoteSeries(series).state().nextObservation;
-        if (uint256(next) < block.timestamp + minSecsToObservation) revert TooCloseToObservation(next);
-        priceBps = _sidePrice(series, lo, hi, sp, side);
-        fee = Math.mulDiv(legAmount, feeBps, BPS, Math.Rounding.Ceil);
-        growth = _growth(series, legAmount, side, l.capNotional);
-    }
-
-    /// The model's lower or higher NOTE quote (at the two ends of the vol
-    /// band) moved by the flat spread, against the trader; the cover price is
-    /// what is left of a pair (IDeskCover).
-    function _sidePrice(address series, uint256 lo, uint256 hi, Spread memory sp, Side side)
-        internal
-        view
-        returns (uint16)
-    {
         uint256 maxBps = INoteSeries(series).maxPayoutPerNote() / UNIT_PER_BPS;
         uint256 note;
         if (side == Side.BuyNote || side == Side.SellCover) {
@@ -487,7 +492,7 @@ contract Desk is IDeskCover, ERC4626, Ownable, ReentrancyGuard {
             lo = Math.min(lo, maxBps);
             note = lo > sp.bidBps ? lo - sp.bidBps : 0;
         }
-        return SafeCast.toUint16(side == Side.BuyNote || side == Side.SellNote ? note : maxBps - note);
+        priceBps = SafeCast.toUint16(side == Side.BuyNote || side == Side.SellNote ? note : maxBps - note);
     }
 
     /// The part of a trade the Desk can't serve from, or pair with, what it
