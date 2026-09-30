@@ -439,6 +439,85 @@ are replayed (`replayStepSecs`, 3600 s). Tables `samples`, `nav_samples`.
 - The stored resolution is the step (3600 s) plus event points; a smaller
   `step` in the request returns what is stored, no interpolation.
 
+## Model routes (WP4)
+
+`GET /series/{addr}/curve?vs=spot|vol|weeks&n=41`
+
+```json
+{ "series": "0x32fb…eab8", "vs": "spot", "field": "spotBpsOfInitial",
+  "inputs": { "spotBpsOfInitial": 8500, "distToKnockInBps": 2500, "volBpsAnnual": 5500, "kiBarrierBps": 6000,
+              "acBarrierBps": 10000, "couponBpsPerPeriod": 25, "timeToMaturitySecs": 9933466,
+              "timeToNextObsSecs": 256666, "observationsRemaining": 16, "flags": 1 },
+  "accruedBps": 264, "weightsHash": "0xaf76…cd8a",
+  "points": [ { "x": 5000, "noteBps": 5662, "coverBps": 5013, "cleanBps": 5398, "inDomain": true, "current": false },
+              { "x": 8500, "noteBps": 8837, "coverBps": 1838, "cleanBps": 8573, "inDomain": true, "current": true },
+              { "x": 10000, "noteBps": null, "coverBps": null, "cleanBps": null, "inDomain": false, "current": false,
+                "reason": { "error": "Uncertified", "args": { "region": 0 } } }, … ],
+  "block": 1883, "time": 1790803151 }
+```
+
+- `inputs` are `NoteQuoter.inputs(series, listing vol)` at the response's
+  block: exactly what the model sees now. One field is varied over the
+  listing model's certified range in `n` even steps (2..401), and the current
+  value is always included (`current: true`), so that point equals
+  `/series/{addr}.mid` at the same block, bit for bit.
+- `vs=spot` varies `spotBpsOfInitial` (with `distToKnockInBps` kept
+  consistent); `vs=vol` varies `volBpsAnnual` (one point for K2, whose vol is
+  pinned at 5500); `vs=weeks` varies `observationsRemaining` from 1 to the
+  series' count, with `timeToMaturitySecs` consistent and the accrued coupon
+  of the note at that point of its life.
+- Each point: `cleanBps` from `tools/pricer_quant.forward` (the Stylus
+  contract's twin; the tests compare points with the deployed contract),
+  `noteBps = cleanBps + accrued`, `coverBps = maxBps − noteBps`. Outside the
+  domain `inDomain: false`, null prices, and the model's refusal in `reason`.
+- 409 with the quoter's error when there are no current inputs (NotLive,
+  FixingPending, FeedStale), 409 `NotListed` without a listing.
+
+`POST /verify-quote` with `{"series", "txHash"}` (a Desk trade) or
+`{"inputs": <PricerInputs>, "accruedBps"?, "weightsHash"?}`
+
+```json
+{ "inputs": { … }, "accruedBps": 264,
+  "onChain": { "priceBps": 8867, "weightsHash": "0xaf76…cd8a", "kind": "buy", "series": "0x32fb…eab8",
+               "txHash": "0xfced…0e89", "block": 1879, "spreadBps": 30, "midBps": 8837 },
+  "student": { "priceBps": 8573, "quoteBps": 8837, "weightsHash": "0xaf76…cd8a" },
+  "teacher": { "priceBps": 8576.92, "stdErrBps": 3.69, "paths": 65536, "seed": 20260930,
+               "config": "merton-tsla-2016-2026", "backend": "numpy", "device": "cpu", "secs": 0.09,
+               "quoteBps": 8840.92,
+               "note": "numpy teacher on the CPU with 65536 paths (2^18 on the GPU: set TEACHER_DEVICE=cuda)" },
+  "check": { "onChainMidBps": 8837, "teacherQuoteBps": 8840.92, "diffBps": -3.92, "toleranceBps": 26.08,
+             "within": true },
+  "cached": false, "teacherSecs": 2.36, "secs": 2.37, "block": 1883, "time": 1790803151 }
+```
+
+- For a tx: the trade event gives `priceBps` (the leg's price, spread
+  included) and `weightsHash`; the inputs are the quoter's at the trade's
+  block and the listing's vol then. `midBps` is the NOTE quote the price
+  implies, IDeskCover's formulas with the flat spread at that block: buy
+  `price − ask`, sell `price + bid`, buyCover `maxBps − price + bid`,
+  sellCover `maxBps − price − ask` (with a vol band this is the band's lower
+  or higher quote).
+- `student.priceBps` and `teacher.priceBps` are **clean** prices (coupon from
+  now on); `quoteBps` adds the coupon accrued since the strike at the trade's
+  time, which is what the quoter adds. `check` compares the teacher's quote
+  with the on-chain mid against 3 stdErr + 15 bps.
+- The teacher (`ml/teacher.py`) needs torch, so it runs in a subprocess with
+  `TEACHER_PYTHON` (default `/opt/ai/cache/venv-cuda/bin/python`):
+  `TEACHER_DEVICE=cuda` → the torch backend (`ml/teacher_torch.py`) with 2^18
+  paths (about 1 s on the RTX 3090), else the numpy teacher on the CPU with
+  2^16 paths and a `note`. Seed fixed (`TEACHER_SEED`, 20260930),
+  `TEACHER_PATHS` overrides the path count. One run at a time: a request that
+  would start a second run gets 429 `Busy`. Results are cached in memory by
+  (inputs, seed, paths, backend); `cached: true` on a hit.
+
+### Choices where the spec is silent (WP4)
+
+- The curve always contains the current value; `n` is the grid, so there are
+  `n` or `n + 1` points. Points carry `cleanBps`, `current` and `reason`.
+- `vs=weeks` moves the accrued coupon with the remaining weeks.
+- `/verify-quote` returns clean and accrued-inclusive prices and the `check`
+  block; the cache is in memory (a restart clears it).
+
 ### Choices where the spec is silent (WP1)
 
 - `before` in `/trades` is a block number (the dev node puts one tx in a block).
@@ -487,3 +566,12 @@ database), so a service on 8650 keeps running.
   knock-in, 6 observations left, out of range, stale feed); `/vault/history`
   samples a trade's block; a service stopped while blocks are made
   backfills those blocks with `eth_call` on restart (series and NAV).
+- `test_wp4_model.py`: `curve?vs=spot`'s current point equals
+  `/series/{addr}.mid` at the same block, its `inputs` are the quoter's, and
+  sampled points equal the deployed Stylus contract's `priceBps` (`eth_call`);
+  `vs=vol` (one point) and `vs=weeks` (1..26, checked against the contract);
+  excluded bands flagged with their region; 409 FeedStale; `/verify-quote` on
+  the e2e buy (10,000 NOTE, 20 bps fee): teacher within 3 stdErr + 15 bps of
+  `priceBps − spread`, the student's quote equal to the on-chain mid, the
+  cache; `{inputs}` bodies, 429 on simultaneous runs, 400/404 errors; with
+  `TEACHER_DEVICE=cuda` the torch backend with 2^18 paths (skipped without a GPU).
