@@ -11,15 +11,26 @@ updates the interface, the ABI and this file together. Layer picture:
 
 | Contract | Interface | Implementation |
 |---|---|---|
-| SurrogatePricer (Stylus) | `ISurrogatePricer` | done (`stylus/pricer-model`, synthetic weights) |
-| FixingsRecorder | `IFixingsRecorder` | done, implements the interface |
-| SeriesFactory, NoteSeries, SeriesToken | `ISeriesFactory`, `INoteSeries`, `ISeriesToken` | next |
-| NoteQuoter | `INoteQuoter` | legacy terms-based version exists; rework to series-based |
-| Desk | `IDesk` (ERC-4626) | after the core |
+| SurrogatePricer (Stylus) | `ISurrogatePricer` | done (`stylus/pricer-model`, default weights `model/k2`) |
+| FixingsRecorder | `IFixingsRecorder` | done; records only observation times strictly in the past |
+| SeriesFactory, NoteSeries, SeriesToken | `ISeriesFactory`, `INoteSeries`, `ISeriesToken` | done (`contracts/src/`), payout via the `AutocallPayout` library |
+| NoteQuoter | `INoteQuoter` | done, series-based; one quoter for every model |
+| Desk | `IDesk` (ERC-4626) | done; `MAX_FEE_BPS` = 200, `BACKSTOP_SHARE_BPS` = 2000 |
+
+All of the above pass `forge test` and the dev node end-to-end run
+(`contracts/script/e2e-devnode.sh`); see [contracts-review.md](contracts-review.md).
+No interface or ABI changed since the freeze.
 
 Robinhood Chain testnet: chain ID 46630, RPC `https://rpc.testnet.chain.robinhood.com`,
-USDG `0x7E955252E15c84f5768B83c41a71F9eba181802F` (6 decimals). Deployed addresses will be
+USDG `0x7E955252E15c84f5768B83c41a71F9eba181802F` (6 decimals). `contracts/script/Deploy.s.sol`
+simulates cleanly against it; not broadcast yet, so no deployed addresses. They will be
 listed here.
+
+Implementation notes beyond the interfaces:
+- `desk.listedSeries()` also returns delisted series; check `desk.listing(s)`.
+- The Desk has one extra view not in `IDesk`: `heldSeries()`.
+- The integrator fee on a sell is capped at the gross proceeds.
+- `FixingPending(obsTime)` starts once `obsTime < block.timestamp`.
 
 ## Units
 
@@ -39,7 +50,11 @@ coupon, a maximum tenor, and currently a fixed vol. It never sees which stock it
 every input is relative to the strike. So one model serves every series with those
 terms, on any stock with that vol. The Desk listing says which model prices which
 series: `Listing{pricer, volBpsAnnual, capNotional, …}`. One stateless quoter serves all
-models. Today: one model, `model/k1-r1` (60% / 100% / 25 bps per week, 55% vol).
+models. Today: `model/k2` (60% / 100% / 25 bps per week, 26 weekly observations, 55%
+total vol), distilled from a jump-diffusion teacher calibrated to TSLA
+([teacher-v2.md](teacher-v2.md), [k2-round2.md](k2-round2.md)). `model/k1-r1` (first
+week only) remains as a second certified model. `volBpsAnnual` is total vol; the
+current teacher needs it above 44.7% (its pinned jump vol).
 
 ## Screens and the calls behind them
 
@@ -51,8 +66,11 @@ rather than hiding the series.
 **Lifecycle to show.** Barrier observations every interval after strike; the
 maturity fixing is **one interval after the last observation** (see
 `INoteSeries`). No quotes in that final period, or anywhere outside the model's
-certified domain: for the K1 round-1 model that is the first week after strike
-only (26 observations remaining), spot 50–120% of initial.
+certified domain: for `model/k2` that is the whole life of the note (1–26
+observations remaining, any time within the week), spot 50–120% of initial, except
+two observation-day bands (next observation within 1 day): spot 95–105% of initial
+(autocall, region 0) and, for notes not yet knocked in, spot 50–70% (knock-in,
+region 1).
 
 **Note detail.** Everything from the market list, plus:
 - `quoter.inputs(s, vol)`: exactly what the model saw. Showing it is the transparency pitch.
@@ -83,7 +101,8 @@ You get `n` NOTE and `n` WRITER. Sell the NOTE to the Desk or keep it.
 
 **LP.** Standard ERC-4626 on the Desk: `deposit`/`withdraw`/`redeem`. Check
 `maxDeposit`/`maxWithdraw` first: they return 0 while any held series can't be quoted
-(weekends, pending fixing). Say so in the UI; don't let the transaction revert.
+(weekends, pending fixing), and in the final week of a knocked-in note, which the model
+doesn't price. Say so in the UI; don't let the transaction revert.
 
 **Keeper (anyone, could be a button).** For each observation time that has passed:
 find the round (binary search over `feed.getRoundData`: the last round at or before
@@ -111,7 +130,7 @@ pricer, so include `INoteQuoter` and `ISurrogatePricer` errors.
 | `FixingPending(obsTime)` | "Observation at … awaiting its fixing": offer the keeper button |
 | `TooCloseToObservation(obsTime)` | "Trading pauses shortly before each observation" |
 | `OutOfRange(field, value)` | "Outside the model's certified range (field …)": the model refuses rather than guesses. `pricer.certifiedRange(field)` gives the range to show |
-| `Uncertified(region)` | "Too close to the autocall barrier on observation day": the one place the payoff jumps |
+| `Uncertified(region)` | region 0: "Too close to the autocall barrier on observation day"; region 1: "Too close to the knock-in barrier on observation day". The two places the value jumps at a fixing |
 | `Inconsistent(field)` | a bug in whoever built the inputs; never expected from our quoter |
 | `NotLive()` | not struck yet, or already settled |
 | `CapExceeded`, `Slippage`, `FeeTooHigh` | self-explanatory |

@@ -110,12 +110,13 @@ Sources: [Opyn Gamma OZ audit](https://www.openzeppelin.com/news/opyn-gamma-prot
   a model with vol as a free input (one per product) if K1 round 2 certifies it, otherwise
   one model per product and vol level.
 - **The payout rules are normative** (see `INoteSeries.sol`) and are the ones the Monte Carlo
-  teacher prices: accrued coupon, autocall at `>= ac`, knock-in at `< ki`, both latching and
+  teacher (jump-diffusion calibrated to TSLA, [teacher-v2.md](teacher-v2.md)) prices: accrued coupon, autocall at `>= ac`, knock-in at `< ki`, both latching and
   checked at barrier observations only, and the maturity fixing **one period after the last
   observation**. That extra period is what keeps the knock-in barrier smooth for the model.
 - **Each model carries a certified domain** (format v2): pinned note terms, exact derived
-  fields, and excluded regions such as the autocall observation-day band. The Stylus contract
-  reverts outside it, so a direct caller can't get an unmeasured price either.
+  fields, and excluded regions: for `model/k2` the autocall and knock-in observation-day
+  bands, where the value jumps at the fixing. The Stylus contract reverts outside it, so a
+  direct caller can't get an unmeasured price either.
 - **No demo mode in production contracts.** The demo stages feed history on the mock feed
   and uses series whose strike lies in the past.
 - **The Desk's LP flows pause while any held series can't be quoted** (weekends, pending
