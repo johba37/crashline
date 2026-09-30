@@ -236,6 +236,7 @@ def stage(body: dict = Body(...), x_demo_token: str | None = Header(None)):
     new = cfgmod.load(SERVICE.indexer.config_path)
     new["addresses"]["feeds"][name] = st["feed"]
     cfgmod.save(new, SERVICE.indexer.config_path)
+    SERVICE.indexer.reload_config()  # /config names the feed from the next read on
     block = c.chain.block_number()
     c = wait_indexed(block)
     return c.out(series_objects(c, [c.series_row(st["series"])], full=True)[0])

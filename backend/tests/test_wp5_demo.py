@@ -131,9 +131,12 @@ def test_fixing_advances_the_series(service, chain, cfg, token):
 
 
 @pytest.mark.destructive
-def test_reset(service, chain, cfg, token):
-    old = service.get("/config")
-    assert service.get("/trades")["trades"]  # earlier tests traded
+def test_reset(service, chain, cfg, token, keys):
+    from helpers import USDG, buy
+    service.synced(chain, timeout=60)
+    buy(chain, cfgmod.load(), keys["buyer"], default_series(chain, cfgmod.load()), 10 * USDG)
+    old = service.synced(chain)
+    assert service.get("/trades")["trades"]  # something to be wiped
     r = post(service, "/demo/reset", {}, token)
     assert r["addresses"]["desk"] != old["addresses"]["desk"]
     new = service.get("/config")

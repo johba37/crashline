@@ -124,10 +124,14 @@ class Service:
                 raise AssertionError(f"condition not met within {timeout} s")
             time.sleep(poll)
 
-    def synced(self, chain: Chain, timeout: float = 10) -> dict:
-        """Wait until the service reflects the chain head."""
+    def synced(self, chain: Chain, timeout: float = 30) -> dict:
+        """Wait until the service reflects the chain head (503 while it rescans counts as not yet)."""
         head = chain.block_number()
-        return self.wait_for(lambda: (lambda c: c if c["block"] >= head else None)(self.get("/config")), timeout)
+
+        def ready():
+            r = self.client.get("/config")
+            return r.json() if r.status_code == 200 and r.json()["block"] >= head else None
+        return self.wait_for(ready, timeout)
 
 
 @pytest.fixture(scope="session")

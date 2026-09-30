@@ -140,8 +140,10 @@ class Indexer:
     def start(self) -> None:
         if self.snap is None:
             self.setup()
-        self._stop.clear()
-        self._thread = threading.Thread(target=self._run, name="indexer", daemon=True)
+        # one stop event per thread: a thread still inside a poll when stop() gave up
+        # waiting for it must not come back to life when a new one starts
+        self._stop = threading.Event()
+        self._thread = threading.Thread(target=self._run, args=(self._stop,), name="indexer", daemon=True)
         self._thread.start()
 
     def stop(self, timeout: float = 30) -> None:
@@ -149,13 +151,28 @@ class Indexer:
         if self._thread and self._thread is not threading.current_thread():
             self._thread.join(timeout)
 
-    def _run(self) -> None:
-        while not self._stop.is_set():
+    def reload_config(self) -> None:
+        """Re-read config.json: a new deployment (or RPC) means setup(), else the new
+        settings (e.g. a feed name) replace the old ones in place."""
+        with self._lock:
+            cfg = cfgmod.load(self.config_path)
+            if fingerprint(cfg) != fingerprint(self.cfg) or cfg["rpcUrl"] != self.cfg["rpcUrl"]:
+                self.setup()
+                return
+            self.cfg_mtime = self.config_path.stat().st_mtime
+            self.cfg = cfg
+            s = self.snap
+            self.snap = Snapshot(cfg, s.chain, s.db, s.head, s.status)
+
+    def _run(self, stop: threading.Event) -> None:
+        while not stop.is_set():
             busy = False
             try:
                 if self.config_path.exists() and self.config_path.stat().st_mtime != self.cfg_mtime:
                     log.info("config.json changed: reloading")
-                    self.setup()
+                    self.reload_config()
+                if stop.is_set():
+                    break
                 busy = self.poll_once()
                 self.error = None
             except Exception as e:  # keep going: the node may be restarting
@@ -163,7 +180,7 @@ class Indexer:
                 log.warning("poll failed: %s", self.error)
                 self._set_status("error")
             if not busy:
-                self._stop.wait(self.cfg.get("pollSecs", 2))
+                stop.wait(self.cfg.get("pollSecs", 2))
 
     def _set_status(self, status: str, head: dict | None = None) -> None:
         s = self.snap
