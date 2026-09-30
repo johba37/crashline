@@ -9,6 +9,7 @@ Destructive tests (they recreate the chain) are marked `destructive` and run las
 from __future__ import annotations
 
 import os
+import shutil
 import signal
 import subprocess
 import sys
@@ -141,3 +142,4 @@ def service():
     svc.start()
     yield svc
     svc.stop()
+    shutil.rmtree(tmp, ignore_errors=True)

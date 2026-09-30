@@ -20,7 +20,10 @@ from .config import ROOT
 if str(ROOT / "tools") not in sys.path:
     sys.path.insert(0, str(ROOT / "tools"))
 
+_bytecode, sys.dont_write_bytecode = sys.dont_write_bytecode, True  # no __pycache__ in tools/
 import pricer_quant as pq  # noqa: E402
+
+sys.dont_write_bytecode = _bytecode
 
 FIELD_NAMES = pq.FIELD_NAMES
 

@@ -135,7 +135,7 @@ class Teacher:
             f["knockedIn"] = values[9] & 1
             req = {"features": f, "paths": paths, "seed": TEACHER_SEED, "device": device}
             p = subprocess.run([TEACHER_PYTHON, str(WORKER)], input=json.dumps(req), capture_output=True, text=True,
-                               timeout=600)
+                               timeout=600, env=dict(os.environ, PYTHONDONTWRITEBYTECODE="1"))  # no ml/__pycache__
             if p.returncode != 0:
                 raise ApiError(500, "TeacherFailed", {"stderr": p.stderr[-2000:]})
             out = json.loads(p.stdout.strip().splitlines()[-1])
