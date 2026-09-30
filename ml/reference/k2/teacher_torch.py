@@ -9,8 +9,7 @@ equal-length arrays; `teacher.features(...)` builds one on the consistency
 manifold). Returns numpy float64 (priceBps, mcStdErrBps). cfg None = the pinned
 jump config (ml/teacher_config.json); teacher.GBM for lambda = 0.
 
-Semantics are identical to ml/teacher.py (docstring there): total-vol split
-(fixed jump variance, or v3's vol-scaled jump sizes when cfg.vol_ref > 0),
+Semantics are identical to ml/teacher.py (docstring there): total-vol split,
 risk-neutral drift r - lambda*kappa, antithetic pairs sharing the jump count,
 exact tNext = 0 barrier comparisons, maturity strike = initial, exact
 Poisson-lognormal smoothing of the last step. Only the random numbers differ
@@ -42,31 +41,10 @@ def _dev(device):
     return torch.device(device)
 
 
-def _scaled_jumps(sig, cfg):
-    """v3 (vol_ref > 0): per-label (muJ, sigJ, kappa) at total vol sig (float64 tensors)."""
-    js = sig / cfg.vol_ref
-    mu, sj = cfg.mu_j * js, cfg.sigma_j * js
-    return mu, sj, torch.expm1(mu + 0.5 * sj**2)
-
-
 def _log_increment(gen, dt_y, sig, sd_d, cfg, P):
     """(G, 2P) float32 log increments; sig total vol, sd_d diffusion vol (float64 tensors)."""
     G = dt_y.shape[0]
     dev = dt_y.device
-    if cfg.jumps and cfg.vol_ref > 0.0:        # v3: per-label jump sizes, same stream order
-        mu_js, sig_js, kap = _scaled_jumps(sig, cfg)
-        mu = (cfg.r - cfg.lambda_year * kap - 0.5 * sd_d**2) * dt_y
-        sd = sd_d * torch.sqrt(dt_y)
-        Z = torch.randn((G, P), generator=gen, device=dev, dtype=torch.float32)
-        inc = (mu[:, None] + sd[:, None] * torch.cat([Z, -Z], dim=1)).to(torch.float32)
-        rate = (cfg.lambda_year * dt_y).to(torch.float32)[:, None].expand(G, P).contiguous()
-        n = torch.poisson(rate, generator=gen)
-        zj = torch.randn((G, P), generator=gen, device=dev, dtype=torch.float32)
-        base = n * mu_js.to(torch.float32)[:, None]
-        spread = torch.sqrt(n) * sig_js.to(torch.float32)[:, None] * zj
-        inc[:, :P] += base + spread
-        inc[:, P:] += base - spread
-        return inc
     if cfg.jumps:
         mu = (cfg.r - cfg.lambda_year * cfg.kappa - 0.5 * sd_d**2) * dt_y
     else:
@@ -85,16 +63,11 @@ def _log_increment(gen, dt_y, sig, sd_d, cfg, P):
     return inc
 
 
-def _smoothed_capped_spot(s_last, sd_d, dY, cfg, sig=None):
-    """E[min(S_T,1) | s_last] over dY years, exact Poisson-lognormal sum (float64).
-    sig: per-path total vol, needed for v3's vol-scaled jump sizes."""
+def _smoothed_capped_spot(s_last, sd_d, dY, cfg):
+    """E[min(S_T,1) | s_last] over dY years, exact Poisson-lognormal sum (float64)."""
     lam_t = cfg.lambda_year * dY
     ln_s = torch.log(s_last)
-    if cfg.vol_ref > 0.0:
-        mu_j, sig_j, kap = _scaled_jumps(sig, cfg)
-    else:
-        mu_j, sig_j, kap = cfg.mu_j, cfg.sigma_j, cfg.kappa
-    drift = (cfg.r - cfg.lambda_year * kap - 0.5 * sd_d**2) * dY
+    drift = (cfg.r - cfg.lambda_year * cfg.kappa - 0.5 * sd_d**2) * dY
     out = torch.zeros_like(s_last)
     wsum = torch.zeros_like(s_last)
     for n in range(T.SMOOTH_TERMS):
@@ -104,8 +77,8 @@ def _smoothed_capped_spot(s_last, sd_d, dY, cfg, sig=None):
             if n > float(lam_t.max()):
                 break
             continue
-        m = ln_s + drift + n * mu_j
-        v = sd_d**2 * dY + n * sig_j**2
+        m = ln_s + drift + n * cfg.mu_j
+        v = sd_d**2 * dY + n * cfg.sigma_j**2
         sv = torch.sqrt(v)
         out += w * (torch.exp(m + 0.5 * v) * torch.special.ndtr(-(m + v) / sv)
                     + torch.special.ndtr(m / sv))
@@ -174,7 +147,7 @@ def _simulate(F, idx, N, total_paths, gen, smooth, cfg, dev):
             m = ki_latch & live
             if bool(m.any()):
                 gi = torch.nonzero(m, as_tuple=True)[0]
-                ev = _smoothed_capped_spot(s_last[m], sd_d[gi], dY[gi], cfg, sig=sig[gi])
+                ev = _smoothed_capped_spot(s_last[m], sd_d[gi], dY[gi], cfg)
                 cont[m] = 1e4 * disc[gi, 0] * ev
         else:
             inc = _log_increment(gen, dY, sig, sd_d, cfg, P).to(torch.float64)

@@ -1,4 +1,4 @@
-"""Checks for the jump teacher (ml/teacher.py) and its torch backend.
+"""Checks for the jump teacher (ml/teacher.py) and its torch backend: v2 (a)-(h), v3 (i)-(o).
 
     tools/.venv/bin/python ml/test_teacher.py [--cuda-python PATH] [--skip-g] [--only abc...]
 
@@ -15,6 +15,18 @@ error of the quantities compared (independent streams: hypot of the two).
     jump versions (knocked-in, never-autocall note vs the closed form)
 (g) torch backend (CUDA when available) vs numpy teacher on 64 note states
 (h) barrier equality at tNext = 0: spot == ki does not knock in, spot == ac autocalls
+
+Teacher v3 (vol-scaled jump sizes, ml/teacher_config_v3.json):
+(i) the v2 code path is unchanged: numpy and torch are bit-identical to the frozen
+    K2 teacher (ml/reference/k2/, byte-identical to the files that labelled K2)
+(j) v3 at vol s equals the fixed-jump teacher with sizes scaled to s (same seed),
+    six vols 15-120%: the per-label scaling is exactly that
+(k) martingale and total variance vol^2 T under v3 at 20% / 55% / 90%
+(l) European puts (26 weeks, 3 strikes) and the knocked-in never-autocall note vs
+    Merton closed forms under v3 at 25% and 85%
+(m) smoothed vs brute-force last step under v3, vols 20-90% mixed in one batch
+(n) torch backend vs numpy teacher under v3, 64 states with mixed vols
+(o) barrier equality at tNext = 0 under v3
 """
 
 from __future__ import annotations
@@ -37,6 +49,10 @@ sys.path.insert(0, HERE)
 import teacher as T  # noqa: E402
 
 REF_PATH = os.path.join(HERE, "reference", "teacher_gbm_k1.py")
+K2_DIR = os.path.join(HERE, "reference", "k2")   # frozen K2 teacher (v2), byte-identical copies
+K2_SHA256 = {"teacher.py": "3e3ff8c33c91887544f6e959beaade8b780db505e6d171e9eadfb31c0f140910",
+             "teacher_torch.py": "242f89d3c7360e5935f2ba7c7165867707906a493f1f8c412f891419ae1bd2ba",
+             "teacher_config.json": "463782fbc14f5f6d53d5dd44a75fd4ad0dd4305f9e31f2d114a8be10fd020638"}
 REF_SHA256 = "af8be22db1856ed2beb5d07b249c5b35f10c048f42652b3d7fe0d37c993a9fab"  # ml/teacher.py @ 42d2fe4
 DEFAULT_CUDA_PY = "/opt/ai/cache/venv-cuda/bin/python"
 
@@ -289,7 +305,7 @@ def check_g(cfg, cuda_python):
            f"time numpy {t_np:.1f}s / torch {t_t:.1f}s")
 
 
-def check_h(cfg):
+def check_h(cfg, name="(h) barrier equality at tNext=0"):
     ok_all = True
     parts = []
     W, Y = T.WEEK_SECS, T.YEAR_SECS
@@ -308,9 +324,174 @@ def check_h(cfg):
             ok_all &= ok
             if not ok:
                 parts.append(f"{c.name} spot==ac {ac:.0f}: {p:.4f} vs 10000")
-    report("(h) barrier equality at tNext=0", ok_all,
+    report(name, ok_all,
            "spot == ki (5500/6000/7000) stays un-knocked, spot == ac (9500/10000/10500) autocalls, GBM and jumps"
            + ("; " + "; ".join(parts) if parts else ""))
+
+
+# ---------------------------------------------------------------- teacher v3
+
+TORCH_WORKER = r"""
+import sys, numpy as np
+sys.path.insert(0, sys.argv[1])
+import teacher as T, teacher_torch as TT, torch
+assert T.__file__.startswith(sys.argv[1]) and TT.__file__.startswith(sys.argv[1])
+F = dict(np.load(sys.argv[2]))
+cfg = T.load_config(sys.argv[5]) if sys.argv[5] != "-" else None
+p, se = TT.price_batch(F, int(sys.argv[4]), seed=int(sys.argv[6]), cfg=cfg, device="cuda")
+np.savez(sys.argv[3], p=p, se=se, dev=np.array(torch.cuda.get_device_name()))
+"""
+
+
+def torch_prices(teacher_dir, F, paths, seed, cfg_path, cuda_python):
+    """teacher_torch.price_batch from `teacher_dir` in a fresh CUDA process (so the frozen
+    and the current modules never share a process). Returns (price, se, device)."""
+    with tempfile.TemporaryDirectory() as td:
+        fin, fout = os.path.join(td, "F.npz"), os.path.join(td, "out.npz")
+        np.savez(fin, **F)
+        subprocess.run([cuda_python, "-c", TORCH_WORKER, teacher_dir, fin, fout, str(paths),
+                        cfg_path or "-", str(seed)], check=True)
+        o = np.load(fout)
+        return o["p"], o["se"], str(o["dev"])
+
+
+def load_k2():
+    spec = importlib.util.spec_from_file_location("teacher_k2", os.path.join(K2_DIR, "teacher.py"))
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["teacher_k2"] = mod    # dataclasses resolve the defining module by name
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def v3_states(n, seed, vols):
+    rng = np.random.default_rng(seed)
+    spot = rng.integers(5000, 12001, n).astype(np.float64)
+    obs = rng.integers(1, 27, n)
+    tn = rng.choice([0, 3600, 43200, 86400, 90000, 172800, 345600, 604800], n).astype(np.float64)
+    kin = rng.integers(0, 2, n)
+    return T.features(spot, rng.choice(np.asarray(vols, np.float64), n), tn, obs, kin)
+
+
+def scaled_cfg(cfg3, vol):
+    """The fixed-jump (v2-style) config whose sizes are v3's at this total vol."""
+    js = vol / cfg3.vol_ref
+    return T.TeacherConfig(name=f"{cfg3.name}@{vol:.4f}", r=cfg3.r, lambda_year=cfg3.lambda_year,
+                           mu_j=cfg3.mu_j * js, sigma_j=cfg3.sigma_j * js)
+
+
+def check_i(cuda_python):
+    sha_ok = all(hashlib.sha256(open(os.path.join(K2_DIR, f), "rb").read()).hexdigest() == h
+                 for f, h in K2_SHA256.items())
+    k2 = load_k2()
+    cfg_now, cfg_k2 = T.load_config(), k2.load_config(os.path.join(K2_DIR, "teacher_config.json"))
+    F = v3_states(96, 800, [5000.0, 5500.0, 8000.0])
+    same, parts = sha_ok, []
+    for paths, seed in ((2**12, 801), (2**15, 802)):
+        for smooth in (True, False):
+            a = T.price_batch(F, paths, seed, smooth=smooth, cfg=cfg_now)
+            b = k2.price_batch(F, paths, seed, smooth=smooth, cfg=cfg_k2)
+            same &= np.array_equal(a[0], b[0]) and np.array_equal(a[1], b[1])
+    parts.append(f"numpy: 96 states x 2 path counts x smoothed/brute, pinned v2 config, "
+                 f"{'bit-identical' if same else 'DIFFERENT'}")
+    if cuda_python and os.path.exists(cuda_python):
+        pa, sa, dev = torch_prices(HERE, F, 2**15, 803, None, cuda_python)
+        pb, sb, _ = torch_prices(K2_DIR, F, 2**15, 803, None, cuda_python)
+        tsame = np.array_equal(pa, pb) and np.array_equal(sa, sb)
+        same &= tsame
+        parts.append(f"torch ({dev}): 96 states, 2^15 paths, {'bit-identical' if tsame else 'DIFFERENT'}")
+    else:
+        parts.append("torch: skipped (no CUDA python)")
+    report("(i) v2 path bit-identical to the frozen K2 teacher", same,
+           f"frozen copies sha256 {'ok' if sha_ok else 'MISMATCH'}; " + "; ".join(parts))
+
+
+def check_j(cfg3):
+    worst, parts = 0.0, []
+    for vol in (1500.0, 2000.0, 3500.0, 5500.0, 7500.0, 12000.0):
+        F = v3_states(48, 900 + int(vol), [vol])
+        a, sa = T.price_batch(F, 2**14, 901, cfg=cfg3)
+        b, sb = T.price_batch(F, 2**14, 901, cfg=scaled_cfg(cfg3, vol / 1e4))
+        d = float(np.max(np.abs(a - b)))
+        worst = max(worst, d)
+        parts.append(f"{vol / 100:.0f}%: {d:.1e}")
+    report("(j) v3 at vol s == fixed jumps scaled to s, same seed", worst <= 0.01,
+           f"48 states per vol, 2^14 paths; max |diff| bps " + ", ".join(parts)
+           + " (float rounding of the scaled sizes only)")
+
+
+def check_k(cfg3):
+    ok_all, parts = True, []
+    steps = [3600] + [604800] * 52
+    Ty = sum(steps) / T.YEAR_SECS
+    for i, vol in enumerate((0.20, 0.55, 0.90)):
+        lx = T.simulate_log_spot(2**21, vol, steps, seed=1000 + i, cfg=cfg3)
+        pm = 0.5 * (np.exp(lx[0]) + np.exp(lx[1]))
+        mean, se = pm.mean(), pm.std(ddof=1) / math.sqrt(pm.size)
+        z = (mean - math.exp(cfg3.r * Ty)) / se
+        mu = lx.mean()
+        sq = 0.5 * ((lx[0] - mu) ** 2 + (lx[1] - mu) ** 2)
+        zv = (sq.mean() - vol**2 * Ty) / (sq.std(ddof=1) / math.sqrt(sq.size))
+        ok_all &= abs(z) <= 3 and abs(zv) <= 3
+        parts.append(f"vol {vol:.0%}: E[S_T] z {z:+.2f}, Var[logS] {sq.mean():.5f} vs {vol**2 * Ty:.5f} (z {zv:+.2f})")
+    report("(k) v3 martingale and total variance", ok_all, f"T={Ty:.4f}y, 2^21 paths; " + "; ".join(parts))
+
+
+def check_l(cfg3):
+    ok_all, parts = True, []
+    steps = [604800] * 26
+    t = sum(steps) / T.YEAR_SECS
+    for i, vol in enumerate((0.25, 0.85)):
+        c = scaled_cfg(cfg3, vol)
+        lx = T.simulate_log_spot(2**21, vol, steps, seed=1100 + i, cfg=cfg3)
+        for K in (0.6, 1.0, 1.2):
+            pm = 0.5 * (np.maximum(K - np.exp(lx[0]), 0) + np.maximum(K - np.exp(lx[1]), 0)) * math.exp(-cfg3.r * t)
+            mc, se = pm.mean() * 1e4, pm.std(ddof=1) / math.sqrt(pm.size) * 1e4
+            cf = merton_put(1.0, K, t, vol, c) * 1e4
+            z = (mc - cf) / se
+            ok_all &= abs(z) <= 3
+            parts.append(f"vol {vol:.0%} put K={K}: {mc:.2f}+-{se:.2f} vs {cf:.2f} (z {z:+.2f})")
+        F = T.features([7000], vol * 1e4, 0, 26, 1, ac=1e9)
+        p, se = T.price_batch(F, 2**18, seed=1110 + i, cfg=cfg3)
+        want = 1e4 * (0.7 - merton_call(0.7, 1.0, t, vol, c)) + math.exp(-cfg3.r * t) * 25 * 26
+        z = (p[0] - want) / se[0]
+        ok_all &= abs(z) <= 3
+        parts.append(f"vol {vol:.0%} knocked-in no-autocall note: {p[0]:.2f}+-{se[0]:.2f} vs {want:.2f} (z {z:+.2f})")
+    report("(l) v3 European puts and knocked-in note vs Merton closed forms", ok_all, "; ".join(parts))
+
+
+def check_m(cfg3):
+    rows = []
+    for vol in (2000, 5500, 9000):
+        for s in (5500, 7000, 9000):
+            for kin in (0, 1):
+                for n, tn in ((1, 0), (1, 302400), (4, 86400), (26, 3600)):
+                    rows.append((s, n, tn, kin, vol))
+    rows = np.array(rows, dtype=np.float64)
+    F = T.features(rows[:, 0], rows[:, 4], rows[:, 2], rows[:, 1].astype(np.int64), rows[:, 3].astype(np.int64))
+    p1, s1 = T.price_batch(F, 2**17, seed=1201, smooth=True, cfg=cfg3)
+    p2, s2 = T.price_batch(F, 2**17, seed=1202, smooth=False, cfg=cfg3)
+    z = (p1 - p2) / np.hypot(s1, s2)
+    w = int(np.argmax(np.abs(z)))
+    report("(m) v3 smoothing vs brute-force last step, mixed vols", bool(np.all(np.abs(z) <= 3.5)),
+           f"{len(rows)} states (vol 20/55/90% in one batch), 2^17 paths; max |z| {np.max(np.abs(z)):.2f} at "
+           f"vol {rows[w, 4]:.0f} spot {rows[w, 0]:.0f} obs {rows[w, 1]:.0f} tNext {rows[w, 2]:.0f}; "
+           f"mean z^2 {np.mean(z**2):.2f}")
+
+
+def check_n(cfg3, cuda_python):
+    if not (cuda_python and os.path.exists(cuda_python)):
+        report("(n) v3 torch backend vs numpy teacher", False, "no CUDA python")
+        return
+    F = v3_states(64, 1300, [1500.0, 2500.0, 4000.0, 5500.0, 7500.0, 9000.0, 12000.0])
+    p_np, s_np = T.price_batch(F, 2**18, seed=1302, cfg=cfg3)
+    p_t, s_t, dev = torch_prices(HERE, F, 2**18, 1301, T.CONFIG_V3_PATH, cuda_python)
+    d, e = p_t - p_np, np.hypot(s_t, s_np)
+    det = e < 1e-9                   # deterministic states: numpy's stderr can be 5e-15 of rounding, not 0
+    z = d[~det] / e[~det]
+    ok = bool(np.all(np.abs(z) <= 3.5)) and bool(np.all(np.abs(d[det]) <= 1e-6))
+    report("(n) v3 torch backend vs numpy teacher, mixed vols", ok,
+           f"64 states, vols 15-120%, 2^18 paths, cuda ({dev}); {int(det.sum())} deterministic; "
+           f"max |z| {np.max(np.abs(z)):.2f}, mean z^2 {np.mean(z**2):.2f}, max |diff| {np.max(np.abs(d)):.2f} bps")
 
 
 def main():
@@ -340,6 +521,24 @@ def main():
         check_g(cfg, args.cuda_python)
     if run("h"):
         check_h(cfg)
+    cfg3 = T.load_config(T.CONFIG_V3_PATH)
+    if any(run(c) for c in "ijklmno"):
+        print(f"v3 teacher: {cfg3.name} lambdaYear {cfg3.lambda_year} muJ {cfg3.mu_j} sigmaJ {cfg3.sigma_j} at "
+              f"volRef {cfg3.vol_ref}; jump share {cfg3.jump_share:.6f}", flush=True)
+    if run("i"):
+        check_i(args.cuda_python)
+    if run("j"):
+        check_j(cfg3)
+    if run("k"):
+        check_k(cfg3)
+    if run("l"):
+        check_l(cfg3)
+    if run("m"):
+        check_m(cfg3)
+    if run("n") and not args.skip_g:
+        check_n(cfg3, args.cuda_python)
+    if run("o"):
+        check_h(cfg3, "(o) v3 barrier equality at tNext=0")
     n_fail = sum(1 for _, ok in RESULTS if not ok)
     print(f"{len(RESULTS) - n_fail}/{len(RESULTS)} checks passed in {time.time() - t0:.0f}s")
     sys.exit(1 if n_fail else 0)
