@@ -7,15 +7,17 @@ import {ISurrogatePricer} from "./ISurrogatePricer.sol";
 import {ISeriesFactory} from "./ISeriesFactory.sol";
 
 /// L3: the market for NOTE, and the pricer's only in-path use. An ERC-4626
-/// vault on USDG: LPs deposit USDG; the Desk mints NOTE+WRITER pairs, sells
-/// NOTE at the model's quote, keeps WRITER, and buys NOTE back for early exit.
-/// All policy lives here: the curated grid, which model prices which series,
-/// vol, caps, bands, fee cap. A model covers one product (note terms), not a
+/// vault on USDG: LPs deposit USDG; the Desk sells NOTE around the model's
+/// quote and buys it back for early exit. The WRITER leg, the two prices and
+/// the risk budget are in IDeskCover, which extends this interface without
+/// changing its ABI. All policy lives here: the curated grid, which model
+/// prices which series, vol, caps, bands, fee cap. A model covers one product (note terms), not a
 /// stock or a series: every series with those terms can share it, and a stock
 /// enters only through the vol the listing sets.
 ///
 /// Units: noteAmount in NOTE base units (6 decimals, 1 NOTE = 1 USDG notional);
-/// priceBps and feeBps in bps of notional. cost/proceeds in USDG base units.
+/// priceBps (the price applied: the model's quote moved by the listing's
+/// spread, IDeskCover) and feeBps in bps of notional. cost/proceeds in USDG base units.
 ///   buy:  cost     = ceil(noteAmount * priceBps / 1e4)  + fee
 ///   sell: proceeds = floor(noteAmount * priceBps / 1e4) - fee
 ///   fee = ceil(noteAmount * feeBps / 1e4); feeReceiver gets fee minus the
@@ -29,8 +31,9 @@ interface IDesk is IERC4626 {
         ISurrogatePricer pricer; // certified model for this series' product
         uint16 volBpsAnnual; // implied vol used for every quote of this series
         // (a vol-pinned model refuses any other vol: see pricer.certifiedRange(2))
-        uint128 capNotional; // max NOTE outstanding from this Desk (6 decimals)
-        uint128 soldNotional; // NOTE currently sold and not bought back
+        uint128 capNotional; // max WRITER the Desk may hold in this series (6 decimals):
+        // the NOTE it may sell beyond its inventory, by minting pairs
+        uint128 soldNotional; // WRITER the Desk holds now
     }
 
     /// Emitted on listing and on every update (new model, vol or cap).

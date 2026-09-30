@@ -15,6 +15,7 @@ contract MockPricer is ISurrogatePricer {
     }
 
     uint16 public price = 9500;
+    int16 public volSlope; // price change in bps per 100 bps of vol above 5500
     Mode public mode;
     uint8 public errA;
     int64 public errB;
@@ -53,6 +54,11 @@ contract MockPricer is ISurrogatePricer {
         mode = Mode.Price;
     }
 
+    /// A vol-sensitive model: price + slope * (vol - 5500) / 100, floored at 0.
+    function setVolSlope(int16 slope) external {
+        volSlope = slope;
+    }
+
     function setRefusal(Mode m, uint8 a, int64 b) external {
         mode = m;
         errA = a;
@@ -74,7 +80,12 @@ contract MockPricer is ISurrogatePricer {
         if (mode == Mode.OutOfRangeErr) revert OutOfRange(errA, errB);
         if (mode == Mode.InconsistentErr) revert Inconsistent(errA);
         if (mode == Mode.UncertifiedErr) revert Uncertified(errA);
-        return price;
+        if (volSlope == 0) return price;
+        if (int64(uint64(inputs.volBpsAnnual)) < _min[2] || int64(uint64(inputs.volBpsAnnual)) > _max[2]) {
+            revert OutOfRange(2, int64(uint64(inputs.volBpsAnnual)));
+        }
+        int256 p = int256(uint256(price)) + int256(volSlope) * (int256(uint256(inputs.volBpsAnnual)) - 5500) / 100;
+        return p > 0 ? uint16(uint256(p)) : 0;
     }
 
     function certifiedRange(uint8 field) external view returns (int64, int64) {

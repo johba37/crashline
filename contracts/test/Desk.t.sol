@@ -5,7 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {ERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {Base} from "./Base.t.sol";
+import {DeskFixture} from "./DeskFixture.t.sol";
 import {MockPricer} from "./mocks/MockPricer.sol";
 import {MockUSDG} from "../src/MockUSDG.sol";
 import {Desk} from "../src/Desk.sol";
@@ -18,78 +18,7 @@ import {INoteSeries, SeriesTerms, Phase} from "../src/interfaces/INoteSeries.sol
 import {ISurrogatePricer} from "../src/interfaces/ISurrogatePricer.sol";
 import {ISeriesFactory} from "../src/interfaces/ISeriesFactory.sol";
 
-contract DeskTest is Base {
-    uint16 constant VOL = 5500;
-    uint128 constant CAP = 100_000e6;
-    uint256 constant LP_CAPITAL = 1_000_000e6;
-
-    NoteQuoter quoter;
-    MockPricer pricer;
-    Desk desk;
-    NoteSeries s;
-    uint40 strikeTime;
-    address lp = makeAddr("lp");
-    address integrator = makeAddr("integrator");
-
-    function setUp() public override {
-        super.setUp();
-        quoter = new NoteQuoter(26 hours);
-        pricer = new MockPricer();
-        desk = new Desk(IERC20(address(usdg)), factory, quoter, address(this), 1 hours);
-        strikeTime = T0 + 1 hours;
-        s = _create(_terms(strikeTime));
-        _fixAt(s, strikeTime, int256(uint256(INITIAL)));
-        _spot(9000); // fresh round, day 0 of week 1
-        desk.listSeries(address(s), pricer, VOL, CAP);
-        pricer.setPrice(9500);
-        _deposit(lp, LP_CAPITAL);
-    }
-
-    // --- helpers ------------------------------------------------------------------
-
-    function _spot(uint256 bps) internal {
-        feed.pushRoundAt(_price(bps), uint40(block.timestamp));
-    }
-
-    /// Move time forward and push a fresh round.
-    function _later(uint256 secs, uint256 bps) internal {
-        vm.warp(block.timestamp + secs);
-        _spot(bps);
-    }
-
-    /// Observation 1 has passed with a feed round at it, but nobody recorded it.
-    function _pendingObs1() internal returns (uint80 round) {
-        feed.pushRoundAt(_price(9000), _obsTime(s, 1));
-        round = uint80(feed.latestRound());
-        vm.warp(uint256(_obsTime(s, 1)) + 60);
-        _spot(9000);
-    }
-
-    function _deposit(address who, uint256 amount) internal returns (uint256 shares) {
-        usdg.mint(who, amount);
-        vm.startPrank(who);
-        usdg.approve(address(desk), amount);
-        shares = desk.deposit(amount, who);
-        vm.stopPrank();
-    }
-
-    function _buy(address who, uint256 n, uint16 feeBps) internal returns (uint256 cost) {
-        (uint256 quoted,) = desk.quoteBuy(address(s), n, feeBps);
-        usdg.mint(who, quoted);
-        vm.startPrank(who);
-        usdg.approve(address(desk), quoted);
-        cost = desk.buy(address(s), n, quoted, feeBps, integrator, who);
-        vm.stopPrank();
-    }
-
-    function _sell(address who, uint256 n, uint16 feeBps) internal returns (uint256 proceeds) {
-        address noteToken = s.note();
-        vm.startPrank(who);
-        IERC20(noteToken).approve(address(desk), n);
-        proceeds = desk.sell(address(s), n, 0, feeBps, integrator, who);
-        vm.stopPrank();
-    }
-
+contract DeskTest is DeskFixture {
     // --- construction and listing -------------------------------------------------
 
     function test_constructor_wrong_asset() public {
