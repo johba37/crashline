@@ -1,5 +1,5 @@
 import { Link, useSearchParams } from 'react-router'
-import { date, observationsLeft, per100, signedPct, trigger, usd } from '../../market/format.ts'
+import { date, observationsLeft, signedPct, trigger, usd, usdg } from '../../market/format.ts'
 import type { Refusable, SeriesView } from '../../market/types.ts'
 import StatusChip from './StatusChip.tsx'
 import { seriesStatus } from './status.ts'
@@ -7,23 +7,24 @@ import Term from './Term.tsx'
 
 const COLUMNS = 'md:grid-cols-[1.4fr_0.8fr_1.2fr_1fr_1fr_12rem]'
 
-function Price({ quote, caption }: { quote: Refusable<number>; caption: string }) {
+function Price({ quote, amount, caption }: { quote: Refusable<number>; amount: bigint; caption: string }) {
   return (
     <div className="flex flex-col md:items-end">
       {quote.ok
-        ? <span className="type-data text-ink">{per100(quote.value)}</span>
+        ? <span className="type-data text-ink">{usdg((amount * BigInt(quote.value)) / 10_000n)}</span>
         : <span className="type-data text-ink-faint" aria-label="No price">—</span>}
       <span className="type-caption text-ink-muted">{caption}</span>
     </div>
   )
 }
 
-/** Every open note, paused ones included with the reason. Choosing a row makes it the note above. */
-export default function MarketList({ series, selected }: { series: SeriesView[]; selected?: string }) {
+/** Every open note with what `amount` costs, paused ones included with the reason. Choosing a row makes it the note above. */
+export default function MarketList({ series, selected, amount }: { series: SeriesView[]; selected?: string; amount: bigint }) {
   const [params] = useSearchParams()
-  const href = (address: string) => {
+  const href = (s: SeriesView) => {
     const next = new URLSearchParams(params)
-    next.set('series', address)
+    next.set('stock', s.symbol)
+    next.set('series', s.address)
     return `?${next}`
   }
   return (
@@ -32,8 +33,8 @@ export default function MarketList({ series, selected }: { series: SeriesView[];
         <span>Note</span>
         <span>Checks left</span>
         <span className="inline-flex items-center gap-1"><Term t="crashLine">Crash line</Term></span>
-        <span className="text-right">Earn: cost per 100</span>
-        <span className="text-right">Protect: cost per 100</span>
+        <span className="text-right">Earn costs</span>
+        <span className="text-right">Protect costs</span>
         <span className="text-right">Status</span>
       </div>
       <ul className="divide-y divide-line">
@@ -47,7 +48,7 @@ export default function MarketList({ series, selected }: { series: SeriesView[];
             >
               <div className="flex flex-col">
                 <Link
-                  to={href(s.address)}
+                  to={href(s)}
                   preventScrollReset
                   aria-current={current ? 'true' : undefined}
                   className="type-body text-ink outline-none after:absolute after:inset-0 focus-visible:after:outline-2 focus-visible:after:-outline-offset-2 focus-visible:after:outline-focus"
@@ -64,8 +65,8 @@ export default function MarketList({ series, selected }: { series: SeriesView[];
                 <span className="type-data text-ink">{usd(t.price)}</span>
                 <span className="type-caption text-ink-muted">{t.move === null ? '' : `${signedPct(t.move, 0)} from today`}</span>
               </div>
-              <Price quote={s.noteAsk} caption="Earn" />
-              <Price quote={s.coverAsk} caption="Protect" />
+              <Price quote={s.noteAsk} amount={amount} caption="Earn, USDG" />
+              <Price quote={s.coverAsk} amount={amount} caption="Protect, USDG" />
               <div className="hidden justify-end md:flex">
                 <StatusChip status={seriesStatus(s)} />
               </div>

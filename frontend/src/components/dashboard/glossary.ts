@@ -2,16 +2,16 @@
 // page. Facts from contracts/src/interfaces (INoteSeries payout rules, IDeskCover) and
 // docs/interfaces.md.
 export const GLOSSARY = {
-  note: ['note', 'An agreement on one stock that runs about six months: 26 weekly checks, then one more week. It’s split into two sides, a weekly income (Earn) and crash insurance (Protect), and the most it can ever pay is locked in the day it’s made.'],
+  note: ['note', 'An agreement on one stock that runs for a set number of weeks, up to about six months: a check every week, then one more week. It’s split into two sides, a weekly income (Earn) and crash insurance (Protect), and the most it can ever pay is locked in the day it’s made.'],
   cover: ['cover', 'Crash insurance on a stock. You pay once, upfront. If the stock is below the crash line at a weekly check and ends below its starting price, cover pays you the fall.'],
   NOTE: ['NOTE', 'The income side of a note. You get 0.25% of your amount for every week, paid when the note ends. In a big crash you get back less.'],
   premium: ['premium', 'What cover costs. You pay it once, when you buy it.'],
-  crashLine: ['crash line', 'A 40% fall: 60% of the starting price. If the stock is below it at a weekly check, the insurance switches on for good.'],
+  crashLine: ['crash line', 'The price that counts as a crash: 60% of the note’s starting price. If the stock closes below it at a weekly check, the insurance switches on for good.'],
   weeklyCheck: ['weekly check', 'Once a week the stock’s closing price is recorded on the blockchain. Only these prices count, not the moves in between.'],
-  startingPrice: ['starting price', 'The stock’s price on the note’s first day. Payouts are measured from it.'],
-  endsEarly: ['ends early', 'If the stock is at or above its starting price at a weekly check, the note ends there and everyone is paid out.'],
+  startingPrice: ['starting price', 'The stock’s price on the note’s first day. Payouts are measured from it, not from today’s price.'],
+  endsEarly: ['ends early', 'If the stock is at or above its starting price at a weekly check, the note is over that day. Protect gets back part of what it paid and is no longer covered. Earn gets its amount back, plus the income so far.'],
   endDate: ['end date', 'One week after the last weekly check. Whatever hasn’t ended early is paid out then.'],
-  amount: ['amount', 'What your note or cover is about. The weekly income and the payouts are shares of it.'],
+  amount: ['amount', 'How much the insurance is for, in USDG. Every payout is a share of it: if the cover pays for a 50% fall, that’s half of this amount. The weekly income is 0.25% of it.'],
   usdg: ['USDG', 'A digital dollar made by Paxos: 1 USDG is worth 1 US dollar. All prices and payouts are in USDG.'],
   fullyBacked: ['fully backed', 'The most a note can ever pay is locked in the contract the day it’s made, so every payout is already there.'],
   model: ['model', 'A small AI model that runs on the blockchain and computes the price. Anyone can check what it saw and which version priced a trade.'],
@@ -22,7 +22,7 @@ export const GLOSSARY = {
   fee: ['fee', 'What this website charges, as a share of the price. The contract caps it, and half of it stays with the Desk as a safety buffer.'],
   coverAvailable: ['cover available', 'How much more the Desk can take on for this stock right now. It stops selling before it could ever fail to pay.'],
   fingerprint: ['fingerprint', 'A unique code for the model’s exact version. If anyone changed the model, the code would change.'],
-  slippage: ['price protection', 'If the price moves by more than 0.5% before your order goes through, the order is cancelled and you pay nothing.'],
+  slippage: ['slippage limit', 'If the price moves by more than 0.5% before your order goes through, the order is cancelled and you pay nothing.'],
 } as const
 
 export type TermId = keyof typeof GLOSSARY

@@ -25,11 +25,14 @@ export function fromConfig(json: unknown, chainId: number): Deployment {
   return { desk: c.addresses.desk, usdg: c.addresses.usdg }
 }
 
-/** Where the contracts are: the backend's /config when VITE_API_URL is set, else the deployments file. */
-export function useDeployment(): { deployment: Deployment | null; isLoading: boolean; error: Error | null } {
+/**
+ * Where the contracts are: the backend's /config when VITE_API_URL is set, else the deployments
+ * file. Not looked up while `live` is off (test mode shows the example market).
+ */
+export function useDeployment(live: boolean): { deployment: Deployment | null; isLoading: boolean; error: Error | null } {
   const query = useQuery({
     queryKey: ['config', API_URL, chain.id],
-    enabled: API_URL !== undefined,
+    enabled: API_URL !== undefined && live,
     queryFn: async ({ signal }) => {
       const res = await fetch(`${API_URL}/config`, { signal })
       if (!res.ok) throw new Error(`The backend answered ${res.status}.`)
@@ -38,6 +41,7 @@ export function useDeployment(): { deployment: Deployment | null; isLoading: boo
     refetchInterval: REFETCH_MS,
     retry: 1,
   })
+  if (!live) return { deployment: null, isLoading: false, error: null }
   if (API_URL === undefined) return { deployment: fromFile, isLoading: false, error: null }
   return { deployment: query.data ?? null, isLoading: query.isLoading, error: query.error }
 }

@@ -105,6 +105,21 @@ export type MarketData = {
   now: number // unix seconds the data was read at
 }
 
+/** One recorded price of a stock: unix seconds and the feed price (8 decimals). */
+export type PricePoint = { time: number; price: bigint }
+
+/**
+ * What a wallet holds in one note: one side of it, as the backend's /accounts/{address} reports it
+ * (docs/backend.md). `amount` is NOTE or WRITER in base units, `paid` its cost basis in USDG.
+ */
+export type Position = {
+  series: SeriesView
+  side: 'cover' | 'note'
+  amount: bigint
+  paid: bigint
+  path: PricePoint[] // the stock since the note started, oldest first, the last point is now
+}
+
 /** The four Desk trades. */
 export type TradeKind = 'buy' | 'sell' | 'buyCover' | 'sellCover'
 

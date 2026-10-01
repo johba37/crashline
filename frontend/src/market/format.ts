@@ -12,10 +12,6 @@ const locale = undefined // the reader's locale
 export const pct = (bps: number, digits = 2) =>
   `${(bps / 100).toLocaleString(locale, { minimumFractionDigits: digits, maximumFractionDigits: digits })}%`
 
-/** A price in bps of the amount, as USDG per 100 USDG: 1300 -> "13.00" */
-export const per100 = (bps: number) =>
-  (bps / 100).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-
 /** Signed fraction -> "−26.0%", with a real minus sign. */
 export const signedPct = (fraction: number, digits = 1) => {
   const s = Math.abs(fraction * 100).toLocaleString(locale, { minimumFractionDigits: digits, maximumFractionDigits: digits })
@@ -26,9 +22,9 @@ export const signedPct = (fraction: number, digits = 1) => {
 export const usdg = (base: bigint, digits = 2) =>
   (Number(base) / 1e6).toLocaleString(locale, { minimumFractionDigits: digits, maximumFractionDigits: digits })
 
-/** Feed price (8 decimals) -> "$251.30" */
+/** Feed price (8 decimals) -> "$251.30" (the narrow symbol: other locales would print "US$251.30") */
 export const usd = (price: bigint) =>
-  (Number(price) / 1e8).toLocaleString(locale, { style: 'currency', currency: 'USD' })
+  (Number(price) / 1e8).toLocaleString(locale, { style: 'currency', currency: 'USD', currencyDisplay: 'narrowSymbol' })
 
 /** A barrier in bps of the initial fixing, as a feed price. */
 export const level = (initialFixing: bigint, bps: number) => (initialFixing * BigInt(bps)) / 10_000n
@@ -53,6 +49,13 @@ export const fromNow = (ts: number, now: number) => {
   if (Math.abs(s) >= 2 * 86400) return rtf.format(Math.round(s / 86400), 'day')
   if (Math.abs(s) >= 2 * 3600) return rtf.format(Math.round(s / 3600), 'hour')
   return rtf.format(Math.round(s / 60), 'minute')
+}
+
+/** A length of time as people say it: whole weeks up to two months, then months. 14 weeks -> "About 3 months" */
+export const span = (secs: number) => {
+  const weeks = Math.max(1, Math.round(secs / WEEK))
+  if (weeks <= 8) return weeks === 1 ? '1 week' : `${weeks} weeks`
+  return `About ${Math.round(secs / (30.44 * 86400))} months`
 }
 
 /** "1,250.5" -> base units, or null when it isn't a positive amount with at most 6 decimals. */

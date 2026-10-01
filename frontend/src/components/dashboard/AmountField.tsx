@@ -3,12 +3,13 @@ import { useId, type ReactNode } from 'react'
 
 /** Enter a USDG amount. Validated by the caller on blur and submit, not per keystroke. */
 export default function AmountField({
-  label, info, unit, value, onChange, onBlur, helper, error,
+  label, info, unit, value, placeholder = '0.00', onChange, onBlur, helper, error,
 }: {
   label: string
   info?: ReactNode // an InfoTip, kept outside the <label> so a tap on it doesn't focus the input
   unit: string
   value: string
+  placeholder?: string
   onChange: (value: string) => void
   onBlur?: () => void
   helper?: ReactNode
@@ -26,7 +27,7 @@ export default function AmountField({
           id={id}
           inputMode="decimal"
           autoComplete="off"
-          placeholder="0.00"
+          placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onBlur={onBlur}
@@ -36,7 +37,7 @@ export default function AmountField({
         />
         <span className="type-label text-ink-muted">{unit}</span>
       </div>
-      <p id={`${id}-help`} className={`flex items-center gap-1.5 type-caption ${error ? 'text-abort' : 'text-ink-muted'}`}>
+      <p id={`${id}-help`} className={`flex items-center gap-1.5 type-label ${error ? 'text-abort' : 'text-ink-muted'}`}>
         {error && <WarningCircle size={16} weight="bold" aria-hidden="true" />}
         {error ?? helper}
       </p>

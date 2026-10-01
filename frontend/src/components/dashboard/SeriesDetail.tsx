@@ -1,12 +1,10 @@
 import type { ReactNode } from 'react'
-import { level, pct, per100, signedPct, trigger, usd } from '../../market/format.ts'
+import { level, pct, signedPct, trigger, usd, usdg } from '../../market/format.ts'
 import type { Refusable, SeriesView } from '../../market/types.ts'
 import ObservationTimeline from './ObservationTimeline.tsx'
 import Term from './Term.tsx'
 
-const show = (q: Refusable<number>) => (q.ok ? per100(q.value) : '—')
-
-function Side({ title, buy, sell, fair }: { title: string; buy: Refusable<number>; sell: Refusable<number>; fair: string }) {
+function Side({ title, buy, sell, fair, show }: { title: string; buy: Refusable<number>; sell: Refusable<number>; fair: string; show: (q: Refusable<number>) => string }) {
   return (
     <div className="flex flex-col gap-3 rounded-md bg-surface-well p-4">
       <h4 className="type-label text-ink">{title}</h4>
@@ -28,24 +26,27 @@ function Side({ title, buy, sell, fair }: { title: string; buy: Refusable<number
   )
 }
 
-/** Both sides of the chosen note at the Desk's two prices, per 100 USDG, around the model's fair price. */
-export function PriceDetails({ s }: { s: SeriesView }) {
+/** Both sides of the chosen note at the Desk's two prices, in USDG for `amount`, around the model's fair price. */
+export function PriceDetails({ s, amount }: { s: SeriesView; amount: bigint }) {
   const max = Number(s.maxPayoutPerNote / 100n)
-  const fairNote = s.mid.ok ? per100(s.mid.value.priceBps) : '—'
-  const fairCover = s.mid.ok ? per100(max - s.mid.value.priceBps) : '—'
+  const money = (bps: number) => usdg((amount * BigInt(bps)) / 10_000n)
+  const show = (q: Refusable<number>) => (q.ok ? money(q.value) : '—')
+  const fairNote = s.mid.ok ? money(s.mid.value.priceBps) : '—'
+  const fairCover = s.mid.ok ? money(max - s.mid.value.priceBps) : '—'
   return (
     <div className="flex flex-col gap-4">
       <p className="type-body text-ink-muted">
         The <Term t="model" /> works out a <Term t="fairPrice" />. The <Term t="desk" /> sells a little above it and buys a
-        little below it; that gap is the <Term t="spread" />. All prices are in USDG per 100 USDG of <Term t="amount" />.
+        little below it; that gap is the <Term t="spread" />. All prices are in USDG, for your <Term t="amount" /> of{' '}
+        {usdg(amount, 0)} USDG.
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Side title="Protect: cover" buy={s.coverAsk} sell={s.coverBid} fair={fairCover} />
-        <Side title="Earn: NOTE" buy={s.noteAsk} sell={s.noteBid} fair={fairNote} />
+        <Side title="Protect: cover" buy={s.coverAsk} sell={s.coverBid} fair={fairCover} show={show} />
+        <Side title="Earn: NOTE" buy={s.noteAsk} sell={s.noteBid} fair={fairNote} show={show} />
       </div>
       <p className="type-body text-ink-muted">
-        Together, a NOTE and its cover always pay {per100(max)} per 100 when the note ends, because that money is locked in the
-        day it’s made (<Term t="fullyBacked" />). That’s why their fair prices add up to {per100(max)}.
+        Together, a NOTE and its cover always pay {money(max)} USDG when the note ends, because that money is locked in the
+        day it’s made (<Term t="fullyBacked" />). That’s why their fair prices add up to {money(max)}.
       </p>
     </div>
   )
