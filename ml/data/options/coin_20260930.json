@@ -1,0 +1,2416 @@
+{
+"symbol": "COIN",
+"fetchedAtUtc": "2026-10-01T05:22:34+00:00",
+"expiries": {
+"2026-11-20": [
+{
+"strike": "5.00",
+"c_Bid": "178.40",
+"c_Ask": "185.70",
+"c_Openinterest": "236",
+"p_Bid": "--",
+"p_Ask": "0.02",
+"p_Openinterest": "181"
+},
+{
+"strike": "10.00",
+"c_Bid": "173.30",
+"c_Ask": "180.80",
+"c_Openinterest": "--",
+"p_Bid": "--",
+"p_Ask": "0.02",
+"p_Openinterest": "--"
+},
+{
+"strike": "15.00",
+"c_Bid": "168.50",
+"c_Ask": "175.75",
+"c_Openinterest": "1",
+"p_Bid": "--",
+"p_Ask": "0.02",
+"p_Openinterest": "5"
+},
+{
+"strike": "20.00",
+"c_Bid": "163.50",
+"c_Ask": "170.95",
+"c_Openinterest": "1",
+"p_Bid": "--",
+"p_Ask": "0.02",
+"p_Openinterest": "--"
+},
+{
+"strike": "25.00",
+"c_Bid": "158.50",
+"c_Ask": "165.80",
+"c_Openinterest": "1",
+"p_Bid": "--",
+"p_Ask": "0.32",
+"p_Openinterest": "730"
+},
+{
+"strike": "30.00",
+"c_Bid": "153.55",
+"c_Ask": "160.85",
+"c_Openinterest": "--",
+"p_Bid": "--",
+"p_Ask": "4.90",
+"p_Openinterest": "3"
+},
+{
+"strike": "35.00",
+"c_Bid": "148.55",
+"c_Ask": "155.80",
+"c_Openinterest": "2",
+"p_Bid": "--",
+"p_Ask": "2.31",
+"p_Openinterest": "14"
+},
+{
+"strike": "40.00",
+"c_Bid": "143.65",
+"c_Ask": "151.05",
+"c_Openinterest": "11",
+"p_Bid": "--",
+"p_Ask": "0.26",
+"p_Openinterest": "15"
+},
+{
+"strike": "45.00",
+"c_Bid": "138.30",
+"c_Ask": "145.85",
+"c_Openinterest": "--",
+"p_Bid": "--",
+"p_Ask": "0.29",
+"p_Openinterest": "8"
+},
+{
+"strike": "50.00",
+"c_Bid": "133.65",
+"c_Ask": "141.00",
+"c_Openinterest": "10",
+"p_Bid": "--",
+"p_Ask": "0.13",
+"p_Openinterest": "122"
+},
+{
+"strike": "75.00",
+"c_Bid": "110.05",
+"c_Ask": "115.75",
+"c_Openinterest": "2",
+"p_Bid": "--",
+"p_Ask": "1.00",
+"p_Openinterest": "131"
+},
+{
+"strike": "80.00",
+"c_Bid": "104.30",
+"c_Ask": "111.20",
+"c_Openinterest": "4",
+"p_Bid": "--",
+"p_Ask": "1.00",
+"p_Openinterest": "132"
+},
+{
+"strike": "85.00",
+"c_Bid": "99.05",
+"c_Ask": "106.25",
+"c_Openinterest": "31",
+"p_Bid": "0.02",
+"p_Ask": "1.00",
+"p_Openinterest": "160"
+},
+{
+"strike": "90.00",
+"c_Bid": "95.50",
+"c_Ask": "100.40",
+"c_Openinterest": "6",
+"p_Bid": "0.10",
+"p_Ask": "0.36",
+"p_Openinterest": "143"
+},
+{
+"strike": "95.00",
+"c_Bid": "90.60",
+"c_Ask": "95.45",
+"c_Openinterest": "19",
+"p_Bid": "0.02",
+"p_Ask": "0.66",
+"p_Openinterest": "581"
+},
+{
+"strike": "100.00",
+"c_Bid": "85.45",
+"c_Ask": "91.50",
+"c_Openinterest": "73",
+"p_Bid": "0.05",
+"p_Ask": "0.57",
+"p_Openinterest": "1431"
+},
+{
+"strike": "105.00",
+"c_Bid": "80.55",
+"c_Ask": "85.90",
+"c_Openinterest": "15",
+"p_Bid": "--",
+"p_Ask": "0.55",
+"p_Openinterest": "276"
+},
+{
+"strike": "110.00",
+"c_Bid": "74.60",
+"c_Ask": "81.70",
+"c_Openinterest": "54",
+"p_Bid": "0.28",
+"p_Ask": "0.90",
+"p_Openinterest": "759"
+},
+{
+"strike": "115.00",
+"c_Bid": "71.25",
+"c_Ask": "76.65",
+"c_Openinterest": "8",
+"p_Bid": "0.35",
+"p_Ask": "0.92",
+"p_Openinterest": "800"
+},
+{
+"strike": "120.00",
+"c_Bid": "66.55",
+"c_Ask": "71.10",
+"c_Openinterest": "49",
+"p_Bid": "0.60",
+"p_Ask": "1.04",
+"p_Openinterest": "710"
+},
+{
+"strike": "125.00",
+"c_Bid": "60.30",
+"c_Ask": "66.70",
+"c_Openinterest": "15",
+"p_Bid": "0.79",
+"p_Ask": "1.29",
+"p_Openinterest": "1343"
+},
+{
+"strike": "130.00",
+"c_Bid": "58.00",
+"c_Ask": "62.70",
+"c_Openinterest": "37",
+"p_Bid": "1.22",
+"p_Ask": "1.51",
+"p_Openinterest": "2488"
+},
+{
+"strike": "135.00",
+"c_Bid": "53.15",
+"c_Ask": "56.55",
+"c_Openinterest": "10",
+"p_Bid": "1.65",
+"p_Ask": "1.90",
+"p_Openinterest": "1705"
+},
+{
+"strike": "140.00",
+"c_Bid": "47.00",
+"c_Ask": "53.85",
+"c_Openinterest": "47",
+"p_Bid": "2.19",
+"p_Ask": "2.52",
+"p_Openinterest": "1904"
+},
+{
+"strike": "145.00",
+"c_Bid": "43.55",
+"c_Ask": "48.75",
+"c_Openinterest": "134",
+"p_Bid": "2.60",
+"p_Ask": "3.15",
+"p_Openinterest": "1523"
+},
+{
+"strike": "150.00",
+"c_Bid": "39.45",
+"c_Ask": "44.75",
+"c_Openinterest": "527",
+"p_Bid": "3.70",
+"p_Ask": "4.25",
+"p_Openinterest": "2372"
+},
+{
+"strike": "155.00",
+"c_Bid": "35.55",
+"c_Ask": "40.90",
+"c_Openinterest": "245",
+"p_Bid": "4.25",
+"p_Ask": "5.20",
+"p_Openinterest": "765"
+},
+{
+"strike": "160.00",
+"c_Bid": "31.90",
+"c_Ask": "36.85",
+"c_Openinterest": "942",
+"p_Bid": "5.25",
+"p_Ask": "6.55",
+"p_Openinterest": "1373"
+},
+{
+"strike": "165.00",
+"c_Bid": "28.45",
+"c_Ask": "33.20",
+"c_Openinterest": "1784",
+"p_Bid": "6.85",
+"p_Ask": "8.10",
+"p_Openinterest": "2467"
+},
+{
+"strike": "170.00",
+"c_Bid": "25.25",
+"c_Ask": "29.90",
+"c_Openinterest": "12062",
+"p_Bid": "9.55",
+"p_Ask": "10.50",
+"p_Openinterest": "1706"
+},
+{
+"strike": "175.00",
+"c_Bid": "22.65",
+"c_Ask": "27.40",
+"c_Openinterest": "366",
+"p_Bid": "11.45",
+"p_Ask": "12.20",
+"p_Openinterest": "936"
+},
+{
+"strike": "180.00",
+"c_Bid": "20.50",
+"c_Ask": "24.70",
+"c_Openinterest": "657",
+"p_Bid": "13.80",
+"p_Ask": "14.45",
+"p_Openinterest": "1180"
+},
+{
+"strike": "185.00",
+"c_Bid": "18.55",
+"c_Ask": "19.95",
+"c_Openinterest": "660",
+"p_Bid": "14.25",
+"p_Ask": "17.60",
+"p_Openinterest": "830"
+},
+{
+"strike": "190.00",
+"c_Bid": "16.90",
+"c_Ask": "17.70",
+"c_Openinterest": "1544",
+"p_Bid": "19.10",
+"p_Ask": "20.30",
+"p_Openinterest": "2385"
+},
+{
+"strike": "195.00",
+"c_Bid": "14.50",
+"c_Ask": "15.70",
+"c_Openinterest": "943",
+"p_Bid": "20.40",
+"p_Ask": "24.60",
+"p_Openinterest": "1433"
+},
+{
+"strike": "200.00",
+"c_Bid": "13.00",
+"c_Ask": "13.90",
+"c_Openinterest": "3037",
+"p_Bid": "25.25",
+"p_Ask": "27.55",
+"p_Openinterest": "1870"
+},
+{
+"strike": "210.00",
+"c_Bid": "10.35",
+"c_Ask": "10.90",
+"c_Openinterest": "5459",
+"p_Bid": "29.95",
+"p_Ask": "34.30",
+"p_Openinterest": "350"
+},
+{
+"strike": "220.00",
+"c_Bid": "8.00",
+"c_Ask": "9.45",
+"c_Openinterest": "2628",
+"p_Bid": "37.45",
+"p_Ask": "42.45",
+"p_Openinterest": "164"
+},
+{
+"strike": "230.00",
+"c_Bid": "6.00",
+"c_Ask": "6.70",
+"c_Openinterest": "1558",
+"p_Bid": "45.75",
+"p_Ask": "50.65",
+"p_Openinterest": "277"
+},
+{
+"strike": "240.00",
+"c_Bid": "4.85",
+"c_Ask": "5.30",
+"c_Openinterest": "2900",
+"p_Bid": "54.10",
+"p_Ask": "59.25",
+"p_Openinterest": "99"
+},
+{
+"strike": "250.00",
+"c_Bid": "3.90",
+"c_Ask": "4.20",
+"c_Openinterest": "2222",
+"p_Bid": "63.05",
+"p_Ask": "68.20",
+"p_Openinterest": "56"
+},
+{
+"strike": "260.00",
+"c_Bid": "2.66",
+"c_Ask": "4.05",
+"c_Openinterest": "561",
+"p_Bid": "72.35",
+"p_Ask": "77.45",
+"p_Openinterest": "51"
+},
+{
+"strike": "270.00",
+"c_Bid": "2.42",
+"c_Ask": "3.55",
+"c_Openinterest": "916",
+"p_Bid": "82.90",
+"p_Ask": "86.40",
+"p_Openinterest": "55"
+},
+{
+"strike": "280.00",
+"c_Bid": "2.00",
+"c_Ask": "2.57",
+"c_Openinterest": "943",
+"p_Bid": "90.35",
+"p_Ask": "97.05",
+"p_Openinterest": "41"
+},
+{
+"strike": "290.00",
+"c_Bid": "1.59",
+"c_Ask": "2.23",
+"c_Openinterest": "665",
+"p_Bid": "100.85",
+"p_Ask": "106.10",
+"p_Openinterest": "96"
+},
+{
+"strike": "300.00",
+"c_Bid": "1.30",
+"c_Ask": "1.81",
+"c_Openinterest": "4101",
+"p_Bid": "110.60",
+"p_Ask": "115.85",
+"p_Openinterest": "41"
+},
+{
+"strike": "310.00",
+"c_Bid": "1.06",
+"c_Ask": "1.52",
+"c_Openinterest": "668",
+"p_Bid": "119.80",
+"p_Ask": "127.25",
+"p_Openinterest": "1"
+},
+{
+"strike": "320.00",
+"c_Bid": "0.76",
+"c_Ask": "1.49",
+"c_Openinterest": "599",
+"p_Bid": "130.15",
+"p_Ask": "135.20",
+"p_Openinterest": "2"
+},
+{
+"strike": "330.00",
+"c_Bid": "0.60",
+"c_Ask": "1.43",
+"c_Openinterest": "784",
+"p_Bid": "140.25",
+"p_Ask": "146.65",
+"p_Openinterest": "--"
+},
+{
+"strike": "340.00",
+"c_Bid": "0.60",
+"c_Ask": "1.16",
+"c_Openinterest": "148",
+"p_Bid": "149.40",
+"p_Ask": "156.75",
+"p_Openinterest": "--"
+},
+{
+"strike": "350.00",
+"c_Bid": "0.29",
+"c_Ask": "1.10",
+"c_Openinterest": "553",
+"p_Bid": "159.45",
+"p_Ask": "166.60",
+"p_Openinterest": "--"
+},
+{
+"strike": "360.00",
+"c_Bid": "0.16",
+"c_Ask": "0.60",
+"c_Openinterest": "326",
+"p_Bid": "169.45",
+"p_Ask": "176.85",
+"p_Openinterest": "--"
+},
+{
+"strike": "370.00",
+"c_Bid": "--",
+"c_Ask": "1.03",
+"c_Openinterest": "183",
+"p_Bid": "179.40",
+"p_Ask": "186.65",
+"p_Openinterest": "--"
+},
+{
+"strike": "380.00",
+"c_Bid": "--",
+"c_Ask": "0.88",
+"c_Openinterest": "130",
+"p_Bid": "189.40",
+"p_Ask": "196.80",
+"p_Openinterest": "--"
+},
+{
+"strike": "390.00",
+"c_Bid": "--",
+"c_Ask": "0.65",
+"c_Openinterest": "49",
+"p_Bid": "200.20",
+"p_Ask": "205.45",
+"p_Openinterest": "--"
+},
+{
+"strike": "400.00",
+"c_Bid": "0.10",
+"c_Ask": "0.80",
+"c_Openinterest": "334",
+"p_Bid": "209.40",
+"p_Ask": "216.70",
+"p_Openinterest": "--"
+},
+{
+"strike": "410.00",
+"c_Bid": "--",
+"c_Ask": "0.79",
+"c_Openinterest": "107",
+"p_Bid": "219.40",
+"p_Ask": "226.70",
+"p_Openinterest": "--"
+},
+{
+"strike": "420.00",
+"c_Bid": "--",
+"c_Ask": "0.98",
+"c_Openinterest": "114",
+"p_Bid": "229.35",
+"p_Ask": "236.65",
+"p_Openinterest": "--"
+},
+{
+"strike": "430.00",
+"c_Bid": "--",
+"c_Ask": "0.82",
+"c_Openinterest": "219",
+"p_Bid": "239.40",
+"p_Ask": "246.75",
+"p_Openinterest": "--"
+},
+{
+"strike": "440.00",
+"c_Bid": "--",
+"c_Ask": "0.78",
+"c_Openinterest": "169",
+"p_Bid": "250.70",
+"p_Ask": "255.45",
+"p_Openinterest": "--"
+},
+{
+"strike": "450.00",
+"c_Bid": "0.10",
+"c_Ask": "0.41",
+"c_Openinterest": "1062",
+"p_Bid": "259.35",
+"p_Ask": "266.80",
+"p_Openinterest": "--"
+},
+{
+"strike": "460.00",
+"c_Bid": "--",
+"c_Ask": "0.40",
+"c_Openinterest": "126",
+"p_Bid": "269.40",
+"p_Ask": "276.75",
+"p_Openinterest": "--"
+},
+{
+"strike": "470.00",
+"c_Bid": "0.05",
+"c_Ask": "0.70",
+"c_Openinterest": "138",
+"p_Bid": "280.45",
+"p_Ask": "286.70",
+"p_Openinterest": "--"
+},
+{
+"strike": "480.00",
+"c_Bid": "--",
+"c_Ask": "0.40",
+"c_Openinterest": "134",
+"p_Bid": "289.40",
+"p_Ask": "296.90",
+"p_Openinterest": "--"
+},
+{
+"strike": "490.00",
+"c_Bid": "--",
+"c_Ask": "0.45",
+"c_Openinterest": "344",
+"p_Bid": "300.35",
+"p_Ask": "306.90",
+"p_Openinterest": "--"
+}
+],
+"2026-12-18": [
+{
+"strike": "5.00",
+"c_Bid": "177.00",
+"c_Ask": "183.85",
+"c_Openinterest": "881",
+"p_Bid": "--",
+"p_Ask": "0.02",
+"p_Openinterest": "837"
+},
+{
+"strike": "10.00",
+"c_Bid": "172.10",
+"c_Ask": "181.90",
+"c_Openinterest": "34",
+"p_Bid": "--",
+"p_Ask": "0.03",
+"p_Openinterest": "14"
+},
+{
+"strike": "15.00",
+"c_Bid": "167.05",
+"c_Ask": "176.35",
+"c_Openinterest": "3",
+"p_Bid": "--",
+"p_Ask": "0.05",
+"p_Openinterest": "4"
+},
+{
+"strike": "20.00",
+"c_Bid": "162.70",
+"c_Ask": "171.00",
+"c_Openinterest": "14",
+"p_Bid": "--",
+"p_Ask": "0.66",
+"p_Openinterest": "785"
+},
+{
+"strike": "25.00",
+"c_Bid": "157.30",
+"c_Ask": "166.45",
+"c_Openinterest": "1",
+"p_Bid": "--",
+"p_Ask": "0.98",
+"p_Openinterest": "15"
+},
+{
+"strike": "30.00",
+"c_Bid": "152.10",
+"c_Ask": "162.00",
+"c_Openinterest": "3",
+"p_Bid": "--",
+"p_Ask": "0.94",
+"p_Openinterest": "43"
+},
+{
+"strike": "35.00",
+"c_Bid": "147.10",
+"c_Ask": "156.95",
+"c_Openinterest": "--",
+"p_Bid": "--",
+"p_Ask": "0.15",
+"p_Openinterest": "66"
+},
+{
+"strike": "40.00",
+"c_Bid": "142.00",
+"c_Ask": "151.80",
+"c_Openinterest": "--",
+"p_Bid": "--",
+"p_Ask": "0.24",
+"p_Openinterest": "186"
+},
+{
+"strike": "45.00",
+"c_Bid": "137.50",
+"c_Ask": "146.95",
+"c_Openinterest": "11",
+"p_Bid": "--",
+"p_Ask": "0.08",
+"p_Openinterest": "74"
+},
+{
+"strike": "50.00",
+"c_Bid": "133.90",
+"c_Ask": "140.90",
+"c_Openinterest": "33",
+"p_Bid": "--",
+"p_Ask": "0.05",
+"p_Openinterest": "411"
+},
+{
+"strike": "75.00",
+"c_Bid": "111.20",
+"c_Ask": "116.60",
+"c_Openinterest": "29",
+"p_Bid": "0.01",
+"p_Ask": "0.26",
+"p_Openinterest": "588"
+},
+{
+"strike": "80.00",
+"c_Bid": "105.30",
+"c_Ask": "110.10",
+"c_Openinterest": "83",
+"p_Bid": "0.10",
+"p_Ask": "0.27",
+"p_Openinterest": "5141"
+},
+{
+"strike": "85.00",
+"c_Bid": "99.10",
+"c_Ask": "106.80",
+"c_Openinterest": "20",
+"p_Bid": "0.20",
+"p_Ask": "0.42",
+"p_Openinterest": "385"
+},
+{
+"strike": "90.00",
+"c_Bid": "94.95",
+"c_Ask": "101.25",
+"c_Openinterest": "25",
+"p_Bid": "0.20",
+"p_Ask": "0.58",
+"p_Openinterest": "179"
+},
+{
+"strike": "95.00",
+"c_Bid": "89.40",
+"c_Ask": "97.30",
+"c_Openinterest": "30",
+"p_Bid": "0.27",
+"p_Ask": "0.60",
+"p_Openinterest": "139"
+},
+{
+"strike": "100.00",
+"c_Bid": "87.00",
+"c_Ask": "90.60",
+"c_Openinterest": "121",
+"p_Bid": "0.45",
+"p_Ask": "0.65",
+"p_Openinterest": "1814"
+},
+{
+"strike": "105.00",
+"c_Bid": "80.30",
+"c_Ask": "86.65",
+"c_Openinterest": "19",
+"p_Bid": "0.61",
+"p_Ask": "0.88",
+"p_Openinterest": "982"
+},
+{
+"strike": "110.00",
+"c_Bid": "76.75",
+"c_Ask": "81.75",
+"c_Openinterest": "39",
+"p_Bid": "0.78",
+"p_Ask": "1.27",
+"p_Openinterest": "5460"
+},
+{
+"strike": "115.00",
+"c_Bid": "72.05",
+"c_Ask": "77.35",
+"c_Openinterest": "596",
+"p_Bid": "1.00",
+"p_Ask": "1.57",
+"p_Openinterest": "608"
+},
+{
+"strike": "120.00",
+"c_Bid": "67.45",
+"c_Ask": "72.75",
+"c_Openinterest": "82",
+"p_Bid": "1.40",
+"p_Ask": "1.79",
+"p_Openinterest": "4490"
+},
+{
+"strike": "125.00",
+"c_Bid": "62.90",
+"c_Ask": "67.95",
+"c_Openinterest": "98",
+"p_Bid": "1.69",
+"p_Ask": "2.26",
+"p_Openinterest": "1320"
+},
+{
+"strike": "130.00",
+"c_Bid": "57.25",
+"c_Ask": "64.55",
+"c_Openinterest": "113",
+"p_Bid": "2.32",
+"p_Ask": "2.85",
+"p_Openinterest": "1664"
+},
+{
+"strike": "135.00",
+"c_Bid": "54.25",
+"c_Ask": "59.80",
+"c_Openinterest": "70",
+"p_Bid": "3.00",
+"p_Ask": "3.60",
+"p_Openinterest": "2068"
+},
+{
+"strike": "140.00",
+"c_Bid": "51.05",
+"c_Ask": "55.50",
+"c_Openinterest": "75",
+"p_Bid": "3.70",
+"p_Ask": "4.20",
+"p_Openinterest": "2207"
+},
+{
+"strike": "145.00",
+"c_Bid": "46.10",
+"c_Ask": "51.50",
+"c_Openinterest": "95",
+"p_Bid": "4.20",
+"p_Ask": "5.60",
+"p_Openinterest": "1480"
+},
+{
+"strike": "150.00",
+"c_Bid": "43.20",
+"c_Ask": "46.55",
+"c_Openinterest": "608",
+"p_Bid": "5.70",
+"p_Ask": "6.40",
+"p_Openinterest": "2349"
+},
+{
+"strike": "155.00",
+"c_Bid": "38.75",
+"c_Ask": "44.10",
+"c_Openinterest": "219",
+"p_Bid": "7.10",
+"p_Ask": "7.85",
+"p_Openinterest": "698"
+},
+{
+"strike": "160.00",
+"c_Bid": "35.30",
+"c_Ask": "40.35",
+"c_Openinterest": "1626",
+"p_Bid": "8.65",
+"p_Ask": "10.10",
+"p_Openinterest": "1563"
+},
+{
+"strike": "165.00",
+"c_Bid": "32.10",
+"c_Ask": "37.40",
+"c_Openinterest": "1043",
+"p_Bid": "10.40",
+"p_Ask": "11.50",
+"p_Openinterest": "1002"
+},
+{
+"strike": "170.00",
+"c_Bid": "29.10",
+"c_Ask": "34.40",
+"c_Openinterest": "830",
+"p_Bid": "12.70",
+"p_Ask": "13.10",
+"p_Openinterest": "3015"
+},
+{
+"strike": "175.00",
+"c_Bid": "26.30",
+"c_Ask": "29.75",
+"c_Openinterest": "613",
+"p_Bid": "13.00",
+"p_Ask": "15.95",
+"p_Openinterest": "648"
+},
+{
+"strike": "180.00",
+"c_Bid": "25.45",
+"c_Ask": "27.15",
+"c_Openinterest": "847",
+"p_Bid": "15.80",
+"p_Ask": "19.15",
+"p_Openinterest": "1272"
+},
+{
+"strike": "185.00",
+"c_Bid": "22.60",
+"c_Ask": "24.95",
+"c_Openinterest": "931",
+"p_Bid": "17.30",
+"p_Ask": "21.65",
+"p_Openinterest": "707"
+},
+{
+"strike": "190.00",
+"c_Bid": "21.00",
+"c_Ask": "22.95",
+"c_Openinterest": "1419",
+"p_Bid": "20.10",
+"p_Ask": "23.65",
+"p_Openinterest": "1114"
+},
+{
+"strike": "195.00",
+"c_Bid": "19.10",
+"c_Ask": "20.60",
+"c_Openinterest": "798",
+"p_Bid": "23.10",
+"p_Ask": "28.40",
+"p_Openinterest": "1336"
+},
+{
+"strike": "200.00",
+"c_Bid": "16.95",
+"c_Ask": "18.80",
+"c_Openinterest": "3247",
+"p_Bid": "26.80",
+"p_Ask": "30.75",
+"p_Openinterest": "2245"
+},
+{
+"strike": "210.00",
+"c_Bid": "14.00",
+"c_Ask": "15.20",
+"c_Openinterest": "1234",
+"p_Bid": "33.00",
+"p_Ask": "36.50",
+"p_Openinterest": "543"
+},
+{
+"strike": "220.00",
+"c_Bid": "11.35",
+"c_Ask": "12.85",
+"c_Openinterest": "804",
+"p_Bid": "40.50",
+"p_Ask": "44.40",
+"p_Openinterest": "797"
+},
+{
+"strike": "230.00",
+"c_Bid": "9.55",
+"c_Ask": "10.20",
+"c_Openinterest": "1829",
+"p_Bid": "48.35",
+"p_Ask": "53.50",
+"p_Openinterest": "1156"
+},
+{
+"strike": "240.00",
+"c_Bid": "7.90",
+"c_Ask": "8.40",
+"c_Openinterest": "1475",
+"p_Bid": "56.60",
+"p_Ask": "61.20",
+"p_Openinterest": "1440"
+},
+{
+"strike": "250.00",
+"c_Bid": "6.50",
+"c_Ask": "6.85",
+"c_Openinterest": "1864",
+"p_Bid": "66.75",
+"p_Ask": "69.15",
+"p_Openinterest": "697"
+},
+{
+"strike": "260.00",
+"c_Bid": "4.90",
+"c_Ask": "6.35",
+"c_Openinterest": "1451",
+"p_Bid": "75.20",
+"p_Ask": "79.25",
+"p_Openinterest": "536"
+},
+{
+"strike": "270.00",
+"c_Bid": "4.45",
+"c_Ask": "4.85",
+"c_Openinterest": "1232",
+"p_Bid": "83.10",
+"p_Ask": "88.35",
+"p_Openinterest": "450"
+},
+{
+"strike": "280.00",
+"c_Bid": "3.55",
+"c_Ask": "5.45",
+"c_Openinterest": "1795",
+"p_Bid": "92.40",
+"p_Ask": "97.65",
+"p_Openinterest": "385"
+},
+{
+"strike": "290.00",
+"c_Bid": "2.80",
+"c_Ask": "4.10",
+"c_Openinterest": "622",
+"p_Bid": "102.05",
+"p_Ask": "106.40",
+"p_Openinterest": "497"
+},
+{
+"strike": "300.00",
+"c_Bid": "2.80",
+"c_Ask": "3.35",
+"c_Openinterest": "4289",
+"p_Bid": "112.55",
+"p_Ask": "116.15",
+"p_Openinterest": "1566"
+},
+{
+"strike": "310.00",
+"c_Bid": "2.16",
+"c_Ask": "2.80",
+"c_Openinterest": "1507",
+"p_Bid": "121.15",
+"p_Ask": "126.25",
+"p_Openinterest": "731"
+},
+{
+"strike": "320.00",
+"c_Bid": "1.60",
+"c_Ask": "2.74",
+"c_Openinterest": "1032",
+"p_Bid": "131.90",
+"p_Ask": "136.00",
+"p_Openinterest": "161"
+},
+{
+"strike": "330.00",
+"c_Bid": "1.34",
+"c_Ask": "2.43",
+"c_Openinterest": "1702",
+"p_Bid": "141.50",
+"p_Ask": "145.80",
+"p_Openinterest": "336"
+},
+{
+"strike": "340.00",
+"c_Bid": "1.14",
+"c_Ask": "1.91",
+"c_Openinterest": "625",
+"p_Bid": "153.55",
+"p_Ask": "155.65",
+"p_Openinterest": "37"
+},
+{
+"strike": "350.00",
+"c_Bid": "1.30",
+"c_Ask": "2.03",
+"c_Openinterest": "1376",
+"p_Bid": "160.60",
+"p_Ask": "165.55",
+"p_Openinterest": "25"
+},
+{
+"strike": "360.00",
+"c_Bid": "1.20",
+"c_Ask": "1.38",
+"c_Openinterest": "303",
+"p_Bid": "169.50",
+"p_Ask": "175.50",
+"p_Openinterest": "--"
+},
+{
+"strike": "370.00",
+"c_Bid": "0.87",
+"c_Ask": "1.37",
+"c_Openinterest": "509",
+"p_Bid": "180.55",
+"p_Ask": "187.85",
+"p_Openinterest": "37"
+},
+{
+"strike": "380.00",
+"c_Bid": "0.68",
+"c_Ask": "1.33",
+"c_Openinterest": "429",
+"p_Bid": "189.00",
+"p_Ask": "197.95",
+"p_Openinterest": "4"
+},
+{
+"strike": "390.00",
+"c_Bid": "0.60",
+"c_Ask": "1.26",
+"c_Openinterest": "577",
+"p_Bid": "199.40",
+"p_Ask": "206.60",
+"p_Openinterest": "--"
+},
+{
+"strike": "400.00",
+"c_Bid": "0.63",
+"c_Ask": "0.85",
+"c_Openinterest": "2252",
+"p_Bid": "209.00",
+"p_Ask": "218.40",
+"p_Openinterest": "6"
+},
+{
+"strike": "410.00",
+"c_Bid": "0.44",
+"c_Ask": "0.86",
+"c_Openinterest": "149",
+"p_Bid": "219.40",
+"p_Ask": "227.00",
+"p_Openinterest": "--"
+},
+{
+"strike": "420.00",
+"c_Bid": "0.28",
+"c_Ask": "0.85",
+"c_Openinterest": "309",
+"p_Bid": "230.05",
+"p_Ask": "235.45",
+"p_Openinterest": "--"
+},
+{
+"strike": "430.00",
+"c_Bid": "0.24",
+"c_Ask": "1.11",
+"c_Openinterest": "838",
+"p_Bid": "239.40",
+"p_Ask": "247.00",
+"p_Openinterest": "--"
+},
+{
+"strike": "440.00",
+"c_Bid": "0.18",
+"c_Ask": "1.10",
+"c_Openinterest": "554",
+"p_Bid": "250.90",
+"p_Ask": "256.25",
+"p_Openinterest": "--"
+},
+{
+"strike": "450.00",
+"c_Bid": "0.27",
+"c_Ask": "0.55",
+"c_Openinterest": "1348",
+"p_Bid": "260.20",
+"p_Ask": "265.45",
+"p_Openinterest": "--"
+},
+{
+"strike": "460.00",
+"c_Bid": "0.10",
+"c_Ask": "0.99",
+"c_Openinterest": "377",
+"p_Bid": "269.40",
+"p_Ask": "277.00",
+"p_Openinterest": "--"
+},
+{
+"strike": "470.00",
+"c_Bid": "0.07",
+"c_Ask": "0.91",
+"c_Openinterest": "383",
+"p_Bid": "280.20",
+"p_Ask": "285.45",
+"p_Openinterest": "--"
+},
+{
+"strike": "480.00",
+"c_Bid": "0.17",
+"c_Ask": "0.52",
+"c_Openinterest": "227",
+"p_Bid": "289.40",
+"p_Ask": "295.45",
+"p_Openinterest": "--"
+},
+{
+"strike": "490.00",
+"c_Bid": "0.16",
+"c_Ask": "0.44",
+"c_Openinterest": "215",
+"p_Bid": "299.40",
+"p_Ask": "307.00",
+"p_Openinterest": "--"
+},
+{
+"strike": "500.00",
+"c_Bid": "0.19",
+"c_Ask": "0.41",
+"c_Openinterest": "3273",
+"p_Bid": "309.25",
+"p_Ask": "315.45",
+"p_Openinterest": "--"
+},
+{
+"strike": "510.00",
+"c_Bid": "0.03",
+"c_Ask": "0.58",
+"c_Openinterest": "544",
+"p_Bid": "320.75",
+"p_Ask": "325.65",
+"p_Openinterest": "--"
+},
+{
+"strike": "520.00",
+"c_Bid": "0.05",
+"c_Ask": "0.62",
+"c_Openinterest": "659",
+"p_Bid": "329.40",
+"p_Ask": "337.00",
+"p_Openinterest": "--"
+},
+{
+"strike": "530.00",
+"c_Bid": "0.01",
+"c_Ask": "0.60",
+"c_Openinterest": "210",
+"p_Bid": "340.20",
+"p_Ask": "345.45",
+"p_Openinterest": "--"
+},
+{
+"strike": "540.00",
+"c_Bid": "0.05",
+"c_Ask": "0.88",
+"c_Openinterest": "346",
+"p_Bid": "350.05",
+"p_Ask": "356.60",
+"p_Openinterest": "--"
+},
+{
+"strike": "550.00",
+"c_Bid": "0.01",
+"c_Ask": "0.55",
+"c_Openinterest": "1369",
+"p_Bid": "359.40",
+"p_Ask": "367.00",
+"p_Openinterest": "--"
+},
+{
+"strike": "560.00",
+"c_Bid": "0.03",
+"c_Ask": "0.44",
+"c_Openinterest": "207",
+"p_Bid": "369.40",
+"p_Ask": "377.00",
+"p_Openinterest": "--"
+},
+{
+"strike": "570.00",
+"c_Bid": "0.01",
+"c_Ask": "0.66",
+"c_Openinterest": "422",
+"p_Bid": "379.40",
+"p_Ask": "387.00",
+"p_Openinterest": "--"
+},
+{
+"strike": "580.00",
+"c_Bid": "0.02",
+"c_Ask": "0.70",
+"c_Openinterest": "338",
+"p_Bid": "389.40",
+"p_Ask": "397.00",
+"p_Openinterest": "--"
+},
+{
+"strike": "590.00",
+"c_Bid": "0.01",
+"c_Ask": "0.69",
+"c_Openinterest": "364",
+"p_Bid": "400.20",
+"p_Ask": "405.45",
+"p_Openinterest": "--"
+},
+{
+"strike": "600.00",
+"c_Bid": "0.02",
+"c_Ask": "0.47",
+"c_Openinterest": "816",
+"p_Bid": "410.05",
+"p_Ask": "416.80",
+"p_Openinterest": "--"
+},
+{
+"strike": "610.00",
+"c_Bid": "0.01",
+"c_Ask": "0.86",
+"c_Openinterest": "125",
+"p_Bid": "419.40",
+"p_Ask": "427.00",
+"p_Openinterest": "--"
+},
+{
+"strike": "620.00",
+"c_Bid": "0.01",
+"c_Ask": "0.84",
+"c_Openinterest": "656",
+"p_Bid": "430.35",
+"p_Ask": "435.80",
+"p_Openinterest": "--"
+},
+{
+"strike": "630.00",
+"c_Bid": "0.01",
+"c_Ask": "0.84",
+"c_Openinterest": "136",
+"p_Bid": "439.40",
+"p_Ask": "447.00",
+"p_Openinterest": "--"
+},
+{
+"strike": "640.00",
+"c_Bid": "0.01",
+"c_Ask": "0.83",
+"c_Openinterest": "63",
+"p_Bid": "450.05",
+"p_Ask": "456.65",
+"p_Openinterest": "--"
+},
+{
+"strike": "650.00",
+"c_Bid": "0.01",
+"c_Ask": "0.62",
+"c_Openinterest": "269",
+"p_Bid": "460.90",
+"p_Ask": "466.25",
+"p_Openinterest": "--"
+},
+{
+"strike": "660.00",
+"c_Bid": "0.01",
+"c_Ask": "0.11",
+"c_Openinterest": "388",
+"p_Bid": "470.90",
+"p_Ask": "476.25",
+"p_Openinterest": "--"
+},
+{
+"strike": "670.00",
+"c_Bid": "0.02",
+"c_Ask": "0.28",
+"c_Openinterest": "743",
+"p_Bid": "480.20",
+"p_Ask": "487.00",
+"p_Openinterest": "--"
+},
+{
+"strike": "680.00",
+"c_Bid": "0.02",
+"c_Ask": "0.10",
+"c_Openinterest": "508",
+"p_Bid": "490.20",
+"p_Ask": "495.45",
+"p_Openinterest": "--"
+},
+{
+"strike": "690.00",
+"c_Bid": "0.02",
+"c_Ask": "0.10",
+"c_Openinterest": "781",
+"p_Bid": "499.10",
+"p_Ask": "507.85",
+"p_Openinterest": "--"
+},
+{
+"strike": "700.00",
+"c_Bid": "0.01",
+"c_Ask": "0.18",
+"c_Openinterest": "843",
+"p_Bid": "509.40",
+"p_Ask": "517.00",
+"p_Openinterest": "--"
+},
+{
+"strike": "710.00",
+"c_Bid": "0.02",
+"c_Ask": "0.10",
+"c_Openinterest": "248",
+"p_Bid": "519.40",
+"p_Ask": "527.00",
+"p_Openinterest": "--"
+},
+{
+"strike": "720.00",
+"c_Bid": "0.01",
+"c_Ask": "0.15",
+"c_Openinterest": "97",
+"p_Bid": "530.05",
+"p_Ask": "536.65",
+"p_Openinterest": "--"
+},
+{
+"strike": "730.00",
+"c_Bid": "0.01",
+"c_Ask": "0.19",
+"c_Openinterest": "58",
+"p_Bid": "540.20",
+"p_Ask": "545.45",
+"p_Openinterest": "--"
+},
+{
+"strike": "740.00",
+"c_Bid": "0.01",
+"c_Ask": "0.10",
+"c_Openinterest": "93",
+"p_Bid": "549.40",
+"p_Ask": "555.45",
+"p_Openinterest": "--"
+},
+{
+"strike": "750.00",
+"c_Bid": "0.01",
+"c_Ask": "0.18",
+"c_Openinterest": "105",
+"p_Bid": "560.90",
+"p_Ask": "566.25",
+"p_Openinterest": "--"
+},
+{
+"strike": "760.00",
+"c_Bid": "--",
+"c_Ask": "0.10",
+"c_Openinterest": "6",
+"p_Bid": "569.40",
+"p_Ask": "577.00",
+"p_Openinterest": "--"
+},
+{
+"strike": "770.00",
+"c_Bid": "--",
+"c_Ask": "0.10",
+"c_Openinterest": "8",
+"p_Bid": "580.20",
+"p_Ask": "585.45",
+"p_Openinterest": "--"
+},
+{
+"strike": "780.00",
+"c_Bid": "--",
+"c_Ask": "0.15",
+"c_Openinterest": "88",
+"p_Bid": "589.40",
+"p_Ask": "597.00",
+"p_Openinterest": "--"
+},
+{
+"strike": "790.00",
+"c_Bid": "0.01",
+"c_Ask": "0.18",
+"c_Openinterest": "2",
+"p_Bid": "599.40",
+"p_Ask": "607.00",
+"p_Openinterest": "--"
+},
+{
+"strike": "800.00",
+"c_Bid": "0.01",
+"c_Ask": "0.22",
+"c_Openinterest": "216",
+"p_Bid": "609.60",
+"p_Ask": "617.00",
+"p_Openinterest": "--"
+},
+{
+"strike": "810.00",
+"c_Bid": "--",
+"c_Ask": "0.10",
+"c_Openinterest": "44",
+"p_Bid": "621.10",
+"p_Ask": "626.25",
+"p_Openinterest": "--"
+},
+{
+"strike": "820.00",
+"c_Bid": "--",
+"c_Ask": "0.10",
+"c_Openinterest": "8",
+"p_Bid": "631.10",
+"p_Ask": "635.45",
+"p_Openinterest": "--"
+},
+{
+"strike": "830.00",
+"c_Bid": "--",
+"c_Ask": "0.21",
+"c_Openinterest": "37",
+"p_Bid": "639.80",
+"p_Ask": "647.00",
+"p_Openinterest": "--"
+},
+{
+"strike": "840.00",
+"c_Bid": "--",
+"c_Ask": "0.21",
+"c_Openinterest": "29",
+"p_Bid": "651.05",
+"p_Ask": "656.25",
+"p_Openinterest": "--"
+},
+{
+"strike": "850.00",
+"c_Bid": "--",
+"c_Ask": "0.20",
+"c_Openinterest": "503",
+"p_Bid": "659.35",
+"p_Ask": "666.50",
+"p_Openinterest": "--"
+},
+{
+"strike": "860.00",
+"c_Bid": "--",
+"c_Ask": "0.20",
+"c_Openinterest": "37",
+"p_Bid": "669.85",
+"p_Ask": "676.80",
+"p_Openinterest": "--"
+},
+{
+"strike": "870.00",
+"c_Bid": "--",
+"c_Ask": "0.18",
+"c_Openinterest": "349",
+"p_Bid": "679.35",
+"p_Ask": "687.20",
+"p_Openinterest": "--"
+},
+{
+"strike": "880.00",
+"c_Bid": "0.02",
+"c_Ask": "0.04",
+"c_Openinterest": "3937",
+"p_Bid": "690.20",
+"p_Ask": "695.45",
+"p_Openinterest": "--"
+}
+],
+"2027-03-19": [
+{
+"strike": "5.00",
+"c_Bid": "178.35",
+"c_Ask": "185.75",
+"c_Openinterest": "1",
+"p_Bid": "--",
+"p_Ask": "1.38",
+"p_Openinterest": "--"
+},
+{
+"strike": "10.00",
+"c_Bid": "173.30",
+"c_Ask": "181.00",
+"c_Openinterest": "--",
+"p_Bid": "--",
+"p_Ask": "0.73",
+"p_Openinterest": "--"
+},
+{
+"strike": "15.00",
+"c_Bid": "168.55",
+"c_Ask": "175.95",
+"c_Openinterest": "--",
+"p_Bid": "--",
+"p_Ask": "1.45",
+"p_Openinterest": "--"
+},
+{
+"strike": "20.00",
+"c_Bid": "163.80",
+"c_Ask": "171.05",
+"c_Openinterest": "--",
+"p_Bid": "--",
+"p_Ask": "1.48",
+"p_Openinterest": "--"
+},
+{
+"strike": "25.00",
+"c_Bid": "158.80",
+"c_Ask": "166.20",
+"c_Openinterest": "1",
+"p_Bid": "--",
+"p_Ask": "2.37",
+"p_Openinterest": "1"
+},
+{
+"strike": "30.00",
+"c_Bid": "153.90",
+"c_Ask": "161.30",
+"c_Openinterest": "2",
+"p_Bid": "--",
+"p_Ask": "1.61",
+"p_Openinterest": "5"
+},
+{
+"strike": "35.00",
+"c_Bid": "149.00",
+"c_Ask": "156.55",
+"c_Openinterest": "--",
+"p_Bid": "--",
+"p_Ask": "1.23",
+"p_Openinterest": "23"
+},
+{
+"strike": "40.00",
+"c_Bid": "144.20",
+"c_Ask": "151.55",
+"c_Openinterest": "--",
+"p_Bid": "--",
+"p_Ask": "1.63",
+"p_Openinterest": "2"
+},
+{
+"strike": "45.00",
+"c_Bid": "139.30",
+"c_Ask": "146.80",
+"c_Openinterest": "1",
+"p_Bid": "--",
+"p_Ask": "0.85",
+"p_Openinterest": "9"
+},
+{
+"strike": "50.00",
+"c_Bid": "134.50",
+"c_Ask": "141.95",
+"c_Openinterest": "7",
+"p_Bid": "--",
+"p_Ask": "0.71",
+"p_Openinterest": "315"
+},
+{
+"strike": "60.00",
+"c_Bid": "126.50",
+"c_Ask": "131.50",
+"c_Openinterest": "--",
+"p_Bid": "--",
+"p_Ask": "0.96",
+"p_Openinterest": "7"
+},
+{
+"strike": "65.00",
+"c_Bid": "120.45",
+"c_Ask": "127.65",
+"c_Openinterest": "--",
+"p_Bid": "0.01",
+"p_Ask": "0.76",
+"p_Openinterest": "14"
+},
+{
+"strike": "70.00",
+"c_Bid": "115.75",
+"c_Ask": "122.80",
+"c_Openinterest": "2",
+"p_Bid": "0.03",
+"p_Ask": "0.80",
+"p_Openinterest": "32"
+},
+{
+"strike": "75.00",
+"c_Bid": "112.20",
+"c_Ask": "117.15",
+"c_Openinterest": "2",
+"p_Bid": "0.14",
+"p_Ask": "0.90",
+"p_Openinterest": "1393"
+},
+{
+"strike": "80.00",
+"c_Bid": "107.75",
+"c_Ask": "112.45",
+"c_Openinterest": "10",
+"p_Bid": "0.44",
+"p_Ask": "1.72",
+"p_Openinterest": "1018"
+},
+{
+"strike": "85.00",
+"c_Bid": "103.10",
+"c_Ask": "107.60",
+"c_Openinterest": "1",
+"p_Bid": "0.62",
+"p_Ask": "2.03",
+"p_Openinterest": "179"
+},
+{
+"strike": "90.00",
+"c_Bid": "98.50",
+"c_Ask": "102.95",
+"c_Openinterest": "12",
+"p_Bid": "0.93",
+"p_Ask": "2.16",
+"p_Openinterest": "120"
+},
+{
+"strike": "95.00",
+"c_Bid": "94.15",
+"c_Ask": "98.70",
+"c_Openinterest": "23",
+"p_Bid": "1.59",
+"p_Ask": "2.27",
+"p_Openinterest": "72"
+},
+{
+"strike": "100.00",
+"c_Bid": "89.65",
+"c_Ask": "93.65",
+"c_Openinterest": "29",
+"p_Bid": "2.21",
+"p_Ask": "2.60",
+"p_Openinterest": "416"
+},
+{
+"strike": "105.00",
+"c_Bid": "84.90",
+"c_Ask": "90.45",
+"c_Openinterest": "37",
+"p_Bid": "2.64",
+"p_Ask": "3.50",
+"p_Openinterest": "393"
+},
+{
+"strike": "110.00",
+"c_Bid": "79.55",
+"c_Ask": "86.70",
+"c_Openinterest": "15",
+"p_Bid": "3.25",
+"p_Ask": "4.00",
+"p_Openinterest": "251"
+},
+{
+"strike": "115.00",
+"c_Bid": "75.45",
+"c_Ask": "82.00",
+"c_Openinterest": "40",
+"p_Bid": "4.00",
+"p_Ask": "4.80",
+"p_Openinterest": "219"
+},
+{
+"strike": "120.00",
+"c_Bid": "72.55",
+"c_Ask": "78.05",
+"c_Openinterest": "469",
+"p_Bid": "4.50",
+"p_Ask": "6.40",
+"p_Openinterest": "867"
+},
+{
+"strike": "125.00",
+"c_Bid": "69.05",
+"c_Ask": "72.85",
+"c_Openinterest": "38",
+"p_Bid": "5.90",
+"p_Ask": "6.45",
+"p_Openinterest": "511"
+},
+{
+"strike": "130.00",
+"c_Bid": "65.85",
+"c_Ask": "68.70",
+"c_Openinterest": "85",
+"p_Bid": "6.65",
+"p_Ask": "7.90",
+"p_Openinterest": "438"
+},
+{
+"strike": "135.00",
+"c_Bid": "61.90",
+"c_Ask": "65.40",
+"c_Openinterest": "26",
+"p_Bid": "6.55",
+"p_Ask": "9.90",
+"p_Openinterest": "411"
+},
+{
+"strike": "140.00",
+"c_Bid": "58.55",
+"c_Ask": "62.00",
+"c_Openinterest": "43",
+"p_Bid": "9.30",
+"p_Ask": "10.65",
+"p_Openinterest": "742"
+},
+{
+"strike": "145.00",
+"c_Bid": "54.40",
+"c_Ask": "59.95",
+"c_Openinterest": "57",
+"p_Bid": "11.00",
+"p_Ask": "12.30",
+"p_Openinterest": "633"
+},
+{
+"strike": "150.00",
+"c_Bid": "51.20",
+"c_Ask": "56.65",
+"c_Openinterest": "124",
+"p_Bid": "11.40",
+"p_Ask": "15.05",
+"p_Openinterest": "824"
+},
+{
+"strike": "155.00",
+"c_Bid": "48.15",
+"c_Ask": "52.60",
+"c_Openinterest": "76",
+"p_Bid": "12.50",
+"p_Ask": "18.00",
+"p_Openinterest": "317"
+},
+{
+"strike": "160.00",
+"c_Bid": "45.25",
+"c_Ask": "50.35",
+"c_Openinterest": "148",
+"p_Bid": "16.55",
+"p_Ask": "17.80",
+"p_Openinterest": "1368"
+},
+{
+"strike": "165.00",
+"c_Bid": "43.10",
+"c_Ask": "47.45",
+"c_Openinterest": "336",
+"p_Bid": "18.15",
+"p_Ask": "22.10",
+"p_Openinterest": "462"
+},
+{
+"strike": "170.00",
+"c_Bid": "40.05",
+"c_Ask": "44.80",
+"c_Openinterest": "131",
+"p_Bid": "18.90",
+"p_Ask": "22.45",
+"p_Openinterest": "575"
+},
+{
+"strike": "175.00",
+"c_Bid": "37.55",
+"c_Ask": "42.80",
+"c_Openinterest": "180",
+"p_Bid": "22.05",
+"p_Ask": "25.35",
+"p_Openinterest": "1370"
+},
+{
+"strike": "180.00",
+"c_Bid": "35.00",
+"c_Ask": "40.40",
+"c_Openinterest": "2618",
+"p_Bid": "25.90",
+"p_Ask": "28.60",
+"p_Openinterest": "1100"
+},
+{
+"strike": "185.00",
+"c_Bid": "32.80",
+"c_Ask": "38.15",
+"c_Openinterest": "273",
+"p_Bid": "28.60",
+"p_Ask": "30.90",
+"p_Openinterest": "344"
+},
+{
+"strike": "190.00",
+"c_Bid": "32.55",
+"c_Ask": "35.85",
+"c_Openinterest": "297",
+"p_Bid": "31.30",
+"p_Ask": "34.60",
+"p_Openinterest": "290"
+},
+{
+"strike": "195.00",
+"c_Bid": "28.65",
+"c_Ask": "32.35",
+"c_Openinterest": "166",
+"p_Bid": "32.45",
+"p_Ask": "37.95",
+"p_Openinterest": "211"
+},
+{
+"strike": "200.00",
+"c_Bid": "28.75",
+"c_Ask": "30.60",
+"c_Openinterest": "5665",
+"p_Bid": "37.45",
+"p_Ask": "39.15",
+"p_Openinterest": "585"
+},
+{
+"strike": "210.00",
+"c_Bid": "24.85",
+"c_Ask": "28.40",
+"c_Openinterest": "421",
+"p_Bid": "42.55",
+"p_Ask": "45.80",
+"p_Openinterest": "536"
+},
+{
+"strike": "220.00",
+"c_Bid": "22.55",
+"c_Ask": "25.30",
+"c_Openinterest": "1367",
+"p_Bid": "49.40",
+"p_Ask": "52.90",
+"p_Openinterest": "561"
+},
+{
+"strike": "230.00",
+"c_Bid": "19.55",
+"c_Ask": "23.35",
+"c_Openinterest": "275",
+"p_Bid": "56.70",
+"p_Ask": "61.70",
+"p_Openinterest": "310"
+},
+{
+"strike": "240.00",
+"c_Bid": "15.75",
+"c_Ask": "20.95",
+"c_Openinterest": "1004",
+"p_Bid": "64.05",
+"p_Ask": "68.25",
+"p_Openinterest": "156"
+},
+{
+"strike": "250.00",
+"c_Bid": "15.50",
+"c_Ask": "17.25",
+"c_Openinterest": "1665",
+"p_Bid": "72.05",
+"p_Ask": "77.35",
+"p_Openinterest": "453"
+},
+{
+"strike": "260.00",
+"c_Bid": "13.65",
+"c_Ask": "17.10",
+"c_Openinterest": "2689",
+"p_Bid": "81.95",
+"p_Ask": "84.60",
+"p_Openinterest": "91"
+},
+{
+"strike": "270.00",
+"c_Bid": "12.20",
+"c_Ask": "15.45",
+"c_Openinterest": "278",
+"p_Bid": "89.00",
+"p_Ask": "93.35",
+"p_Openinterest": "71"
+},
+{
+"strike": "280.00",
+"c_Bid": "10.90",
+"c_Ask": "13.85",
+"c_Openinterest": "357",
+"p_Bid": "97.40",
+"p_Ask": "102.00",
+"p_Openinterest": "39"
+},
+{
+"strike": "290.00",
+"c_Bid": "9.75",
+"c_Ask": "10.75",
+"c_Openinterest": "380",
+"p_Bid": "106.00",
+"p_Ask": "111.40",
+"p_Openinterest": "30"
+},
+{
+"strike": "300.00",
+"c_Bid": "7.50",
+"c_Ask": "10.00",
+"c_Openinterest": "924",
+"p_Bid": "114.95",
+"p_Ask": "119.10",
+"p_Openinterest": "46"
+},
+{
+"strike": "310.00",
+"c_Bid": "7.90",
+"c_Ask": "8.85",
+"c_Openinterest": "4749",
+"p_Bid": "125.45",
+"p_Ask": "129.20",
+"p_Openinterest": "9"
+}
+],
+"2027-06-17": [
+{
+"strike": "5.00",
+"c_Bid": "178.50",
+"c_Ask": "185.90",
+"c_Openinterest": "--",
+"p_Bid": "--",
+"p_Ask": "4.90",
+"p_Openinterest": "--"
+},
+{
+"strike": "10.00",
+"c_Bid": "173.65",
+"c_Ask": "180.85",
+"c_Openinterest": "--",
+"p_Bid": "--",
+"p_Ask": "1.26",
+"p_Openinterest": "--"
+},
+{
+"strike": "15.00",
+"c_Bid": "168.85",
+"c_Ask": "176.25",
+"c_Openinterest": "--",
+"p_Bid": "--",
+"p_Ask": "1.96",
+"p_Openinterest": "--"
+},
+{
+"strike": "20.00",
+"c_Bid": "164.05",
+"c_Ask": "171.45",
+"c_Openinterest": "--",
+"p_Bid": "--",
+"p_Ask": "1.27",
+"p_Openinterest": "2"
+},
+{
+"strike": "25.00",
+"c_Bid": "159.15",
+"c_Ask": "166.60",
+"c_Openinterest": "--",
+"p_Bid": "--",
+"p_Ask": "1.55",
+"p_Openinterest": "5"
+},
+{
+"strike": "30.00",
+"c_Bid": "154.35",
+"c_Ask": "161.60",
+"c_Openinterest": "--",
+"p_Bid": "--",
+"p_Ask": "1.47",
+"p_Openinterest": "2"
+},
+{
+"strike": "35.00",
+"c_Bid": "149.55",
+"c_Ask": "157.00",
+"c_Openinterest": "1",
+"p_Bid": "--",
+"p_Ask": "0.55",
+"p_Openinterest": "3"
+},
+{
+"strike": "40.00",
+"c_Bid": "144.75",
+"c_Ask": "152.25",
+"c_Openinterest": "--",
+"p_Bid": "--",
+"p_Ask": "1.03",
+"p_Openinterest": "8"
+},
+{
+"strike": "45.00",
+"c_Bid": "141.20",
+"c_Ask": "147.55",
+"c_Openinterest": "--",
+"p_Bid": "--",
+"p_Ask": "0.94",
+"p_Openinterest": "5"
+},
+{
+"strike": "50.00",
+"c_Bid": "135.90",
+"c_Ask": "142.70",
+"c_Openinterest": "--",
+"p_Bid": "--",
+"p_Ask": "1.27",
+"p_Openinterest": "21"
+},
+{
+"strike": "75.00",
+"c_Bid": "113.15",
+"c_Ask": "120.20",
+"c_Openinterest": "2",
+"p_Bid": "1.55",
+"p_Ask": "2.51",
+"p_Openinterest": "33"
+},
+{
+"strike": "80.00",
+"c_Bid": "110.45",
+"c_Ask": "115.35",
+"c_Openinterest": "17",
+"p_Bid": "1.70",
+"p_Ask": "2.81",
+"p_Openinterest": "69"
+},
+{
+"strike": "85.00",
+"c_Bid": "104.20",
+"c_Ask": "111.20",
+"c_Openinterest": "--",
+"p_Bid": "2.19",
+"p_Ask": "4.05",
+"p_Openinterest": "146"
+},
+{
+"strike": "90.00",
+"c_Bid": "101.40",
+"c_Ask": "106.10",
+"c_Openinterest": "2",
+"p_Bid": "2.78",
+"p_Ask": "3.90",
+"p_Openinterest": "311"
+},
+{
+"strike": "95.00",
+"c_Bid": "97.85",
+"c_Ask": "101.50",
+"c_Openinterest": "--",
+"p_Bid": "3.75",
+"p_Ask": "4.40",
+"p_Openinterest": "75"
+},
+{
+"strike": "100.00",
+"c_Bid": "93.60",
+"c_Ask": "97.65",
+"c_Openinterest": "133",
+"p_Bid": "4.75",
+"p_Ask": "5.15",
+"p_Openinterest": "104"
+},
+{
+"strike": "105.00",
+"c_Bid": "90.25",
+"c_Ask": "93.35",
+"c_Openinterest": "2",
+"p_Bid": "5.50",
+"p_Ask": "6.25",
+"p_Openinterest": "163"
+},
+{
+"strike": "110.00",
+"c_Bid": "85.30",
+"c_Ask": "91.00",
+"c_Openinterest": "7",
+"p_Bid": "6.30",
+"p_Ask": "7.15",
+"p_Openinterest": "236"
+},
+{
+"strike": "115.00",
+"c_Bid": "81.40",
+"c_Ask": "86.80",
+"c_Openinterest": "20",
+"p_Bid": "7.55",
+"p_Ask": "8.40",
+"p_Openinterest": "255"
+},
+{
+"strike": "120.00",
+"c_Bid": "77.10",
+"c_Ask": "83.50",
+"c_Openinterest": "12",
+"p_Bid": "8.65",
+"p_Ask": "9.55",
+"p_Openinterest": "254"
+},
+{
+"strike": "125.00",
+"c_Bid": "75.90",
+"c_Ask": "76.50",
+"c_Openinterest": "12",
+"p_Bid": "9.30",
+"p_Ask": "10.50",
+"p_Openinterest": "181"
+},
+{
+"strike": "130.00",
+"c_Bid": "70.80",
+"c_Ask": "73.15",
+"c_Openinterest": "20",
+"p_Bid": "10.40",
+"p_Ask": "11.95",
+"p_Openinterest": "3575"
+},
+{
+"strike": "135.00",
+"c_Bid": "67.55",
+"c_Ask": "69.90",
+"c_Openinterest": "33",
+"p_Bid": "11.25",
+"p_Ask": "13.70",
+"p_Openinterest": "133"
+},
+{
+"strike": "140.00",
+"c_Bid": "63.20",
+"c_Ask": "66.80",
+"c_Openinterest": "61",
+"p_Bid": "13.95",
+"p_Ask": "15.45",
+"p_Openinterest": "129"
+},
+{
+"strike": "145.00",
+"c_Bid": "61.40",
+"c_Ask": "63.75",
+"c_Openinterest": "34",
+"p_Bid": "16.35",
+"p_Ask": "17.30",
+"p_Openinterest": "375"
+},
+{
+"strike": "150.00",
+"c_Bid": "59.25",
+"c_Ask": "60.85",
+"c_Openinterest": "80",
+"p_Bid": "17.05",
+"p_Ask": "19.30",
+"p_Openinterest": "2962"
+},
+{
+"strike": "155.00",
+"c_Bid": "57.55",
+"c_Ask": "58.10",
+"c_Openinterest": "39",
+"p_Bid": "20.35",
+"p_Ask": "21.40",
+"p_Openinterest": "133"
+},
+{
+"strike": "160.00",
+"c_Bid": "54.00",
+"c_Ask": "55.50",
+"c_Openinterest": "46",
+"p_Bid": "21.85",
+"p_Ask": "23.45",
+"p_Openinterest": "1006"
+},
+{
+"strike": "165.00",
+"c_Bid": "50.60",
+"c_Ask": "53.00",
+"c_Openinterest": "79",
+"p_Bid": "23.35",
+"p_Ask": "25.90",
+"p_Openinterest": "56"
+},
+{
+"strike": "170.00",
+"c_Bid": "48.25",
+"c_Ask": "53.45",
+"c_Openinterest": "591",
+"p_Bid": "25.70",
+"p_Ask": "28.75",
+"p_Openinterest": "5811"
+},
+{
+"strike": "175.00",
+"c_Bid": "46.20",
+"c_Ask": "50.45",
+"c_Openinterest": "34",
+"p_Bid": "28.10",
+"p_Ask": "31.50",
+"p_Openinterest": "88"
+},
+{
+"strike": "180.00",
+"c_Bid": "45.10",
+"c_Ask": "47.95",
+"c_Openinterest": "395",
+"p_Bid": "30.80",
+"p_Ask": "36.05",
+"p_Openinterest": "191"
+},
+{
+"strike": "185.00",
+"c_Bid": "42.50",
+"c_Ask": "46.90",
+"c_Openinterest": "55",
+"p_Bid": "34.15",
+"p_Ask": "38.00",
+"p_Openinterest": "282"
+},
+{
+"strike": "190.00",
+"c_Bid": "39.70",
+"c_Ask": "44.95",
+"c_Openinterest": "199",
+"p_Bid": "36.40",
+"p_Ask": "41.45",
+"p_Openinterest": "312"
+},
+{
+"strike": "195.00",
+"c_Bid": "38.75",
+"c_Ask": "43.05",
+"c_Openinterest": "375",
+"p_Bid": "39.55",
+"p_Ask": "42.95",
+"p_Openinterest": "217"
+},
+{
+"strike": "200.00",
+"c_Bid": "36.85",
+"c_Ask": "39.80",
+"c_Openinterest": "2400",
+"p_Bid": "44.60",
+"p_Ask": "47.80",
+"p_Openinterest": "859"
+},
+{
+"strike": "210.00",
+"c_Bid": "34.35",
+"c_Ask": "37.40",
+"c_Openinterest": "805",
+"p_Bid": "48.95",
+"p_Ask": "53.85",
+"p_Openinterest": "3234"
+},
+{
+"strike": "220.00",
+"c_Bid": "30.05",
+"c_Ask": "34.40",
+"c_Openinterest": "96",
+"p_Bid": "57.60",
+"p_Ask": "60.95",
+"p_Openinterest": "70"
+},
+{
+"strike": "230.00",
+"c_Bid": "28.50",
+"c_Ask": "30.45",
+"c_Openinterest": "176",
+"p_Bid": "63.25",
+"p_Ask": "66.70",
+"p_Openinterest": "16"
+},
+{
+"strike": "240.00",
+"c_Bid": "25.80",
+"c_Ask": "29.25",
+"c_Openinterest": "460",
+"p_Bid": "71.70",
+"p_Ask": "74.35",
+"p_Openinterest": "79"
+},
+{
+"strike": "250.00",
+"c_Bid": "23.65",
+"c_Ask": "25.70",
+"c_Openinterest": "1684",
+"p_Bid": "78.70",
+"p_Ask": "82.95",
+"p_Openinterest": "60"
+},
+{
+"strike": "260.00",
+"c_Bid": "21.85",
+"c_Ask": "23.80",
+"c_Openinterest": "78",
+"p_Bid": "86.15",
+"p_Ask": "90.45",
+"p_Openinterest": "43"
+},
+{
+"strike": "270.00",
+"c_Bid": "19.10",
+"c_Ask": "22.30",
+"c_Openinterest": "80",
+"p_Bid": "94.95",
+"p_Ask": "98.10",
+"p_Openinterest": "69"
+},
+{
+"strike": "280.00",
+"c_Bid": "17.55",
+"c_Ask": "21.70",
+"c_Openinterest": "190",
+"p_Bid": "102.55",
+"p_Ask": "107.45",
+"p_Openinterest": "57"
+},
+{
+"strike": "290.00",
+"c_Bid": "15.80",
+"c_Ask": "19.60",
+"c_Openinterest": "97",
+"p_Bid": "111.30",
+"p_Ask": "114.90",
+"p_Openinterest": "15"
+},
+{
+"strike": "300.00",
+"c_Bid": "15.15",
+"c_Ask": "17.10",
+"c_Openinterest": "267",
+"p_Bid": "119.25",
+"p_Ask": "123.50",
+"p_Openinterest": "196"
+},
+{
+"strike": "310.00",
+"c_Bid": "12.95",
+"c_Ask": "15.85",
+"c_Openinterest": "1427",
+"p_Bid": "129.10",
+"p_Ask": "132.60",
+"p_Openinterest": "2"
+}
+]
+},
+"urls": [
+"https://api.nasdaq.com/api/quote/COIN/option-chain?assetclass=stocks&limit=1000&fromdate=2026-11-20&todate=2026-11-20&money=all&type=all",
+"https://api.nasdaq.com/api/quote/COIN/option-chain?assetclass=stocks&limit=1000&fromdate=2026-12-18&todate=2026-12-18&money=all&type=all",
+"https://api.nasdaq.com/api/quote/COIN/option-chain?assetclass=stocks&limit=1000&fromdate=2027-03-19&todate=2027-03-19&money=all&type=all",
+"https://api.nasdaq.com/api/quote/COIN/option-chain?assetclass=stocks&limit=1000&fromdate=2027-06-17&todate=2027-06-17&money=all&type=all"
+],
+"spot": 186.41,
+"asOf": "2026-09-30"
+}

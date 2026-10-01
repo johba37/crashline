@@ -9,7 +9,9 @@ Frontend guide to the frozen v1 interfaces: [docs/interfaces.md](docs/interfaces
 Roadmap: [docs/v2-perpetual-note.md](docs/v2-perpetual-note.md), a perpetual note with
 no expiry and one token per stock, priced by a closed form plus a learned correction.
 Also on the roadmap: [docs/roadmap-usdg-yield.md](docs/roadmap-usdg-yield.md), interest on
-the USDG that sits idle in the Desk and in the series.
+the USDG that sits idle in the Desk and in the series; and
+[docs/options-calibration.md](docs/options-calibration.md), a teacher calibrated to listed
+option prices (the market's crash premium), one model per group of stocks.
 
 ```
 contracts/src/interfaces/  frozen v1 interfaces (factory, series, tokens, quoter, Desk, recorder, pricer)
