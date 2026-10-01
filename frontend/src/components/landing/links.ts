@@ -9,7 +9,7 @@ export const GITHUB = {
   docs: `${REPO}/tree/main/docs`,
   architecture: doc('architecture.md'),
   interfaces: doc('interfaces.md'),
-  accuracy: doc('k2-round2.md'),
+  accuracy: doc('k3-vol-input.md'),
   simulation: doc('teacher-v2.md'),
   contractsReview: doc('contracts-review.md'),
   perpetualNote: doc('v2-perpetual-note.md'),

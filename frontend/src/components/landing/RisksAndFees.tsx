@@ -4,7 +4,7 @@ import { GITHUB } from './links.ts'
 import Section from './Section.tsx'
 
 // Sources: contracts/src/interfaces/INoteSeries.sol (payouts; Earn never pays below 0, so a buyer
-// loses at most what they paid, docs/pitch.md "no leverage"), docs/k2-round2.md (18.7 bps), and
+// loses at most what they paid, docs/pitch.md "no leverage"), docs/k3-vol-input.md (38.0 bps on the clean sets), and
 // docs/interfaces.md + plans/max-frontend-submission.md "Ground rules" (MAX_FEE_BPS 200 of the
 // amount on NOTE trades, MAX_COVER_FEE_BPS 1000 of the premium on cover trades, BACKSTOP_SHARE_BPS
 // 5000; the spread stays in the vault). Testnet, staged feed, no outside audit, not financial
@@ -21,7 +21,7 @@ const RISKS = [
   },
   {
     title: 'The model can be wrong',
-    text: 'Where it was tested, it was at most 0.187% off the simulation, and the simulation itself can be wrong about TSLA. A wrong price changes what you trade at, never what a note pays: payouts follow the weekly checks, and every payout is fully backed.',
+    text: 'Where it was tested, it was at most 0.38% off the simulation, and the simulation itself can be wrong about TSLA. A wrong price changes what you trade at, never what a note pays: payouts follow the weekly checks, and every payout is fully backed.',
   },
   {
     title: 'Trading pauses at times',

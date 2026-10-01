@@ -4,8 +4,10 @@ import Section from './Section.tsx'
 
 // Sources: the README roadmap (PR #2 version: M1 external review of the core, M2 mainnet on
 // Robinhood Chain with real feeds and conservative caps), docs/interfaces.md and
-// docs/architecture.md (the model never sees which stock it prices; one model per product and vol
-// level), docs/v2-perpetual-note.md (no expiry, one token pair per stock, a share of the pool paid
+// docs/architecture.md (the model never sees which stock it prices), docs/k3-vol-input.md (vol is a
+// live input, certified 20-90%), docs/multi-stock-jumps.md (TSLA's jump shape on 12 more stocks:
+// AAPL, MSFT, AMZN, GOOGL, NVDA within 7.6 bps of their own fit; META, NFLX, PLTR, with rare large
+// drops, 16-27 bps off), docs/v2-perpetual-note.md (no expiry, one token pair per stock, a share of the pool paid
 // out at every weekly fixing, closed form plus a learned correction).
 // After PR #2 merges: link the README's roadmap section.
 
@@ -16,7 +18,7 @@ const NEXT = [
   },
   {
     title: 'More stocks',
-    text: 'The model never sees which stock it prices, only moves relative to the starting price. So one model can serve any stock that swings about as much as TSLA. Others get a model of their own.',
+    text: 'The model never sees which stock it prices, only its moves relative to the starting price and how much it swings. It is tested for swings from 20% to 90% a year, so one model can serve many stocks. Its sudden jumps are shaped on TSLA: a check on 12 more stocks found that shape close for large companies like Apple and Microsoft, and further off for stocks with rare, very large drops.',
   },
   {
     title: 'A note that never ends',
