@@ -63,7 +63,7 @@ export default function MarketList({ series, selected, amount }: { series: Serie
               <span className="hidden type-data text-ink md:block">{observationsLeft(s)} of {s.terms.observationCount}</span>
               <div className="hidden flex-col md:flex">
                 <span className="type-data text-ink">{usd(t.price)}</span>
-                <span className="type-caption text-ink-muted">{t.move === null ? '' : `${signedPct(t.move, 0)} from today`}</span>
+                <span className="type-caption text-ink-muted">{t.move === null ? '' : `${signedPct(t.move)} from today`}</span>
               </div>
               <Price quote={s.noteAsk} amount={amount} caption="Earn, USDG" />
               <Price quote={s.coverAsk} amount={amount} caption="Protect, USDG" />

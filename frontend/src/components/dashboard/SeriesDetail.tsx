@@ -56,7 +56,7 @@ export function PriceDetails({ s, amount }: { s: SeriesView; amount: bigint }) {
 export function Calendar({ s, now }: { s: SeriesView; now: number }) {
   const t = trigger(s)
   const endsEarly = level(s.state.initialFixing, s.terms.acBarrierBps)
-  const fromToday = (price: bigint) => (s.spot ? `${signedPct((Number(price) - Number(s.spot)) / Number(s.spot), 0)} from today` : undefined)
+  const fromToday = (price: bigint) => (s.spot ? `${signedPct((Number(price) - Number(s.spot)) / Number(s.spot))} from today` : undefined)
   const facts: [ReactNode, string, string?][] = [
     [`${s.symbol} today`, s.spot ? usd(s.spot) : '—'],
     [<Term key="s" t="startingPrice">Starting price</Term>, usd(s.state.initialFixing)],

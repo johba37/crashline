@@ -1,6 +1,6 @@
 // Pure helpers for the dashboard: formatting, and the Desk's arithmetic as docs/interfaces.md
 // states it, so the numbers on screen are the ones the contracts compute.
-import type { SeriesView, TradeKind } from './types.ts'
+import { type MarketData, Phase, type SeriesView, type TradeKind } from './types.ts'
 
 export const WEEK = 604800
 export const UNIT = 1_000_000n // 1 NOTE / WRITER / USDG in base units (6 decimals)
@@ -21,6 +21,9 @@ export const signedPct = (fraction: number, digits = 1) => {
 /** USDG base units -> "37,600.00" */
 export const usdg = (base: bigint, digits = 2) =>
   (Number(base) / 1e6).toLocaleString(locale, { minimumFractionDigits: digits, maximumFractionDigits: digits })
+
+/** USDG base units -> "13,314", rounded down: an "at most" amount must itself go through. */
+export const wholeUsdg = (base: bigint) => usdg(base - (base % UNIT), 0)
 
 /** Feed price (8 decimals) -> "$251.30" (the narrow symbol: other locales would print "US$251.30") */
 export const usd = (price: bigint) =>
@@ -94,17 +97,83 @@ export function addsToDesk(s: SeriesView, kind: TradeKind, amount: bigint) {
   switch (kind) {
     case 'buy': return excess(s.noteInventory) // mints pairs, keeps WRITER
     case 'sell': return excess(s.listing.soldNotional) // NOTE it can't pair with WRITER it holds
-    case 'buyCover': return amount // always ends up holding NOTE
+    case 'buyCover': return excess(s.listing.soldNotional) // sells the WRITER it holds first, then mints pairs and keeps NOTE
     case 'sellCover': return excess(s.noteInventory) // WRITER it can't pair with its NOTE
   }
 }
 
-/** Room left in the risk budget of the series' stock, in USDG base units. */
-export const coverRoom = (s: SeriesView) => (s.risk.limit > s.risk.atRisk ? s.risk.limit - s.risk.atRisk : 0n)
+/** What one NOTE and one WRITER the Desk holds can still lose, as its risk budget counts them (Desk._position). */
+function unitRisk(s: SeriesView) {
+  const certain = s.state.phase === Phase.Settled || (s.state.phase === Phase.Live && !s.state.knockedIn && observationsLeft(s) === 0)
+  if (certain) return { note: 0n, writer: 0n }
+  if (!s.mid.ok) return { note: UNIT, writer: UNIT } // no price from the model: the most either can lose
+  const max = s.maxPayoutPerNote
+  const quote = BigInt(s.mid.value.priceBps) * 100n
+  const mark = quote < max ? quote : max
+  const income = max - UNIT // a NOTE is paid this in any case
+  return { note: mark > income ? mark - income : 0n, writer: max - mark }
+}
+
+/** What the Desk holds of the leg a trade is served from first: its NOTE for buy and sellCover, else its WRITER. */
+const heldFor = (s: SeriesView, kind: TradeKind) => (kind === 'buy' || kind === 'sellCover' ? s.noteInventory : s.listing.soldNotional)
+
+/**
+ * The largest amount of a trade the risk budget of the series' stock lets through, or null when
+ * it sets no limit. What the Desk already holds (`have`) is traded without a check and takes
+ * that leg's risk off; only the rest adds to the other leg and has to fit. `setAside` is the USDG
+ * the redemption queue is paid first, which leaves the vault and so lowers the limit.
+ * The Desk rounds on its total holdings, so what it counts at risk can be a couple of base units
+ * off this. A trade also moves the limit itself by what the Desk earns on it (the spread and its
+ * part of the fee, so nearly always up); that is left out, and the trade is simulated before it is sent.
+ */
+export function riskRoom(s: SeriesView, kind: TradeKind, setAside: bigint) {
+  const risk = unitRisk(s)
+  const have = heldFor(s, kind)
+  const [shrinks, grows] = kind === 'buy' || kind === 'sellCover' ? [risk.note, risk.writer] : [risk.writer, risk.note]
+  const limit = s.risk.limit - (setAside * BigInt(s.risk.budgetBps)) / 10_000n
+  const room = (limit - s.risk.atRisk) * UNIT + have * shrinks // in millionths of a base unit
+  if (room < 0n) return have // the stock is over its budget: nothing can be added
+  return grows === 0n ? null : have + room / grows
+}
+
+/**
+ * The largest amount of a trade the Desk has the USDG for (`free`: what it can use, less what
+ * the queue is paid first), or null when that sets no limit or the trade has no price. What it
+ * holds costs it nothing. Beyond that a buy has it lock a new pair's full collateral against the
+ * price it is paid, and a sale has it pay the price for a leg it can't redeem; a pair it can
+ * redeem brings the collateral back. One base unit is kept back for the Desk's rounding, and its
+ * part of the fee is left out: both err on the safe side.
+ */
+export function usdgRoom(s: SeriesView, kind: TradeKind, free: bigint) {
+  const quote = { buy: s.noteAsk, sell: s.noteBid, buyCover: s.coverAsk, sellCover: s.coverBid }[kind]
+  if (!quote.ok) return null
+  const have = heldFor(s, kind)
+  const price = BigInt(quote.value) * 100n // base units per unit, like maxPayoutPerNote
+  const each = kind === 'buy' || kind === 'buyCover' ? s.maxPayoutPerNote - price : price // its own USDG per unit, were nothing held
+  if (each === 0n) return null
+  const most = ((free - 1n) * UNIT + have * s.maxPayoutPerNote) / each
+  return most > have ? most : have
+}
+
+/** The largest amount of a trade the Desk's limits let through, or null when they set none: the smaller of the two rooms above. */
+export function roomFor(s: SeriesView, kind: TradeKind, market: Pick<MarketData, 'idle' | 'queue'>) {
+  const byRisk = riskRoom(s, kind, market.queue.setAside)
+  const byUsdg = usdgRoom(s, kind, market.idle - market.queue.setAside)
+  return byRisk === null || (byUsdg !== null && byUsdg < byRisk) ? byUsdg : byRisk
+}
 
 /** NOTE the Desk can sell: its inventory plus what its WRITER cap still lets it mint. */
 export const noteOnOffer = (s: SeriesView) =>
   s.noteInventory + (s.listing.capNotional > s.listing.soldNotional ? s.listing.capNotional - s.listing.soldNotional : 0n)
+
+/**
+ * Sold out: the Desk has a price but none left to sell (its selling quote is refused for that
+ * alone), and it still buys back. `earn` says which side is asked about: NOTE, else cover.
+ */
+export const soldOut = (s: SeriesView, earn: boolean) => {
+  const [ask, bid] = earn ? [s.noteAsk, s.noteBid] : [s.coverAsk, s.coverBid]
+  return !ask.ok && ask.refusal.error === 'CapExceeded' && bid.ok
+}
 
 export const observationsLeft = (s: SeriesView) => s.terms.observationCount - s.state.observationsDone
 

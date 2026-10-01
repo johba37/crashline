@@ -5,10 +5,11 @@ import {
   type ContractFunctionName,
   type ContractFunctionParameters,
   type ContractFunctionReturnType,
+  erc20Abi,
   multicall3Abi,
   zeroAddress,
 } from 'viem'
-import { useBlock, useReadContracts } from 'wagmi'
+import { useBlock, useReadContracts, useSimulateContract } from 'wagmi'
 import { robinhoodTestnet } from 'wagmi/chains'
 import { chain } from '../wagmi'
 import {
@@ -65,6 +66,9 @@ export function useChainMarket(deployment: Deployment | null): {
       { address: desk, abi: deskAbi, functionName: 'MAX_FEE_BPS' },
       { address: desk, abi: deskAbi, functionName: 'MAX_COVER_FEE_BPS' },
       { address: desk, abi: deskAbi, functionName: 'BACKSTOP_SHARE_BPS' },
+      { address: desk, abi: deskAbi, functionName: 'QUEUE_BATCH' },
+      { address: desk, abi: deskAbi, functionName: 'reservedAssets' },
+      { address: deployment?.usdg ?? zeroAddress, abi: erc20Abi, functionName: 'balanceOf', args: [desk] },
     ],
     allowFailure: true,
     query: { enabled: on, refetchInterval: REFETCH_MS },
@@ -74,6 +78,23 @@ export function useChainMarket(deployment: Deployment | null): {
   const deskOk = deskReads !== undefined && deskFailure === null
   const listed = deskOk ? deskReads[0].result : undefined
   const quoter = deskOk ? deskReads[1].result : undefined
+  const queued = deskOk ? deskReads[3].result : undefined
+  const queueBatch = deskOk ? deskReads[7].result : undefined
+
+  // A trade that adds to the Desk's position pays the queue first. The Desk itself says what that
+  // leaves: processQueue as a call that sends nothing. Anyone may call it, so no wallet is needed.
+  // Kept per queue, so the answer for an earlier queue is never held against a later one.
+  const queueFill = useSimulateContract({
+    address: desk,
+    abi: deskAbi,
+    functionName: 'processQueue',
+    args: queueBatch === undefined ? undefined : [queueBatch],
+    account: zeroAddress,
+    scopeKey: String(queued),
+    query: { enabled: on && !!queued, refetchInterval: REFETCH_MS },
+  })
+  // No answer (yet), or a revert because a held series has no price: the queue can't be paid.
+  const filled = queued && queueFill.isSuccess ? queueFill.data.result : undefined
 
   // Stage 2: every listed series (delisted ones too, filtered below).
   const seriesContracts = useMemo(
@@ -121,7 +142,7 @@ export function useChainMarket(deployment: Deployment | null): {
 
   const data = useMemo((): MarketData | undefined => {
     if (!deskOk || !active || !quoteData) return undefined
-    const [, , usdg, queuedShares, maxFeeBps, maxCoverFeeBps, backstopShareBps] = deskReads
+    const [, , usdg, queuedShares, maxFeeBps, maxCoverFeeBps, backstopShareBps, , reserved, balance] = deskReads
     const timestamp = value<bigint>(quoteData[0])
     let at = 1
     const series = active.map((v) => {
@@ -141,7 +162,11 @@ export function useChainMarket(deployment: Deployment | null): {
       usdg: usdg.result!,
       series,
       models,
-      queuedShares: queuedShares.result!,
+      queue: {
+        waiting: filled ? queuedShares.result! - filled[0] : queuedShares.result!,
+        setAside: filled ? filled[1] : 0n,
+      },
+      idle: balance.result! > reserved.result! ? balance.result! - reserved.result! : 0n, // Desk._idle
       fees: {
         maxFeeBps: maxFeeBps.result!,
         maxCoverFeeBps: maxCoverFeeBps.result!,
@@ -151,7 +176,7 @@ export function useChainMarket(deployment: Deployment | null): {
       // else the local clock at the read
       now: Number(timestamp ?? blockTime ?? Math.floor(readAt / 1000)),
     }
-  }, [active, blockTime, desk, deskOk, deskReads, pricers, quoteData, readAt])
+  }, [active, blockTime, desk, deskOk, deskReads, filled, pricers, quoteData, readAt])
 
   return {
     data: on ? data : undefined,
@@ -206,7 +231,7 @@ function parseSeries(listed: readonly Address[], reads: readonly Read[]): Base[]
   })
 }
 
-const QUOTE_READS = 10
+const QUOTE_READS = 11
 
 function quoteReads(desk: Address, quoter: Address, v: Base): ContractFunctionParameters[] {
   const s = v.address
@@ -223,6 +248,7 @@ function quoteReads(desk: Address, quoter: Address, v: Base): ContractFunctionPa
     { address: v.note, abi: seriesTokenAbi, functionName: 'balanceOf', args: [desk] },
     { address: feed, abi: aggregatorAbi, functionName: 'latestRoundData' },
     { address: feed, abi: aggregatorAbi, functionName: 'description' },
+    { address: desk, abi: deskAbi, functionName: 'riskBudgetBps', args: [feed] },
   ]
 }
 
@@ -233,6 +259,7 @@ function parseQuotes(v: Base, r: readonly Read[]): SeriesView {
   const risk = value<Out<typeof deskAbi, 'risk'>>(r[6])
   const round = value<Out<typeof aggregatorAbi, 'latestRoundData'>>(r[8])
   const description = value<string>(r[9])
+  const budgetBps = value<Out<typeof deskAbi, 'riskBudgetBps'>>(r[10])
   return {
     ...v,
     symbol: description !== undefined ? symbolOf(description) : '',
@@ -249,7 +276,7 @@ function parseQuotes(v: Base, r: readonly Read[]): SeriesView {
     coverBid: refusable(r[5], priceOf),
     // plain views that don't revert; if one ever does, show no inventory and no room
     noteInventory: value<bigint>(r[7]) ?? 0n,
-    risk: risk ? { atRisk: risk[0], limit: risk[1] } : { atRisk: 0n, limit: 0n },
+    risk: risk && budgetBps !== undefined ? { atRisk: risk[0], limit: risk[1], budgetBps } : { atRisk: 0n, limit: 0n, budgetBps: 0 },
   }
 }
 

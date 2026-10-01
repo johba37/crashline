@@ -1,10 +1,10 @@
-import { CaretDown } from '@phosphor-icons/react'
+import { CaretDown, Info } from '@phosphor-icons/react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useState, type ReactNode } from 'react'
-import type { Address } from 'viem'
+import type { Address, Hex } from 'viem'
 import { useAccount } from 'wagmi'
 import {
-  addsToDesk, bestCase, coverRoom, crashPayout, date, level, moveTo, noteOnOffer, observationsLeft, pct, signedPct, tradeAmounts, usd, usdg,
+  addsToDesk, bestCase, crashPayout, date, level, moveTo, noteOnOffer, observationsLeft, pct, roomFor, signedPct, soldOut, tradeAmounts, usd, usdg, wholeUsdg,
 } from '../../market/format.ts'
 import { FEE_BPS, FEE_RECEIVER, SLIPPAGE_BPS } from '../../market/settings.ts'
 import type { MarketData, SeriesView, TradeKind, TradeState } from '../../market/types.ts'
@@ -29,25 +29,46 @@ const ACTION: Record<TradeKind, [string, string]> = {
 }
 
 /** Why the order can't go ahead, checked before anyone signs (prices don't check the Desk's limits). */
-function blocker(s: SeriesView, kind: TradeKind, amount: bigint, market: MarketData): Status | null {
+function blocker(s: SeriesView, kind: TradeKind, amount: bigint, amountOk: boolean, market: MarketData): Status | null {
+  // The page keeps the last amount while step 3 is edited: no order goes ahead for an amount that is no longer in the field.
+  if (!amountOk) {
+    return { tone: 'hold', icon: Info, label: 'Enter an amount in step 3', message: `What you see here is still for ${usdg(amount)} USDG, the last amount you entered. Enter a new amount in step 3 to go on.` }
+  }
   const quote = { buy: s.noteAsk, sell: s.noteBid, buyCover: s.coverAsk, sellCover: s.coverBid }[kind]
+  // Cover the Desk buys back counts against the note's limit like NOTE it sells (Desk._growth).
+  // At the limit even its price is refused, so this comes before the price.
+  if (kind === 'sellCover' && amount > noteOnOffer(s)) {
+    return { ...refusalStatus({ error: 'CapExceeded', args: [] }), label: 'The Desk can’t buy this much cover back right now', message: `It can take back ${wholeUsdg(noteOnOffer(s))} USDG of it at most. Your cover stays valid either way: keep it until it ends, or try again later.` }
+  }
   if (!quote.ok) return refusalStatus(quote.refusal)
   if (kind === 'buy' && amount > noteOnOffer(s)) {
     return { ...refusalStatus({ error: 'CapExceeded', args: [] }), message: `Only ${usdg(noteOnOffer(s), 0)} USDG of this note is on offer. Enter a smaller amount in step 3.` }
   }
   const adds = addsToDesk(s, kind, amount)
   if (adds === 0n) return null
-  if (market.queuedShares > 0n) return refusalStatus({ error: 'QueuePending', args: [] })
-  if (adds > coverRoom(s)) {
+  if (market.queue.waiting > 0n) return refusalStatus({ error: 'QueuePending', args: [] })
+  const room = roomFor(s, kind, market)
+  if (room !== null && amount > room) {
     return {
       ...refusalStatus({ error: 'RiskBudgetExceeded', args: [] }),
       label: kind === 'buyCover'
-        ? `Right now, at most ${usdg(coverRoom(s), 0)} USDG of ${s.symbol} can be protected`
-        : `Right now, at most ${usdg(coverRoom(s), 0)} USDG more can go into ${s.symbol}`,
+        ? `Right now, at most ${wholeUsdg(room)} USDG of ${s.symbol} can be protected`
+        : `Right now, at most ${wholeUsdg(room)} USDG more can go into ${s.symbol}`,
       message: 'How much is sold on one stock is limited, so that every payout can always be paid. Enter a smaller amount in step 3.',
     }
   }
   return null
+}
+
+/** Where to look a transaction up. The dev node has no explorer: there it's the transaction's hash. */
+export function TxLink({ hash }: { hash: Hex }) {
+  return chain.blockExplorers ? (
+    <a href={`${chain.blockExplorers.default.url}/tx/${hash}`} target="_blank" rel="noreferrer" className="type-label text-ink underline">
+      See it on the block explorer
+    </a>
+  ) : (
+    <span className="type-code break-all text-ink-muted">{hash}</span>
+  )
 }
 
 /** One scenario: the case and what comes back in one line, with the full story behind a click. */
@@ -69,15 +90,18 @@ function Outcome({ when, get, gain, children }: { when: string; get: string; gai
 }
 
 /** The last step: what it costs now and what comes back in each case, in real money, then the button. */
-export default function Order({ s, goal, amount, market, trade }: { s: SeriesView; goal: Goal; amount: bigint; market: MarketData; trade: Trade }) {
+export default function Order({ s, goal, amount, amountOk, market, trade }: { s: SeriesView; goal: Goal; amount: bigint; amountOk: boolean; market: MarketData; trade: Trade }) {
   const { isConnected } = useAccount()
-  const [selling, setSelling] = useState(false)
+  // A sold-out note can only be sold back, so its order opens on selling. Only where it opens:
+  // the market is read again every 15 s, and the form mustn't change sides under the reader.
+  const out = soldOut(s, goal === 'earn')
+  const [selling, setSelling] = useState(out)
 
   const kind = KIND[goal][selling ? 1 : 0]
   const quote = { buy: s.noteAsk, sell: s.noteBid, buyCover: s.coverAsk, sellCover: s.coverBid }[kind]
   const amounts = quote.ok ? tradeAmounts(kind, amount, quote.value, FEE_BPS) : null
-  const stop = blocker(s, kind, amount, market)
-  const busy = ['quoting', 'approving', 'trading'].includes(trade.state.step)
+  const stop = blocker(s, kind, amount, amountOk, market)
+  const busy = ['waiting', 'quoting', 'approving', 'trading'].includes(trade.state.step)
   const [label, busyLabel] = ACTION[kind]
   const sym = s.symbol
   const start = usd(s.state.initialFixing)
@@ -94,7 +118,7 @@ export default function Order({ s, goal, amount, market, trade }: { s: SeriesVie
   const started = date(s.terms.strikeTime)
   // Where the starting price sits against today: at or above it at a weekly check, the note ends early.
   const gap = s.spot === null ? null : moveTo(s.spot, s.state.initialFixing)
-  const startVsToday = gap === null ? '' : gap > 0.005 ? `That’s ${Math.round(gap * 100)}% above today’s price. ` : gap < -0.005 ? `${sym} is above that today. ` : `That’s about today’s price. `
+  const startVsToday = gap === null ? '' : gap > 0.005 ? `That’s ${pct(gap * 10_000, 1)} above today’s price. ` : gap < -0.005 ? `${sym} is above that today. ` : `That’s about today’s price. `
   // Ending early at check i: cover gets back 0.25% for each week from i to the end date, NOTE
   // gets its amount plus 0.25% for each week up to i. The next check gives the figures to show.
   const checksLeft = observationsLeft(s)
@@ -106,7 +130,9 @@ export default function Order({ s, goal, amount, market, trade }: { s: SeriesVie
   const startingPrice = <>its price on {started} when this note started (the <Term t="startingPrice" />)</>
   // Two or three cases, each with its outcome up front and the story behind a click.
   // Money coming back carries a plus and the fall a minus, each next to the words that say what it is.
-  const crash = s.spot === null ? '' : ` (${signedPct(moveTo(s.spot, level(s.state.initialFixing, s.terms.kiBarrierBps)), 0)} or more)`
+  // Already below the crash line today, there is no fall left to name.
+  const fall = s.spot === null ? 0 : moveTo(s.spot, level(s.state.initialFixing, s.terms.kiBarrierBps))
+  const crash = fall <= -0.0005 ? ` (${signedPct(fall)} or more)` : ''
   const outcomes: { when: string; get: string; more: ReactNode }[] = goal === 'protect'
     ? [
         hit
@@ -198,6 +224,7 @@ export default function Order({ s, goal, amount, market, trade }: { s: SeriesVie
 
   return (
     <div className="flex flex-col gap-5">
+      {out && <Notice status={{ tone: 'info', icon: Info, label: 'Sold out', message: 'All of this note is sold, so there’s none left to buy right now. If you hold some, you can sell it back here.' }} />}
       <div className="flex flex-col gap-4 rounded-md bg-surface-well p-4" aria-live="polite">
         <p className="type-body text-ink-muted">
           {selling
@@ -234,17 +261,13 @@ export default function Order({ s, goal, amount, market, trade }: { s: SeriesVie
       </div>
 
       {stop && <Notice status={stop} />}
+      {trade.state.step === 'waiting' && (
+        <Notice status={{ tone: 'hold', icon: Info, label: 'An earlier request is still open in your wallet', message: 'It belongs to the order you changed. Reject it in your wallet, and this order goes on by itself.' }} />
+      )}
       {trade.state.step === 'failed' && trade.state.refusal && <Notice status={refusalStatus(trade.state.refusal)} />}
       {trade.state.step === 'done' && (
         <Notice status={trade.state.hash ? confirmed : { ...confirmed, label: 'Test run done', message: 'Test mode is on, so nothing was bought and your wallet wasn’t asked for anything.' }}>
-          {trade.state.hash && (chain.blockExplorers ? (
-            <a href={`${chain.blockExplorers.default.url}/tx/${trade.state.hash}`} target="_blank" rel="noreferrer" className="type-label text-ink underline">
-              See it on the block explorer
-            </a>
-          ) : (
-            // The dev node has no explorer: show the transaction's hash instead.
-            <span className="type-code break-all text-ink-muted">{trade.state.hash}</span>
-          ))}
+          {trade.state.hash && <TxLink hash={trade.state.hash} />}
         </Notice>
       )}
 
@@ -264,15 +287,17 @@ export default function Order({ s, goal, amount, market, trade }: { s: SeriesVie
           aria-busy={busy || undefined}
           className="h-12 rounded-full bg-accent px-6 type-button text-on-accent transition-[background-color,box-shadow] duration-160 ease-out hover:bg-accent-hover hover:shadow-ignition active:bg-accent-pressed disabled:cursor-not-allowed disabled:bg-surface-overlay disabled:text-ink-faint disabled:shadow-none"
         >
-          {busy ? (trade.state.step === 'approving' ? 'Confirm in your wallet…' : busyLabel) : label}
+          {busy ? (trade.state.step === 'approving' ? 'Confirm in your wallet…' : trade.state.step === 'waiting' ? 'Waiting for your wallet…' : busyLabel) : label}
         </button>
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-2 type-caption text-ink-muted">
         <span className="inline-flex items-center gap-1"><Term t="slippage">Slippage limit</Term>: 0.5%</span>
-        <button type="button" onClick={() => { setSelling(!selling); trade.reset() }} className="rounded-full px-2 py-1 underline transition-colors duration-160 hover:text-ink">
-          {selling ? `Buy ${token} instead` : `Already hold ${token}? Sell it`}
-        </button>
+        {!(out && selling) && (
+          <button type="button" onClick={() => { setSelling(!selling); trade.reset() }} className="rounded-full px-2 py-1 underline transition-colors duration-160 hover:text-ink">
+            {selling ? `Buy ${token} instead` : `Already hold ${token}? Sell it`}
+          </button>
+        )}
       </div>
     </div>
   )
