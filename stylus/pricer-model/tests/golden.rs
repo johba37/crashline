@@ -1,7 +1,7 @@
 //! Golden-vector CI: the compiled contract must reproduce the quantized Python
 //! reference exactly (no tolerance) for every model vector, and refuse every
 //! reject vector with exactly the stated error. Runs against whichever model
-//! PRICER_MODEL_DIR selects (default model/k2; also run model/k1-r1 and model/synthetic).
+//! PRICER_MODEL_DIR selects (default model/k3; also run model/k2, model/k1-r1 and model/synthetic).
 
 use serde_json::Value;
 use surrogate_pricer_model::{

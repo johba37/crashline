@@ -13,7 +13,7 @@ updates the interface, the ABI and this file together. Layer picture:
 
 | Contract | Interface | Implementation |
 |---|---|---|
-| SurrogatePricer (Stylus) | `ISurrogatePricer` | done (`stylus/pricer-model`, default weights `model/k2`) |
+| SurrogatePricer (Stylus) | `ISurrogatePricer` | done (`stylus/pricer-model`, default weights `model/k3`; `model/k2` selectable) |
 | FixingsRecorder | `IFixingsRecorder` | done; records only observation times strictly in the past |
 | SeriesFactory, NoteSeries, SeriesToken | `ISeriesFactory`, `INoteSeries`, `ISeriesToken` | done (`contracts/src/`), payout via the `AutocallPayout` library |
 | NoteQuoter | `INoteQuoter` | done, series-based; one quoter for every model |
@@ -67,11 +67,12 @@ coupon, a maximum tenor, and currently a fixed vol. It never sees which stock it
 every input is relative to the strike. So one model serves every series with those
 terms, on any stock with that vol. The Desk listing says which model prices which
 series: `Listing{pricer, volBpsAnnual, capNotional, …}`. One stateless quoter serves all
-models. Today: `model/k2` (60% / 100% / 25 bps per week, 26 weekly observations, 55%
-total vol), distilled from a jump-diffusion teacher calibrated to TSLA
-([teacher-v2.md](teacher-v2.md), [k2-round2.md](k2-round2.md)). `model/k1-r1` (first
-week only) remains as a second certified model. `volBpsAnnual` is total vol; the
-current teacher needs it above 44.7% (its pinned jump vol).
+models. Today: `model/k3` (60% / 100% / 25 bps per week, 26 weekly observations, any
+total vol 20–90%), distilled from teacher v3, a jump-diffusion calibrated to TSLA with
+jump sizes scaled to the vol ([k3-vol-input.md](k3-vol-input.md)); the default build and
+what the dev node deploys. `model/k2` (the same product at 55% only, teacher v2 needs vol
+above 44.7%: [teacher-v2.md](teacher-v2.md), [k2-round2.md](k2-round2.md)) and
+`model/k1-r1` (first week only) remain certified. `volBpsAnnual` is total vol.
 
 ## Screens and the calls behind them
 
@@ -83,11 +84,12 @@ rather than hiding the series.
 **Lifecycle to show.** Barrier observations every interval after strike; the
 maturity fixing is **one interval after the last observation** (see
 `INoteSeries`). No quotes in that final period, or anywhere outside the model's
-certified domain: for `model/k2` that is the whole life of the note (1–26
+certified domain: for `model/k2` and `model/k3` that is the whole life of the note (1–26
 observations remaining, any time within the week), spot 50–120% of initial, except
 two observation-day bands (next observation within 1 day): spot 95–105% of initial
 (autocall, region 0) and, for notes not yet knocked in, spot 50–70% (knock-in,
-region 1).
+region 1). `model/k3` adds three low-vol regions near the knock-in barrier late in
+the note's life (regions 2–4, [k3-vol-input.md](k3-vol-input.md)).
 
 **Note detail.** Everything from the market list, plus:
 - `quoter.inputs(s, vol)`: exactly what the model saw. Showing it is the transparency pitch.
@@ -148,7 +150,9 @@ higher vol, so the band makes the spread widest where the price depends most on 
 `bidBps`/`askBps` are a flat floor on top. To show the mid, quote at the listing's vol
 itself; the Desk's marks use that. All three are 0 until the curator calls
 `setSpread(series, bidBps, askBps, volBandBps)`. A band needs a model certified for a
-range of vols (`pricer.certifiedRange(2)`); `model/k2` pins 55%, so its band is 0. The risk budget is 0 until the curator calls `setRiskBudget(feed, bps)`:
+range of vols (`pricer.certifiedRange(2)`): `model/k3` takes one (the dev node lists at
+5500 ± 200), `model/k2` pins 55%, so its band is 0. The backend's `/series` has both legs'
+bid and ask at 1 unit (`quotes`). The risk budget is 0 until the curator calls `setRiskBudget(feed, bps)`:
 until then every trade that adds to the Desk's positions on that feed reverts.
 
 **LP.** Standard ERC-4626 on the Desk: `deposit`/`withdraw`/`redeem`. Check
