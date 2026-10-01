@@ -509,7 +509,6 @@ class Run:
         return r
 
     def lp_queue(self) -> None:
-        lp = address_of(self.keys["lp"])
         q = self.lp_shares // 4
         self.send("lp", self.desk, "requestRedeem", q)
         self.queued = q

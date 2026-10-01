@@ -10,9 +10,6 @@ from __future__ import annotations
 import json
 import time
 
-import httpx
-import pytest
-
 from conftest import ROOT, RPC
 from helpers import USDG, buy, default_series, unique
 from app.chain import address_of

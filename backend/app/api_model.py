@@ -32,16 +32,16 @@ from fastapi import APIRouter, Body, Query
 
 from .chain import Revert
 from .config import ROOT
+from .indexer import TRADE_KINDS
 from .service import SERVICE, ApiError, addr, model_exports
 from .student import FIELD_NAMES, domain_error, forward
-from .views import ZERO, Ctx
+from .views import ZERO, Ctx, max_bps
 
 router = APIRouter()
 
 TEACHER_PYTHON = os.environ.get("TEACHER_PYTHON", "/opt/ai/cache/venv-cuda/bin/python")
 TEACHER_SEED = int(os.environ.get("TEACHER_SEED", 20260930))
 WORKER = ROOT / "backend/app/teacher_worker.py"
-TRADE_EVENTS = {"NoteBought": "buy", "NoteSold": "sell", "CoverBought": "buyCover", "CoverSold": "sellCover"}
 FIELD_OF = {"spot": 0, "vol": 2, "weeks": 8}
 # model dir -> the teacher it was distilled from (app/teacher_worker.py); anything else: v2
 TEACHER_OF_MODEL = {"model/k3": "v3", "model/k2": "v2", "model/k1-r1": "gbm"}
@@ -83,7 +83,7 @@ def _accrued(r: dict, t: int) -> int:
 
 @router.get("/series/{address}/curve")
 def curve(address: str, vs: str = Query("spot", pattern="^(spot|vol|weeks)$"), n: int = Query(41, ge=2, le=401)):
-    c = Ctx(SERVICE.snap())
+    c = Ctx.now()
     r = c.series_row(addr(address))
     lst, weights, export = _listing_model(c, r["address"])
     try:
@@ -97,7 +97,7 @@ def curve(address: str, vs: str = Query("spot", pattern="^(spot|vol|weeks)$"), n
     if vs == "weeks":
         hi = min(hi, r["count"])
     xs = sorted({lo + (hi - lo) * k // (n - 1) for k in range(n)} | {base[field]})
-    max_bps = 10_000 + r["coupon"] * (r["count"] + 1)
+    mb = max_bps(r)
     t_now_since_strike = c.time - r["strike_time"]
     points = []
     for x in xs:
@@ -118,7 +118,7 @@ def curve(address: str, vs: str = Query("spot", pattern="^(spot|vol|weeks)$"), n
         else:
             clean = forward(export, v)
             note = clean + accrued
-            p.update(cleanBps=clean, noteBps=note, coverBps=max_bps - min(note, max_bps))
+            p.update(cleanBps=clean, noteBps=note, coverBps=mb - min(note, mb))
         points.append(p)
     return c.out({"series": r["address"], "vs": vs, "field": FIELD_NAMES[field], "inputs": _named(base),
                   "accruedBps": _accrued(r, c.time), "weightsHash": weights, "points": points})
@@ -174,7 +174,7 @@ def _trade_from_tx(c: Ctx, tx_hash: str, series: str | None) -> dict:
     receipt = c.chain.rpc("eth_getTransactionReceipt", [tx_hash])
     if receipt is None:
         raise ApiError(404, "UnknownTx", {"txHash": tx_hash})
-    events = {e.topic0: e for e in (c.desk.event(n) for n in TRADE_EVENTS)}
+    events = {e.topic0: e for e in (c.desk.event(n) for n in TRADE_KINDS)}
     for lg in receipt["logs"]:
         e = events.get(lg["topics"][0]) if lg["address"].lower() == c.desk.address else None
         if e is None:
@@ -182,7 +182,7 @@ def _trade_from_tx(c: Ctx, tx_hash: str, series: str | None) -> dict:
         a = e.decode(lg)
         if series and a["series"] != series:
             continue
-        return {"kind": TRADE_EVENTS[e.name], "series": a["series"], "priceBps": a["priceBps"],
+        return {"kind": TRADE_KINDS[e.name], "series": a["series"], "priceBps": a["priceBps"],
                 "weightsHash": a["weightsHash"], "block": int(receipt["blockNumber"], 16), "txHash": tx_hash}
     raise ApiError(404, "NoTradeInTx", {"txHash": tx_hash, "series": series})
 
@@ -203,23 +203,23 @@ def _band_quotes(c: Ctx, series: str, lst: dict, spread: dict, block: int) -> li
     return out
 
 
-def _price_of_trade(kind: str, quotes: list[dict], spread: dict, max_bps: int) -> tuple[dict, int, int]:
+def _price_of_trade(kind: str, quotes: list[dict], spread: dict, mb: int) -> tuple[dict, int, int]:
     """(the band end the Desk used, the flat spread applied, the price IDeskCover's formulas give).
-    lo / hi are the lower and the higher NOTE quote, capped at maxBps:
+    lo / hi are the lower and the higher NOTE quote, capped at maxBps (`mb`):
       NOTE ask = min(hi + askBps, maxBps)   buy;   cover bid = maxBps - NOTE ask   sellCover
       NOTE bid = max(lo - bidBps, 0)        sell;  cover ask = maxBps - NOTE bid   buyCover"""
     lo = min(quotes, key=lambda q: (q["noteBps"], q["volBps"]))
     hi = max(quotes, key=lambda q: (q["noteBps"], -q["volBps"]))
     if kind in ("buy", "sellCover"):
-        note = min(min(hi["noteBps"], max_bps) + spread["askBps"], max_bps)
-        return hi, spread["askBps"], note if kind == "buy" else max_bps - note
-    note = max(min(lo["noteBps"], max_bps) - spread["bidBps"], 0)
-    return lo, spread["bidBps"], note if kind == "sell" else max_bps - note
+        note = min(min(hi["noteBps"], mb) + spread["askBps"], mb)
+        return hi, spread["askBps"], note if kind == "buy" else mb - note
+    note = max(min(lo["noteBps"], mb) - spread["bidBps"], 0)
+    return lo, spread["bidBps"], note if kind == "sell" else mb - note
 
 
 @router.post("/verify-quote")
 def verify_quote(body: dict = Body(...)):
-    c = Ctx(SERVICE.snap())
+    c = Ctx.now()
     t0 = time.monotonic()
     on_chain, accrued = None, int(body.get("accruedBps", 0))
     if body.get("txHash"):
@@ -231,9 +231,8 @@ def verify_quote(body: dict = Body(...)):
         b = tr["block"]
         lst = c.desk.call("listing", tr["series"], block=b)
         spread = c.desk.call("spread", tr["series"], block=b)
-        max_bps = 10_000 + r["coupon"] * (r["count"] + 1)
         quotes = _band_quotes(c, tr["series"], lst, spread, b)
-        used, spread_bps, expected = _price_of_trade(tr["kind"], quotes, spread, max_bps)
+        used, spread_bps, expected = _price_of_trade(tr["kind"], quotes, spread, max_bps(r))
         values = used["values"]  # the model's inputs at the band end the Desk priced at
         accrued = _accrued(r, c.chain.block(b)["time"])
         weights = tr["weightsHash"]

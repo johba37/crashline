@@ -17,7 +17,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 
-UNIT = 10**6
+UNIT = 10**6  # base units per NOTE / USDG
 UNIT_PER_BPS = 100
 LIVE, SETTLED = 1, 2
 

@@ -8,7 +8,6 @@ units' start path (what the user manager runs at boot with lingering).
 
 from __future__ import annotations
 
-import json
 import sqlite3
 import subprocess
 import time
