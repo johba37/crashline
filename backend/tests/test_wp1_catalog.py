@@ -25,13 +25,13 @@ ZERO = "0x" + "00" * 20
 def test_config(service, chain, cfg):
     c = service.synced(chain)
     a = cfg["addresses"]
-    assert c["chainId"] == 412346 and c["rpcUrl"] == "http://localhost:8647"
+    assert c["chainId"] == 412346 and c["rpcUrl"] == cfg["publicRpcUrl"] == f"http://localhost:{RPC.rsplit(':', 1)[1]}"
     assert c["deploymentBlock"] == cfg["deploymentBlock"]
     for k in ("usdg", "seriesFactory", "noteQuoter", "desk", "surrogatePricer"):
         assert c["addresses"][k] == a[k]
     assert c["addresses"]["feeds"]["RHTSLA"] == a["feeds"]["RHTSLA"]
-    export = json.loads((ROOT / "model/k2/student_export.json").read_text())
-    assert c["model"] == {"dir": "model/k2", "weightsHash": export["weightsHash"], "featureSpecVersion": 1,
+    export = json.loads((ROOT / cfg["modelDir"] / "student_export.json").read_text())  # model/k3 by default
+    assert c["model"] == {"dir": cfg["modelDir"], "weightsHash": export["weightsHash"], "featureSpecVersion": 1,
                           "certifiedDomain": export["certifiedDomain"]}
     assert c["desk"] == {"maxFeeBps": 200, "maxCoverFeeBps": 1000, "backstopShareBps": 5000,
                          "minSecsToObservation": 60, "minRequestShares": str(10 * 10**12), "queueBatch": 8}
@@ -55,12 +55,25 @@ def test_series_quotable_with_mid(service, chain, cfg):
     assert st["initialFixing"] == str(dp.INITIAL) and st["pendingObservation"]["pending"] is False
     assert o["listing"]["active"] and o["listing"]["volBpsAnnual"] == 5500
     assert o["listing"]["capNotional"] == str(100_000 * USDG)
-    assert o["spread"] == {"bidBps": 20, "askBps": 30, "volBandBps": 0}
+    band = cfg.get("defaultListing", {}).get("volBandBps", 0)  # 200 for model/k3, 0 for model/k2
+    assert o["spread"] == {"bidBps": 20, "askBps": 30, "volBandBps": band}
     assert o["quotable"] == {"ok": True, "reason": None, "args": {}, "until": None}
     # the mid is the quoter's at the listing's vol, at the block the response reflects
     q = chain.at("quoter", cfg["addresses"]["noteQuoter"])
-    note_bps, wh = q.call("notePriceBps", s0, cfg["addresses"]["surrogatePricer"], 5500, block=d["block"])
+    pricer = cfg["addresses"]["surrogatePricer"]
+    note_bps, wh = q.call("notePriceBps", s0, pricer, 5500, block=d["block"])
     assert o["mid"] == {"noteBps": note_bps, "coverBps": 10675 - note_bps}
+    # both legs' two prices at 1 unit: the Desk's quotes, and IDeskCover's formulas over the band
+    desk = chain.at("desk", cfg["addresses"]["desk"])
+    want = {"note": {"askBps": desk.call("quoteBuy", s0, USDG, 0, block=d["block"])[1],
+                     "bidBps": desk.call("quoteSell", s0, USDG, 0, block=d["block"])[1]},
+            "cover": {"askBps": desk.call("quoteBuyCover", s0, USDG, 0, block=d["block"])[1],
+                      "bidBps": desk.call("quoteSellCover", s0, USDG, 0, block=d["block"])[1]}, "errors": {}}
+    assert o["quotes"] == want
+    ends = [q.call("notePriceBps", s0, pricer, 5500 + k * band, block=d["block"])[0] for k in (-1, 1)]
+    assert want["note"]["askBps"] == max(ends) + 30 and want["note"]["bidBps"] == min(ends) - 20
+    assert want["cover"]["askBps"] == 10675 - want["note"]["bidBps"]
+    assert want["cover"]["bidBps"] == 10675 - want["note"]["askBps"]
     assert chain.block(d["block"])["time"] == d["time"]
 
 
