@@ -82,8 +82,10 @@ operator can change it in `backend/.env`).
 feed `RHTSLA` (initial $250.00) with the K2 terms (knock-in 60 %, autocall
 100 %, 25 bps a week, 26 weekly observations), 10 observations done (it
 knocked in at the 3rd), 16 to go, the next one 3 days out, spot 85 %,
-listed at vol 5500 with a 20/30 bps spread and a 20 % risk budget; the vault
-holds 100,000 USDG. The chain's clock moves only with transactions (each
+priced by the Stylus **k3** pricer (vol a live input, 20–90 %), listed at
+vol 5500 with a vol band of 200 bps and a 20/30 bps spread, and a 20 % risk
+budget; the vault holds 100,000 USDG. `/series` has both legs' bid and ask
+(`quotes`). The chain's clock moves only with transactions (each
 `/demo/*` call moves it to now). Quotes stop when the feed is more than 26 h
 old (`/demo/feed` pushes a round) and when the next observation has passed
 (`/demo/fixing` records it).
@@ -207,9 +209,10 @@ backend/devnode/clock.sh set-absolute 1792000000          # next block at that t
 The e2e script's steps 0-6, without the trades
 (`contracts/script/e2e-devnode.sh`):
 
-1. `cargo stylus deploy` of `stylus/pricer-model` with `model/k2` compiled in
-   (build dir `backend/.build/stylus-target`); checks the deployed
-   `weightsHash` against `model/k2/student_export.json`.
+1. `cargo stylus deploy` of `stylus/pricer-model` with `--model-dir` compiled
+   in (default `model/k3`, env `PRICER_MODEL_DIR`; build dir
+   `backend/.build/stylus-target`, or `CARGO_TARGET_DIR`); checks the deployed
+   `weightsHash` against the model's `student_export.json`.
 2. MockUSDG, SeriesFactory, NoteQuoter(93600 = 26 h staleness), Desk (curator =
    the dev account, 60 s pre-observation band), deployed by a fresh random
    deployer key (funded by the dev account) from a forge build of
@@ -226,9 +229,18 @@ The e2e script's steps 0-6, without the trades
    25 bps, 26 weekly observations) whose strike is 11 weeks before the next
    observation, so 10 observations are done and 16 remain; the strike and the
    10 fixings recorded, `advance()`. The series is **knocked in**.
-5. Lists it: vol 5500, cap 100,000 NOTE, spread bid 20 / ask 30 / vol band 0,
-   risk budget 2000 bps on its feed. Checks `quoteBuy(series, 1 NOTE, 0)`.
-6. Writes `backend/config.json` and `deployments/412346.json`.
+5. Lists it: vol 5500 (`--vol`), cap 100,000 NOTE, spread bid 20 / ask 30,
+   vol band 200 bps (`--vol-band`; 0 when the model's certified vol is one
+   value, as for `--model-dir model/k2`), risk budget 2000 bps on its feed.
+   Checks `quoteBuy(series, 1 NOTE, 0)`.
+6. Writes `backend/config.json` (or `BACKEND_CONFIG`) and
+   `deployments/412346.json`. The default listing is recorded as
+   `defaultListing` and `/demo/reset` keeps it; the node's container and
+   volume names come from `DEVNODE_NAME` / `DEVNODE_VOLUME`, so a reset on a
+   second node recreates that node.
+
+`--model-dir model/k2` deploys the K2 student (vol pinned at 5500, no band),
+as the dev node did before 2026-10-01.
 
 `--lead-secs` (env `DEVNODE_LEAD_SECS`) sets how far the next observation lies
 ahead: **3 days** by default, so a long-lived node stays quotable (the e2e
@@ -333,7 +345,7 @@ backend/run.sh     # uvicorn app.main:app on 127.0.0.1:$BACKEND_PORT (8650): the
 { "chainId": 412346, "rpcUrl": "http://localhost:8647", "deploymentBlock": 71,
   "addresses": { "usdg": "0x…", "seriesFactory": "0x…", "noteQuoter": "0x…", "desk": "0x…",
                  "surrogatePricer": "0x…", "feeds": { "RHTSLA": "0x…" } },
-  "model": { "dir": "model/k2", "weightsHash": "0xaf76…cd8a", "featureSpecVersion": 1,
+  "model": { "dir": "model/k3", "weightsHash": "0x745c…523f", "featureSpecVersion": 1,
              "certifiedDomain": { "ranges": [ … ], "consistency": { … }, "exclusions": [ … ] } },
   "desk": { "maxFeeBps": 200, "maxCoverFeeBps": 1000, "backstopShareBps": 5000,
             "minSecsToObservation": 60, "minRequestShares": "10000000000000", "queueBatch": 8 },
@@ -359,10 +371,11 @@ every reset. `rpcUrl` is the node as seen through the tunnel.
              "pendingObservation": { "pending": false, "obsTime": 1791059817 } },
   "listing": { "active": true, "pricer": "0xfa52…593d", "volBpsAnnual": 5500,
                "capNotional": "100000000000", "writerHeld": "1200000000" },
-  "spread": { "bidBps": 20, "askBps": 30, "volBandBps": 0 },
+  "spread": { "bidBps": 20, "askBps": 30, "volBandBps": 200 },
   "desk": { "noteHeld": "0", "writerHeld": "1200000000" },
   "quotable": { "ok": true, "reason": null, "args": {}, "until": null },
   "mid": { "noteBps": 8838, "coverBps": 1837 },
+  "quotes": { "note": { "bidBps": 8800, "askBps": 8887 }, "cover": { "bidBps": 1788, "askBps": 1875 }, "errors": {} },
   "fixings": [ { "obsTime": 1784407017, "price": "25000000000", "roundId": "18446744073709551617",
                  "index": 0, "updatedAt": 1784407017 }, … ],
   "trades": [ <trade>, … ],
@@ -385,6 +398,14 @@ every reset. `rpcUrl` is the node as seen through the tunnel.
   (`notePriceBps`), and `coverBps = maxBps - noteBps`; null when not quotable.
   The Desk's two prices are `mid ± spread` (with a vol band: see
   `IDeskCover.sol`).
+- `quotes`: the Desk's prices at 1 unit, no fee, at the response's block:
+  `{"note": {"bidBps", "askBps"}, "cover": {"bidBps", "askBps"}, "errors": {}}`
+  from `quoteSell` / `quoteBuy` / `quoteSellCover` / `quoteBuyCover`: the band
+  and the flat spread applied (NOTE ask = higher band quote + ask, NOTE bid =
+  lower − bid, cover ask = maxBps − NOTE bid, cover bid = maxBps − NOTE ask).
+  A quote that reverts is null with its error in `errors` (e.g.
+  `"note.askBps": {"error": "CapExceeded", ...}` when the WRITER cap is full).
+  null when not quotable.
 - `fixings`: the recorder's fixings on this series' schedule, `index` 0 =
   strike, 1..count observations, count + 1 = maturity; `updatedAt` is the feed
   round's time. `trades`: the last 50, newest first.
@@ -612,8 +633,8 @@ are replayed (`replayStepSecs`, 3600 s). Tables `samples`, `nav_samples`.
   value is always included (`current: true`), so that point equals
   `/series/{addr}.mid` at the same block, bit for bit.
 - `vs=spot` varies `spotBpsOfInitial` (with `distToKnockInBps` kept
-  consistent); `vs=vol` varies `volBpsAnnual` (one point for K2, whose vol is
-  pinned at 5500); `vs=weeks` varies `observationsRemaining` from 1 to the
+  consistent); `vs=vol` varies `volBpsAnnual` (2000..9000 for K3; one point
+  for K2, whose vol is pinned at 5500); `vs=weeks` varies `observationsRemaining` from 1 to the
   series' count, with `timeToMaturitySecs` consistent and the accrued coupon
   of the note at that point of its life.
 - Each point: `cleanBps` from `tools/pricer_quant.forward` (the Stylus
@@ -624,33 +645,48 @@ are replayed (`replayStepSecs`, 3600 s). Tables `samples`, `nav_samples`.
   FixingPending, FeedStale), 409 `NotListed` without a listing.
 
 `POST /verify-quote` with `{"series", "txHash"}` (a Desk trade) or
-`{"inputs": <PricerInputs>, "accruedBps"?, "weightsHash"?}`
+`{"inputs": <PricerInputs>, "accruedBps"?, "weightsHash"?}`; either may add `"teacher": "v2" | "v3" | "gbm"`
+(default: the model's own teacher)
 
 ```json
-{ "inputs": { … }, "accruedBps": 264,
-  "onChain": { "priceBps": 8867, "weightsHash": "0xaf76…cd8a", "kind": "buy", "series": "0x32fb…eab8",
-               "txHash": "0xfced…0e89", "block": 1879, "spreadBps": 30, "midBps": 8837 },
-  "student": { "priceBps": 8573, "quoteBps": 8837, "weightsHash": "0xaf76…cd8a" },
-  "teacher": { "priceBps": 8576.92, "stdErrBps": 3.69, "paths": 65536, "seed": 20260930,
-               "config": "merton-tsla-2016-2026", "backend": "numpy", "device": "cpu", "secs": 0.09,
-               "quoteBps": 8840.92,
-               "note": "numpy teacher on the CPU with 65536 paths (2^18 on the GPU: set TEACHER_DEVICE=cuda)" },
-  "check": { "onChainMidBps": 8837, "teacherQuoteBps": 8840.92, "diffBps": -3.92, "toleranceBps": 26.08,
-             "within": true },
+{ "inputs": { …, "volBpsAnnual": 3900, … }, "accruedBps": 264,
+  "onChain": { "priceBps": 10378, "weightsHash": "0x745c…523f", "kind": "buy", "series": "0x13f4…1897",
+               "txHash": "0x…", "block": 118, "spreadBps": 35, "midBps": 10343,
+               "volBpsAnnual": 4200, "volBandBps": 300, "quoteVolBps": 3900,
+               "bandQuotes": [ { "volBps": 3900, "noteBps": 10343 }, { "volBps": 4500, "noteBps": 10142 } ],
+               "expectedPriceBps": 10378, "priceMatches": true },
+  "student": { "priceBps": 10079, "quoteBps": 10343, "weightsHash": "0x745c…523f", "model": "model/k3" },
+  "teacher": { "priceBps": 10074.2, "stdErrBps": 1.89, "paths": 262144, "seed": 20260930,
+               "config": "merton-tsla-share-2016-2026", "teacher": "v3", "backend": "torch", "device": "cuda",
+               "secs": 0.9, "quoteBps": 10338.2 },
+  "check": { "onChainMidBps": 10343, "teacherQuoteBps": 10338.2, "diffBps": 4.8, "toleranceBps": 45.67,
+             "modelErrorBps": 40, "within": true, "priceMatches": true },
   "cached": false, "teacherSecs": 2.36, "secs": 2.37, "block": 1883, "time": 1790803151 }
 ```
 
 - For a tx: the trade event gives `priceBps` (the leg's price, spread
-  included) and `weightsHash`; the inputs are the quoter's at the trade's
-  block and the listing's vol then. `midBps` is the NOTE quote the price
-  implies, IDeskCover's formulas with the flat spread at that block: buy
-  `price − ask`, sell `price + bid`, buyCover `maxBps − price + bid`,
-  sellCover `maxBps − price − ask` (with a vol band this is the band's lower
-  or higher quote).
+  included) and `weightsHash`. The service reads the quoter's NOTE quote and
+  inputs at the trade's block at each vol the Desk asked the model (the
+  listing's vol − and + `volBandBps`, or the vol itself with no band:
+  `onChain.bandQuotes`), and picks the end IDeskCover's formula uses for that
+  side: the higher quote for buy (`min(hi + ask, maxBps)`) and sellCover
+  (`maxBps −` that), the lower for sell (`lo − bid`) and buyCover (`maxBps −`
+  that). `midBps` is that quote, `quoteVolBps` its vol, `spreadBps` the flat
+  part applied, `expectedPriceBps` the formula's price and `priceMatches`
+  whether the trade paid it. `inputs`, the student and the teacher are at
+  that vol, so with a band the check compares like with like.
+- **The teacher is the model's own**: `model/k3` → teacher v3
+  (`ml/teacher_config_v3.json`, vol-scaled jumps, `rDiscount` 0),
+  `model/k2` → the pinned v2 (`ml/teacher_config.json`), `model/k1-r1` → the
+  GBM teacher; `teacher.teacher` and `teacher.config` name it. The body's
+  `teacher` overrides it (e.g. `"v2"` to see what the v2 teacher says about a
+  k3 quote).
 - `student.priceBps` and `teacher.priceBps` are **clean** prices (coupon from
   now on); `quoteBps` adds the coupon accrued since the strike at the trade's
   time, which is what the quoter adds. `check` compares the teacher's quote
-  with the on-chain mid against 3 stdErr + 15 bps.
+  with the on-chain quote against 3 stdErr + the model's certified error
+  (`modelErrorBps`: 40 for k3, whose max on T3 is 38.0 bps; 15 otherwise),
+  and repeats `priceMatches`.
 - The teacher (`ml/teacher.py`) needs torch, so it runs in a subprocess with
   `TEACHER_PYTHON` (default `/opt/ai/cache/venv-cuda/bin/python`):
   `TEACHER_DEVICE=cuda` → the torch backend (`ml/teacher_torch.py`) with 2^18
@@ -658,7 +694,7 @@ are replayed (`replayStepSecs`, 3600 s). Tables `samples`, `nav_samples`.
   2^16 paths and a `note`. Seed fixed (`TEACHER_SEED`, 20260930),
   `TEACHER_PATHS` overrides the path count. One run at a time: a request that
   would start a second run gets 429 `Busy`. Results are cached in memory by
-  (inputs, seed, paths, backend); `cached: true` on a hit.
+  (inputs, teacher, seed, paths, backend); `cached: true` on a hit.
 
 ### Choices where the spec is silent (WP4)
 
@@ -694,7 +730,8 @@ response and the next reads include them) and returns data at that block.
   moves the chain's clock past it.
 - **fixing** is the e2e script's "next observation" step: the series' next
   observation must have passed (409 `ObservationNotPassed` with `until`
-  otherwise; the route pokes first, so "passed" is wall-clock time). It pushes
+  otherwise; the route pokes first, so "passed" is the chain's time: the
+  wall clock on the stock node, wall clock + offset on the dev clock). It pushes
   a round exactly at the observation time with `initial × fixingBps / 1e4`,
   records the fixing and calls `advance()`. If the feed already has a round
   after the observation (a `/demo/feed` after it passed), the fixing is the
@@ -702,15 +739,21 @@ response and the next reads include them) and returns data at that block.
   above the autocall barrier settles the series; one below the knock-in
   barrier knocks it in.
 - **stage**: `{"feedName", "pathBps": [..], "spotBps", "observationsDone",
-  "leadSecs", "terms"?: {"ki", "ac", "coupon", "count"}, "list"?: {"volBps",
+  "leadSecs" | "nextObservation", "terms"?: {"ki", "ac", "coupon", "count",
+  "interval"}, "list"?: {"volBps",
   "capNotional" (NOTE, whole units), "bidBps", "askBps", "volBandBps",
   "riskBudgetBps"}}` — the e2e steps 3–4 as one call: a new mock feed named
   `feedName` (names must be new: 400 otherwise) with a round at the strike
   and at each of the `observationsDone` past observations (`pathBps[i-1]` bps
   of the initial $250.00) and the current spot; a series whose strike is
-  `observationsDone + 1` weeks before the next observation, `leadSecs`
-  (1..604799) from now; the fixings recorded, `advance()`. Terms default to
-  K2's (ki 6000, ac 10000, coupon 25, 26 weekly); K2 lists only those terms.
+  `observationsDone + 1` intervals before the next observation, `leadSecs`
+  (1..interval − 1) from now, or at `nextObservation` (unix time, within one
+  interval; series staged with the same one share a strike time and
+  schedule); the fixings recorded, `advance()`. Terms default to K2's (ki
+  6000, ac 10000, coupon 25, 26 weekly); K2 and K3 list only those terms.
+  `terms.interval` (seconds, ≥ 3600, default a week) stages another grid: the
+  Desk lists weekly series only, so an hourly series is unlisted, e.g. one
+  with every barrier observation past that matures within the hour.
   With `list` (any subset; defaults vol 5500, cap 100,000, 20/30/0, budget
   2000) the series is listed, its spread set and the feed's risk budget set.
   The feed is added to `config.json`'s `feeds`, so `/config` names it.
@@ -808,7 +851,12 @@ SP_CLEAN=1 .venv/bin/python -m pytest tests/test_wp0_devnode.py   # also recreat
 ```
 
 The route tests start their own service (`run.sh` on 8651 with a temporary
-database), so a service on 8650 keeps running.
+database), so a service on 8650 keeps running. They read the model, the vol band
+and the RPC port from `config.json`. Against a second node (not `sp-devnode`):
+`DEVNODE_PORT=8847 BACKEND_CONFIG=<its config.json> TEST_BACKEND_PORT=8851
+.venv/bin/python -m pytest tests/test_wp1_catalog.py ... tests/test_wp5_demo.py`;
+`test_wp0` and `test_wp6` restart and kill `sp-devnode` by name, so leave them
+out there.
 
 - `test_wp0_devnode.py`: the deployment is quotable and listed as specified,
   `cast call` from the host, CORS preflight and response headers,
@@ -846,8 +894,10 @@ database), so a service on 8650 keeps running.
   sampled points equal the deployed Stylus contract's `priceBps` (`eth_call`);
   `vs=vol` (one point) and `vs=weeks` (1..26, checked against the contract);
   excluded bands flagged with their region; 409 FeedStale; `/verify-quote` on
-  the e2e buy (10,000 NOTE, 20 bps fee): teacher within 3 stdErr + 15 bps of
-  `priceBps − spread`, the student's quote equal to the on-chain mid, the
+  the e2e buy (10,000 NOTE, 20 bps fee): the model's own teacher (v3 for k3)
+  within 3 stdErr + the model's allowance of `priceBps − spread`, the
+  student's quote equal to the on-chain quote at the band end the buy used,
+  a buy and a sell priced at the higher and the lower band end, the
   cache; `{inputs}` bodies, 429 on simultaneous runs, 400/404 errors; with
   `TEACHER_DEVICE=cuda` the torch backend with 2^18 paths (skipped without a GPU).
 - `test_wp5_demo.py`: the token (401) and `demo.enabled: false` (403);
