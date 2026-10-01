@@ -32,10 +32,10 @@ def get_json(url: str) -> dict:
         return json.load(r)
 
 
-def fetch_yahoo(end: dt.date):
+def fetch_yahoo(end: dt.date, symbol: str = "TSLA", events: str = "split"):
     p2 = int(dt.datetime(end.year, end.month, end.day, tzinfo=dt.timezone.utc).timestamp())
-    url = ("https://query1.finance.yahoo.com/v8/finance/chart/TSLA"
-           f"?period1=1262304000&period2={p2}&interval=1d&events=split")
+    url = (f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
+           f"?period1=1262304000&period2={p2}&interval=1d&events={events}")
     js = get_json(url)
     res = js["chart"]["result"][0]
     tz_off = res["meta"]["gmtoffset"]  # not used for dates; dates come from exchange tz below
@@ -55,9 +55,9 @@ def fetch_yahoo(end: dt.date):
     return url, rows, splits
 
 
-def fetch_nasdaq(end: dt.date):
+def fetch_nasdaq(end: dt.date, symbol: str = "TSLA", assetclass: str = "stocks"):
     frm = dt.date(end.year - 11, end.month, 1)
-    url = ("https://api.nasdaq.com/api/quote/TSLA/historical?assetclass=stocks"
+    url = (f"https://api.nasdaq.com/api/quote/{symbol}/historical?assetclass={assetclass}"
            f"&fromdate={frm.isoformat()}&todate={(end - dt.timedelta(days=1)).isoformat()}&limit=9999")
     js = get_json(url)
     rows = []

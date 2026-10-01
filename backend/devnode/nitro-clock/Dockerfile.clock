@@ -1,0 +1,22 @@
+# DEV ONLY. Appended by build.sh to Nitro's own Dockerfile (v3.11.4) so these
+# stages reuse its brotli, contracts, prover-header and Go base stages. Builds
+# only what the `nitro` binary links (libstylus.a, not the JIT, prover or
+# replay machines) and drops the patched binary into the stock image.
+
+FROM prover-header-builder AS sp-clock-stylus
+COPY --from=brotli-library-export / target/
+RUN NITRO_BUILD_IGNORE_TIMESTAMPS=1 make build-prover-lib
+
+FROM node-builder-base AS sp-clock-node-builder
+COPY --from=sp-clock-stylus /workspace/target/lib/libstylus.a target/lib/
+# make's `nitro` rule wants the JIT binary as an order-only prerequisite; the
+# node never runs it in --dev (no validation), so a placeholder satisfies make.
+RUN touch target/bin/jit && \
+    NITRO_BUILD_IGNORE_TIMESTAMPS=1 make target/bin/nitro && \
+    target/bin/nitro --version
+
+FROM offchainlabs/nitro-node:v3.11.4-7d5ac27 AS sp-nitro-node-clock
+USER root
+COPY --from=sp-clock-node-builder /workspace/target/bin/nitro /usr/local/bin/nitro
+USER user
+LABEL org.opencontainers.image.description="DEV ONLY: Nitro v3.11.4 with SP_CLOCK_OFFSET_FILE block-timestamp offset (SurrogatePricer)"

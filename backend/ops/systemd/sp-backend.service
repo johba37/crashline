@@ -1,0 +1,16 @@
+[Unit]
+Description=Surrogate Pricer: REST service and indexer (127.0.0.1:8650)
+Documentation=file://@ROOT@/docs/backend.md
+Wants=sp-devnode.service
+After=sp-devnode.service
+
+[Service]
+Type=simple
+Environment=PATH=@HOME@/.foundry/bin:@HOME@/.cargo/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=@ROOT@/backend/run.sh
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target

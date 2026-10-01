@@ -14,44 +14,58 @@ FACTORY  0xe1080224B632A93951A7CFA33EeEa9Fd81558b5e
 QUOTER   0x7E32b54800705876d3b5cFbc7d9c226a211F7C1a
 DESK     0x525c2aBA45F66987217323E8a05EA400C65D06DC
 
-== 3. Staged feed history: strike 2026-07-15 03:21:47 UTC, 10 past observations, next at +240s
+== 3. Staged feed history: strike 2026-07-15 16:16:55 UTC, 10 past observations, next at +240s
 rounds 18446744073709551628 (2^64 + n); current spot 8500 bps of initial
 
 == 4. Series (ki 60%, ac 100%, 25 bps/week, 26 weekly observations), past fixings
-series 0x39C42662cCA9113D6892979a8270109a83aE11a6, NOTE 0x8939C0D27E020B06DfAA555ca395a403Df2B0F91, recorder 0xb504Bb80148e8A7914712622654508367853b2e9, maxPayoutPerNote 1067500
+series 0xe05c54f02e1Be9CE987b14F5b7E441D64A06449E, NOTE 0x0d96d9687C5fA4B32c809fB07681C7Cf88275914, recorder 0xb504Bb80148e8A7914712622654508367853b2e9, maxPayoutPerNote 1067500
 recorded strike + 10 observations; phase 1 (1 = Live), initial 25000000000, observationsDone 10, knockedIn true
 
 == 5. LP deposits 100,000.000000 USDG
 LP shares 100000000000000000 (12 decimals), Desk totalAssets 100,000.000000
 
-== 6. Curator lists the series with the Stylus pricer, vol 5500
+== 6. Curator lists the series with the Stylus pricer, vol 5500; spread 20/30 bps, risk budget 2000 bps
 listing: (true, 0xda52b25ddB0e3B9CC393b0690Ac62245Ac772527, 5500, 50000000000 [5e10], 0)
 
 == 7. Buyer buys 10,000.000000 NOTE (fee 20 bps to the integrator)
-quoteBuy: 8,864.000000 USDG at 8844 bps; maxCost 8,908.320000
-  model saw (8500, 2500, 5500, 6000, 10000, 25, 9677031, 231, 16, 1)
-  model clean price 8570 bps + accrued coupon 274 bps = quote 8844 bps; traded at 8844 bps
-  amount 10,000.000000 NOTE, USDG 8,864.000000, fee 20 bps to 0x3f1Eae7D46d88F08fc2F8ed27FCb2AB183EB2d0E, weightsHash 0xaf76ddf21ca24495bf0540bd54d3d65bef81ea81ddacb55c3e79d64b1266cd8a
-  gas used 2881983, of which L1 data 2384000, L2 execution 497983 (quote incl. the Stylus model, mint or unwind, transfers)
-buyer NOTE 10,000.000000, Desk WRITER 10,000.000000
+quoteBuy: 8,894.000000 USDG at 8874 bps; maxCost 8,938.470000
+  model saw (8500, 2500, 5500, 6000, 10000, 25, 9677030, 230, 16, 1)
+  model clean price 8570 bps + accrued coupon 274 bps = NOTE quote 8844 bps; buyNote traded at 8874 bps
+  amount 10,000.000000, USDG 8,894.000000, fee 20 bps to 0x3f1Eae7D46d88F08fc2F8ed27FCb2AB183EB2d0E, weightsHash 0xaf76ddf21ca24495bf0540bd54d3d65bef81ea81ddacb55c3e79d64b1266cd8a
+  gas used 3117630, of which L1 data 2464000, L2 execution 653630 (quote incl. the Stylus model, mint or unwind, transfers)
+buyer NOTE 10,000.000000
+Desk holds NOTE 0.000000, WRITER 10,000.000000; at risk 1,831.000000 of a budget of 20,008.000000 USDG
+
+== 7b. Hedger buys 12,000.000000 WRITER as cover: pays the premium, the Desk funds the pairs
+risk budget first (quotes don't check it): 18,177.000000 USDG of room
+quoteBuyCover: 2,332.260000 USDG at 1851 bps incl. a fee of 500 bps of the premium (a pair locks 12,810.000000); maxCost 2,378.905200
+  model saw (8500, 2500, 5500, 6000, 10000, 25, 9677028, 228, 16, 1)
+  model clean price 8570 bps + accrued coupon 274 bps = NOTE quote 8844 bps; buyCover traded at 1851 bps
+  amount 12,000.000000, USDG 2,332.260000, fee 500 bps to 0x3f1Eae7D46d88F08fc2F8ed27FCb2AB183EB2d0E, weightsHash 0xaf76ddf21ca24495bf0540bd54d3d65bef81ea81ddacb55c3e79d64b1266cd8a
+  gas used 3009237, of which L1 data 2488000, L2 execution 521237 (quote incl. the Stylus model, mint or unwind, transfers)
+Desk holds NOTE 2,000.000000, WRITER 0.000000; at risk 1,633.800000 of a budget of 20,023.906000 USDG
 
 == 8. Buyer sells 4,000.000000 NOTE back mid-life (early exit)
-quoteSell: 3,529.600000 USDG at 8844 bps; minProceeds 3,511.952000
-  model saw (8500, 2500, 5500, 6000, 10000, 25, 9677030, 230, 16, 1)
-  model clean price 8570 bps + accrued coupon 274 bps = quote 8844 bps; traded at 8844 bps
-  amount 4,000.000000 NOTE, USDG 3,529.600000, fee 20 bps to 0x3f1Eae7D46d88F08fc2F8ed27FCb2AB183EB2d0E, weightsHash 0xaf76ddf21ca24495bf0540bd54d3d65bef81ea81ddacb55c3e79d64b1266cd8a
-  gas used 2755417, of which L1 data 2440000, L2 execution 315417 (quote incl. the Stylus model, mint or unwind, transfers)
+quoteSell: 3,521.600000 USDG at 8824 bps; minProceeds 3,503.992000
+  model saw (8500, 2500, 5500, 6000, 10000, 25, 9677026, 226, 16, 1)
+  model clean price 8570 bps + accrued coupon 274 bps = NOTE quote 8844 bps; sellNote traded at 8824 bps
+  amount 4,000.000000, USDG 3,521.600000, fee 20 bps to 0x3f1Eae7D46d88F08fc2F8ed27FCb2AB183EB2d0E, weightsHash 0xaf76ddf21ca24495bf0540bd54d3d65bef81ea81ddacb55c3e79d64b1266cd8a
+  gas used 2902732, of which L1 data 2472000, L2 execution 430732 (quote incl. the Stylus model, mint or unwind, transfers)
+Desk holds NOTE 6,000.000000, WRITER 0.000000; at risk 4,901.400000 of a budget of 20,026.306000 USDG
 sold with observationsRemaining 16
-Desk totalAssets 100,005.600000 USDG (NOTE/WRITER marked at the model's quote)
+Desk totalAssets 100,131.530000 USDG (NOTE/WRITER marked at the model's quote)
 
-== 9. Waiting 231s for observation 11 at 03:21:47 UTC
+== 9. Waiting 227s for observation 11 at 16:16:55 UTC
+fixing pending: maxRedeem 0, but the LP queues 20000000000000000 shares (20%) for redemption
 fixing 10200 bps of initial -> phase 2 (2 = Settled), autocalled true, knockedIn true, observationsDone 11
 payoutPerNote 1027500 (= 1 + 25 bps x 11)
 
 == 10. Redeem, collect, LP withdraw
 buyer redeemed 6,000.000000 NOTE for 6,165.000000 USDG
-Desk collected 240.000000 USDG for its WRITER
-LP redeemed 99999999999991396 of 100000000000000000 shares for 99,146.999999 USDG (deposited 100,000.000000; P&L -853.000001)
+hedger redeemed 12,000.000000 WRITER for 480.000000 USDG (the coupons the autocall left unpaid)
+Desk collected 6,165.000000 USDG for its NOTE
+queue processed: 20000000000000000 shares filled for 20,198.025999 USDG, claimed by the LP
+LP redeemed the other 80000000000000000 of 100000000000000000 shares; in total 100,990.129999 USDG (deposited 100,000.000000; P&L 990.129999)
 left over: Desk 1, series escrow 0 base units
 
 == E2E PASS: model k2 (0xaf76ddf21ca24495bf0540bd54d3d65bef81ea81ddacb55c3e79d64b1266cd8a), sell at observationsRemaining 16

@@ -9,7 +9,13 @@ contracts/test/NoteQuoter.t.sol rebuilds each state on a live series and
 requires the quoter's inputs to match field by field, and notePriceBps to be
 the model's answer plus the accrued coupon.
 
+With --vols (e.g. model/k3, vol a live input 20-90%) every state is run at
+each listing vol, and each vector carries its `vol`; the forge test passes it
+to the quoter.
+
 Usage: python tools/quoter_vectors.py [--model model/k1-r1] [--out contracts/test/vectors/quoter_vectors.json]
+       python tools/quoter_vectors.py --model model/k3 --vols 2000,3500,5500,9000 \
+           --out contracts/test/vectors/quoter_vectors_k3.json
 """
 
 from __future__ import annotations
@@ -55,12 +61,12 @@ STATES = [
 FLOOR_SPOT_PRICE = 300_00_000_001  # vs initial 333.3333 -> 9000.0000x bps, floors to 9000
 
 
-def inputs(initial: int, spot: int, done: int, knocked_in: int, secs_in: int) -> list[int]:
+def inputs(initial: int, spot: int, done: int, knocked_in: int, secs_in: int, vol: int = VOL) -> list[int]:
     spot_bps = spot * BPS // initial
     obs_remaining = TERMS["n"] - done
     t_next = TERMS["interval"] - secs_in
     ttm = t_next + obs_remaining * TERMS["interval"]
-    return [spot_bps, spot_bps - TERMS["ki"], VOL, TERMS["ki"], TERMS["ac"], TERMS["coupon"],
+    return [spot_bps, spot_bps - TERMS["ki"], vol, TERMS["ki"], TERMS["ac"], TERMS["coupon"],
             ttm, t_next, obs_remaining, knocked_in]
 
 
@@ -68,18 +74,23 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default=str(ROOT / "model/k1-r1"))
     ap.add_argument("--out", default=str(ROOT / "contracts/test/vectors/quoter_vectors.json"))
+    ap.add_argument("--vols", help="comma-separated listing vols in bps (default: 5500 only, no per-vector vol)")
     args = ap.parse_args()
+    vols = [int(v) for v in args.vols.split(",")] if args.vols else [VOL]
     export = json.loads((Path(args.model) / "student_export.json").read_text())
 
     rows = []
-    for label, initial, spot_bps, done, ki, secs_in in STATES:
+    for vol, (label, initial, spot_bps, done, ki, secs_in) in ((v, st) for v in vols for st in STATES):
         spot = FLOOR_SPOT_PRICE if spot_bps is None else initial * spot_bps // BPS
         assert spot_bps is None or spot * BPS // initial == spot_bps
-        v = inputs(initial, spot, done, ki, secs_in)
+        v = inputs(initial, spot, done, ki, secs_in, vol)
         secs_since_strike = done * TERMS["interval"] + secs_in
         accrued = TERMS["coupon"] * secs_since_strike // TERMS["interval"]
-        row = {"label": label, "initial": initial, "spot": spot, "observationsDone": done, "knockedIn": ki,
-               "secsSinceStrike": secs_since_strike, "inputs": v, "accruedBps": accrued}
+        row = {"label": label if not args.vols else f"{label}@{vol}", "initial": initial, "spot": spot,
+               "observationsDone": done, "knockedIn": ki, "secsSinceStrike": secs_since_strike, "inputs": v,
+               "accruedBps": accrued}
+        if args.vols:
+            row["vol"] = vol
         try:
             clean = pq.forward(export, v)
             row.update(result=0, a=clean, b=0, notePriceBps=clean + accrued)
@@ -91,14 +102,14 @@ def main() -> None:
             row.update(result=3, a=e.region, b=0, notePriceBps=0)
         rows.append(row)
 
-    out = {"model": Path(args.model).name, "weightsHash": export["weightsHash"], "vol": VOL, "terms": TERMS,
-           "count": len(rows), "vectors": rows}
+    out = {"model": Path(args.model).name, "weightsHash": export["weightsHash"],
+           "vol": vols if args.vols else VOL, "terms": TERMS, "count": len(rows), "vectors": rows}
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     Path(args.out).write_text(json.dumps(out, indent=1) + "\n")
     names = {0: "price", 1: "OutOfRange", 2: "Inconsistent", 3: "Uncertified"}
     for r in rows:
         detail = f"{r['a']} (+{r['accruedBps']} accrued)" if r["result"] == 0 else f"({r['a']}, {r['b']})"
-        print(f"{r['label']:32s} {names[r['result']]:12s} {detail}")
+        print(f"{r['label']:40s} {names[r['result']]:12s} {detail}")
     print(f"wrote {len(rows)} vectors for {out['model']} to {args.out}")
 
 

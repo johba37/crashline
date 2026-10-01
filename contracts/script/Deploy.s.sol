@@ -20,6 +20,8 @@ import {ISurrogatePricer} from "../src/interfaces/ISurrogatePricer.sol";
 ///   DEPLOYER_KEY=0x… forge script script/Deploy.s.sol --rpc-url … --broadcast                      # deploy
 ///
 /// With --broadcast the addresses go to deployments/<chainid>.json.
+/// The curator then lists series and must call `desk.setRiskBudget(feed, bps)`:
+/// until a feed has a budget, no trade may add to the Desk's positions on it.
 contract Deploy is Script {
     address constant USDG_TESTNET = 0x7E955252E15c84f5768B83c41a71F9eba181802F;
     uint256 constant CHAIN_ID = 46630;

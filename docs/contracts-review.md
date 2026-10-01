@@ -45,9 +45,11 @@ Every rounding goes against the party that asks, and in favor of the escrow and 
 | Barriers | exact integer cross-multiplication, no division: `fixing * 1e4 >= ac * initial`, `fixing * 1e4 < ki * initial` | AutocallPayout |
 | Accrued coupon in the quote | `floor(c * elapsed / I)` bps (at most 1 bps below the continuous accrual) | NoteQuoter |
 | Spot input | `floor(spot * 1e4 / initial)` | NoteQuoter |
-| Desk buy cost | `ceil(n * price / 1e4) + ceil(n * fee / 1e4)` | Desk |
-| Desk sell proceeds | `floor(n * price / 1e4) - fee`, with the fee capped at the gross amount | Desk |
-| Backstop slice of a fee | rounded up (stays with the LPs) | Desk |
+| Desk buy cost (NOTE or WRITER) | `ceil(n * price / 1e4) + ceil(n * fee / 1e4)` | Desk |
+| Desk sell proceeds (NOTE or WRITER) | `floor(n * price / 1e4) - fee`, with the fee capped at the gross amount | Desk |
+| Desk prices | NOTE ask `min(hi + ask, max)`, NOTE bid `min(lo, max) - bid` floored at 0, cover = `max - NOTE` of the other side; `lo`/`hi` = the lower/higher of the model's quotes at the two ends of the vol band | Desk |
+| Integrator fee | NOTE: `ceil(n * fee / 1e4)` of notional; cover: `ceil(premium * fee / 1e4)`, premium = the price term of the cost or proceeds | Desk |
+| Backstop slice of a fee (half) | rounded up (stays with the LPs) | Desk |
 | Desk marks (NOTE, WRITER) | floor per position; WRITER = max - NOTE, with NOTE capped at max | Desk |
 | ERC-4626 | OZ defaults (shares down on deposit, up on withdraw) with virtual shares, offset 6 | Desk |
 
@@ -112,11 +114,78 @@ open `mint`, so it must never be deployed where value is at stake.
 
 ## 6. Desk economics and ERC-4626 deviations
 
+- **Both legs, two prices (added 2026-09-30, `IDeskCover`).** The Desk used to sell
+  NOTE at the mid and keep every WRITER: a USDG vault buying crash insurance, which
+  loses the premium on each autocall. It now also sells and buys back WRITER
+  (`buyCover` / `sellCover`), serves every trade from inventory first, mints a pair
+  only for the shortfall and redeems the pairs a handed-in leg completes. One code
+  path serves both legs (`_buy`, `_sell`); the four entry points differ in the leg and
+  the price. Checked:
+  - *No pair arbitrage.* NOTE bid + cover bid ≤ maxPayout ≤ NOTE ask + cover ask, also
+    when the model quotes above maxPayout (the mid is capped). Fuzz
+    `testFuzz_no_pair_arbitrage` mints pairs and sells both legs, then buys both legs
+    and redeems; without the cap on the mid it fails.
+  - *Round trips.* `testFuzz_cover_round_trip_never_costs_lps`: cover bought and sold
+    back lowers the Desk's assets by at most 2 base units at any spread, fee and price,
+    and never pays the trader. The NOTE round trip is unchanged.
+  - *WRITER cap.* `capNotional` now limits the WRITER the Desk holds, from NOTE buys
+    beyond the inventory and from cover sold back that it can't pair.
+    `Listing.soldNotional` is no longer stored; `listing()` reads the WRITER balance.
+  - *Risk budget.* After a trade that added to a position, what the Desk's unsettled
+    positions on the series' feed can lose (NOTE mark − coupons, WRITER mark) must fit
+    `riskBudgetBps[feed]` of vault assets. It is 0 until set, so a new feed is closed by
+    default. A held series that can't be quoted counts 1 USDG per unit at risk and only
+    its NOTE's coupons as an asset, so the check never reverts with a quoter error.
+    Trades that shrink a position skip it. **Residual:** the check quotes every held
+    series (≤ `MAX_HELD_SERIES`), so a trade that adds risk costs one model call per
+    held series; quotes don't apply it (read `risk(feed)`); an LP withdrawal can push
+    the ratio over the limit, which only blocks new risk.
+  - *Vol band.* `Spread.volBandBps` prices the two sides at the listing's vol −/+ the
+    band (two quoter calls; one when the band is 0). The Desk takes the lower quote as
+    its bid and the higher as its ask, so bid ≤ ask and the no-arbitrage bound hold even
+    where the note gains with vol; both fuzz tests run over bands up to 15 vol points
+    and models sloping either way. `setSpread` and `listSeries` require both ends of
+    the band inside the pricer's certified vol range, so a vol-pinned model (k2) takes
+    no band. Marks stay at the listing's vol. **Residual:** the band only widens the
+    spread when the model's price moves with vol; near a certain payout it adds nothing
+    and the flat spreads are the floor. Gas of the second quote with a vol-input Stylus
+    model: not measured (no such model yet).
+  - *Reentrancy and order.* Unchanged: `nonReentrant` on the four trades; USDG in,
+    mint, leg out, fee out, then the budget check on the final state.
+  - Each check above was confirmed by breaking it: five mutations of `Desk.sol` each
+    fail at least one test in `DeskCover.t.sol`.
 - **Valuation:** the NOTE and WRITER the Desk holds are marked at the model's mid
   quote. They are marked exactly, without the model, after settlement and in the
   final period of a note that isn't knocked in (NOTE = max, certain). That second
   case matters: with one series a week, some series is always in its final week,
   and the model refuses `observationsRemaining = 0`.
+- **Redemption queue (added 2026-09-30, `IDeskQueue`).** `requestRedeem` moves shares
+  into the Desk at any time; `processQueue` (permissionless) fills requests first in,
+  first out at one share price per call, out of idle USDG, and sets the USDG aside;
+  `claim(to)` pulls it (USDG can freeze an account, so a push could block the queue).
+  Checked:
+  - *Forward pricing.* A request is filled at the share price when it is processed, not
+    when it was made, so a request placed on a weekend carries Monday's mark. Queued
+    shares stay in `totalSupply` and share gains and losses until filled.
+  - *Fairness of a fill.* The batch uses OpenZeppelin's `convertToAssets` formula with
+    `totalAssets` read once. Fuzz `testFuzz_fill_is_fair_to_both_sides`: a fill pays no
+    more than the shares were worth and moves the remaining share price by at most one
+    base unit per USDG.
+  - *Set-aside USDG.* `reservedAssets` is excluded from `totalAssets`, from the idle USDG
+    behind `maxWithdraw` and the risk budget, and a trade that would leave the balance
+    below it reverts `ReservedForClaims`.
+  - *Queue first.* A trade that adds to a position fills up to `QUEUE_BATCH` (8) requests
+    itself and reverts `QueuePending` if shares remain; `maxWithdraw`/`maxRedeem` are 0
+    while shares are queued. Deposits, `collect` and trades that shrink a position stay
+    open: they are what frees USDG.
+  - Five mutations of the queue logic each fail a test in `DeskQueue.t.sol`.
+  - **Residual:** requests of at least `MIN_REQUEST_SHARES` are free to make and cancel,
+    so someone can keep more than 8 small requests in the queue and make every
+    risk-adding trade wait for a `processQueue` call; it costs them gas and blocks
+    nobody's money. A large LP's request legitimately stops new cover until it is paid.
+    A request can't be filled while a held series is unquotable, e.g. the final week of
+    a knocked-in note: the queue removes the wait for *requesting*, not for a price.
+    Deposits are not queued and still pause in those states.
 - **LP flows pause** (max* = 0, `totalAssets` reverts with the quoter's or model's
   error) while any held series can't be quoted: weekends, a pending fixing, the
   model's excluded bands, and the final period of a knocked-in note. These are
@@ -129,8 +198,9 @@ open `mint`, so it must never be deployed where value is at stake.
   `certifiedRange`: a series with another interval is caught at quote time by
   the model's `Inconsistent(6)`, not at listing.
 - **Solvency of the Desk:** buys need idle USDG for the pairs' collateral beyond
-  the buyer's payment. Sells of hedger NOTE (no WRITER to unwind) are paid from
-  idle USDG. Both revert on insufficient balance and never touch series collateral.
+  the buyer's payment: about 9% of notional for a NOTE buy, about 95% for a cover
+  buy (the Desk funds the NOTE's share). Sells of a leg the Desk can't pair are paid
+  from idle USDG. All revert on insufficient balance and never touch series collateral.
 - **Inflation:** virtual shares with a 6-decimal offset (shares have 12
   decimals). In `test_inflation_attack_is_unprofitable`, the victim loses at most
   donation / 1e6 and the attacker gets back about half of the donation.

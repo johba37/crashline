@@ -1,0 +1,10 @@
+set T3: 55000 points, 262144 paths, label seed 2119499778, teacher {'teacher.py': '5a6f79b3c2e06057107ffe8af7ba1420407a85500e934b25d558d0eeceec86bf', 'teacher_config_v3.json': '24e4871a15b9522eefa012024045045119651a9f23ac6cec9ce70bd7f4eae13b', 'teacher_torch.py': 'b341f77016aab4334ce223c54e8751bb8bf55bb96c2933b669380a3f56b56fbb'}, domain 27dddf7570d94b22778ad43e3bf72f0d6cc93c6410d6e7d3586eacf8115a8f65
+  1/7 shards (61s)
+  2/7 shards (117s)
+  3/7 shards (182s)
+  4/7 shards (241s)
+  5/7 shards (302s)
+  6/7 shards (361s)
+  7/7 shards (403s)
+labels done in 403s; stderr bps mean 0.90 p99 3.58 max 3.90; paths min 262144
+wrote ml/k3_test3_labels.npz

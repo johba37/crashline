@@ -67,50 +67,64 @@ contract NoteQuoterTest is Base {
         _quoterVectors("quoter_vectors_k2.json");
     }
 
+    /// model/k3, vol a live input: the same states at four listing vols (tools/quoter_vectors.py
+    /// --model model/k3 --vols 2000,3500,5500,9000 --out …/quoter_vectors_k3.json), each vector
+    /// with its own `vol`.
+    function test_quoter_vectors_k3() public {
+        _quoterVectors("quoter_vectors_k3.json");
+    }
+
     function _quoterVectors(string memory file) internal {
         string memory json = vm.readFile(string.concat(vm.projectRoot(), "/test/vectors/", file));
         uint256 count = vm.parseJsonUint(json, ".count");
         assertGe(count, 10);
         for (uint256 i = 0; i < count; i++) {
-            string memory k = string.concat(".vectors[", vm.toString(i), "]");
-            string memory label = vm.parseJsonString(json, string.concat(k, ".label"));
             uint256 snap = vm.snapshotState();
-            _stage(
-                uint96(vm.parseJsonUint(json, string.concat(k, ".initial"))),
-                vm.parseJsonUint(json, string.concat(k, ".spot")),
-                vm.parseJsonUint(json, string.concat(k, ".observationsDone")),
-                vm.parseJsonUint(json, string.concat(k, ".knockedIn")) == 1,
-                vm.parseJsonUint(json, string.concat(k, ".secsSinceStrike"))
-            );
-            // distToKnockInBps may be negative: parse the array as signed
-            PricerInputs memory want = _inputs(vm.parseJsonIntArray(json, string.concat(k, ".inputs")));
-            PricerInputs memory got = quoter.inputs(s, VOL);
-            assertEq(keccak256(abi.encode(got)), keccak256(abi.encode(want)), label);
-            assertEq(int256(got.distToKnockInBps), int256(uint256(got.spotBpsOfInitial)) - 6000, label);
-
-            pricer.expect(keccak256(abi.encode(want)));
-            uint256 result = vm.parseJsonUint(json, string.concat(k, ".result"));
-            uint256 a = vm.parseJsonUint(json, string.concat(k, ".a"));
-            if (result == 0) {
-                pricer.setPrice(uint16(a));
-                (uint16 p, bytes32 h) = quoter.notePriceBps(s, pricer, VOL);
-                assertEq(p, vm.parseJsonUint(json, string.concat(k, ".notePriceBps")), label);
-                assertEq(h, pricer.weightsHash());
-            } else {
-                int256 b = vm.parseJsonInt(json, string.concat(k, ".b"));
-                pricer.setRefusal(MockPricer.Mode(result), uint8(a), int64(b));
-                if (result == 1) {
-                    vm.expectRevert(abi.encodeWithSelector(ISurrogatePricer.OutOfRange.selector, uint8(a), int64(b)));
-                } else if (result == 2) {
-                    vm.expectRevert(abi.encodeWithSelector(ISurrogatePricer.Inconsistent.selector, uint8(a)));
-                } else {
-                    vm.expectRevert(abi.encodeWithSelector(ISurrogatePricer.Uncertified.selector, uint8(a)));
-                }
-                quoter.notePriceBps(s, pricer, VOL);
-            }
-            pricer.expect(bytes32(0));
+            _quoterVector(json, string.concat(".vectors[", vm.toString(i), "]"));
             vm.revertToState(snap);
         }
+    }
+
+    function _quoterVector(string memory json, string memory k) internal {
+        string memory label = vm.parseJsonString(json, string.concat(k, ".label"));
+        // the listing vol: per vector when the file has several (k3), else VOL
+        uint16 vol = vm.keyExistsJson(json, string.concat(k, ".vol"))
+            ? uint16(vm.parseJsonUint(json, string.concat(k, ".vol")))
+            : VOL;
+        _stage(
+            uint96(vm.parseJsonUint(json, string.concat(k, ".initial"))),
+            vm.parseJsonUint(json, string.concat(k, ".spot")),
+            vm.parseJsonUint(json, string.concat(k, ".observationsDone")),
+            vm.parseJsonUint(json, string.concat(k, ".knockedIn")) == 1,
+            vm.parseJsonUint(json, string.concat(k, ".secsSinceStrike"))
+        );
+        // distToKnockInBps may be negative: parse the array as signed
+        PricerInputs memory want = _inputs(vm.parseJsonIntArray(json, string.concat(k, ".inputs")));
+        PricerInputs memory got = quoter.inputs(s, vol);
+        assertEq(keccak256(abi.encode(got)), keccak256(abi.encode(want)), label);
+        assertEq(int256(got.distToKnockInBps), int256(uint256(got.spotBpsOfInitial)) - 6000, label);
+
+        pricer.expect(keccak256(abi.encode(want)));
+        uint256 result = vm.parseJsonUint(json, string.concat(k, ".result"));
+        uint256 a = vm.parseJsonUint(json, string.concat(k, ".a"));
+        if (result == 0) {
+            pricer.setPrice(uint16(a));
+            (uint16 p, bytes32 h) = quoter.notePriceBps(s, pricer, vol);
+            assertEq(p, vm.parseJsonUint(json, string.concat(k, ".notePriceBps")), label);
+            assertEq(h, pricer.weightsHash());
+        } else {
+            int256 b = vm.parseJsonInt(json, string.concat(k, ".b"));
+            pricer.setRefusal(MockPricer.Mode(result), uint8(a), int64(b));
+            if (result == 1) {
+                vm.expectRevert(abi.encodeWithSelector(ISurrogatePricer.OutOfRange.selector, uint8(a), int64(b)));
+            } else if (result == 2) {
+                vm.expectRevert(abi.encodeWithSelector(ISurrogatePricer.Inconsistent.selector, uint8(a)));
+            } else {
+                vm.expectRevert(abi.encodeWithSelector(ISurrogatePricer.Uncertified.selector, uint8(a)));
+            }
+            quoter.notePriceBps(s, pricer, vol);
+        }
+        pricer.expect(bytes32(0));
     }
 
     // --- errors -------------------------------------------------------------------

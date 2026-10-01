@@ -1,0 +1,252 @@
+{
+  "AAPL": {
+    "endExclusiveUtc": "2026-09-29",
+    "fetchedAtUtc": "2026-09-30T13:52:32+00:00",
+    "nasdaq": {
+      "first": "2016-09-29",
+      "last": "2026-09-28",
+      "rows": 2512,
+      "url": "https://api.nasdaq.com/api/quote/AAPL/historical?assetclass=stocks&fromdate=2015-09-01&todate=2026-09-28&limit=9999"
+    },
+    "yahoo": {
+      "first": "2010-01-04",
+      "last": "2026-09-28",
+      "rows": 4209,
+      "splits": [
+        {
+          "date": "2014-06-09",
+          "ratio": "7.0:1.0"
+        },
+        {
+          "date": "2020-08-31",
+          "ratio": "4.0:1.0"
+        }
+      ],
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/AAPL?period1=1262304000&period2=1790640000&interval=1d&events=split,div"
+    }
+  },
+  "AMD": {
+    "endExclusiveUtc": "2026-09-29",
+    "fetchedAtUtc": "2026-09-30T13:52:38+00:00",
+    "nasdaq": {
+      "first": "2016-09-29",
+      "last": "2026-09-28",
+      "rows": 2512,
+      "url": "https://api.nasdaq.com/api/quote/AMD/historical?assetclass=stocks&fromdate=2015-09-01&todate=2026-09-28&limit=9999"
+    },
+    "yahoo": {
+      "first": "2010-01-04",
+      "last": "2026-09-28",
+      "rows": 4209,
+      "splits": [],
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/AMD?period1=1262304000&period2=1790640000&interval=1d&events=split,div"
+    }
+  },
+  "AMZN": {
+    "endExclusiveUtc": "2026-09-29",
+    "fetchedAtUtc": "2026-09-30T13:52:36+00:00",
+    "nasdaq": {
+      "first": "2016-09-29",
+      "last": "2026-09-28",
+      "rows": 2512,
+      "url": "https://api.nasdaq.com/api/quote/AMZN/historical?assetclass=stocks&fromdate=2015-09-01&todate=2026-09-28&limit=9999"
+    },
+    "yahoo": {
+      "first": "2010-01-04",
+      "last": "2026-09-28",
+      "rows": 4209,
+      "splits": [
+        {
+          "date": "2022-06-06",
+          "ratio": "20.0:1.0"
+        }
+      ],
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/AMZN?period1=1262304000&period2=1790640000&interval=1d&events=split,div"
+    }
+  },
+  "COIN": {
+    "endExclusiveUtc": "2026-09-29",
+    "fetchedAtUtc": "2026-09-30T13:52:40+00:00",
+    "nasdaq": {
+      "first": "2021-04-14",
+      "last": "2026-09-28",
+      "rows": 1371,
+      "url": "https://api.nasdaq.com/api/quote/COIN/historical?assetclass=stocks&fromdate=2015-09-01&todate=2026-09-28&limit=9999"
+    },
+    "yahoo": {
+      "first": "2021-04-14",
+      "last": "2026-09-28",
+      "rows": 1371,
+      "splits": [],
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/COIN?period1=1262304000&period2=1790640000&interval=1d&events=split,div"
+    }
+  },
+  "GOOGL": {
+    "endExclusiveUtc": "2026-09-29",
+    "fetchedAtUtc": "2026-09-30T13:52:37+00:00",
+    "nasdaq": {
+      "first": "2016-09-29",
+      "last": "2026-09-28",
+      "rows": 2512,
+      "url": "https://api.nasdaq.com/api/quote/GOOGL/historical?assetclass=stocks&fromdate=2015-09-01&todate=2026-09-28&limit=9999"
+    },
+    "yahoo": {
+      "first": "2010-01-04",
+      "last": "2026-09-28",
+      "rows": 4209,
+      "splits": [
+        {
+          "date": "2014-04-03",
+          "ratio": "1998.0:1000.0"
+        },
+        {
+          "date": "2022-07-18",
+          "ratio": "20.0:1.0"
+        }
+      ],
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/GOOGL?period1=1262304000&period2=1790640000&interval=1d&events=split,div"
+    }
+  },
+  "META": {
+    "endExclusiveUtc": "2026-09-29",
+    "fetchedAtUtc": "2026-09-30T13:52:37+00:00",
+    "nasdaq": {
+      "first": "2016-09-29",
+      "last": "2026-09-28",
+      "rows": 2512,
+      "url": "https://api.nasdaq.com/api/quote/META/historical?assetclass=stocks&fromdate=2015-09-01&todate=2026-09-28&limit=9999"
+    },
+    "yahoo": {
+      "first": "2012-05-18",
+      "last": "2026-09-28",
+      "rows": 3610,
+      "splits": [],
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/META?period1=1262304000&period2=1790640000&interval=1d&events=split,div"
+    }
+  },
+  "MSFT": {
+    "endExclusiveUtc": "2026-09-29",
+    "fetchedAtUtc": "2026-09-30T13:52:34+00:00",
+    "nasdaq": {
+      "first": "2016-09-29",
+      "last": "2026-09-28",
+      "rows": 2512,
+      "url": "https://api.nasdaq.com/api/quote/MSFT/historical?assetclass=stocks&fromdate=2015-09-01&todate=2026-09-28&limit=9999"
+    },
+    "yahoo": {
+      "first": "2010-01-04",
+      "last": "2026-09-28",
+      "rows": 4209,
+      "splits": [],
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/MSFT?period1=1262304000&period2=1790640000&interval=1d&events=split,div"
+    }
+  },
+  "MSTR": {
+    "endExclusiveUtc": "2026-09-29",
+    "fetchedAtUtc": "2026-09-30T13:52:42+00:00",
+    "nasdaq": {
+      "first": "2016-09-29",
+      "last": "2026-09-28",
+      "rows": 2512,
+      "url": "https://api.nasdaq.com/api/quote/MSTR/historical?assetclass=stocks&fromdate=2015-09-01&todate=2026-09-28&limit=9999"
+    },
+    "yahoo": {
+      "first": "2010-01-04",
+      "last": "2026-09-28",
+      "rows": 4209,
+      "splits": [
+        {
+          "date": "2024-08-08",
+          "ratio": "10.0:1.0"
+        }
+      ],
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/MSTR?period1=1262304000&period2=1790640000&interval=1d&events=split,div"
+    }
+  },
+  "NFLX": {
+    "endExclusiveUtc": "2026-09-29",
+    "fetchedAtUtc": "2026-09-30T13:52:39+00:00",
+    "nasdaq": {
+      "first": "2016-09-29",
+      "last": "2026-09-28",
+      "rows": 2512,
+      "url": "https://api.nasdaq.com/api/quote/NFLX/historical?assetclass=stocks&fromdate=2015-09-01&todate=2026-09-28&limit=9999"
+    },
+    "yahoo": {
+      "first": "2010-01-04",
+      "last": "2026-09-28",
+      "rows": 4209,
+      "splits": [
+        {
+          "date": "2015-07-15",
+          "ratio": "7.0:1.0"
+        },
+        {
+          "date": "2025-11-17",
+          "ratio": "10.0:1.0"
+        }
+      ],
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/NFLX?period1=1262304000&period2=1790640000&interval=1d&events=split,div"
+    }
+  },
+  "NVDA": {
+    "endExclusiveUtc": "2026-09-29",
+    "fetchedAtUtc": "2026-09-30T13:52:33+00:00",
+    "nasdaq": {
+      "first": "2016-09-29",
+      "last": "2026-09-28",
+      "rows": 2512,
+      "url": "https://api.nasdaq.com/api/quote/NVDA/historical?assetclass=stocks&fromdate=2015-09-01&todate=2026-09-28&limit=9999"
+    },
+    "yahoo": {
+      "first": "2010-01-04",
+      "last": "2026-09-28",
+      "rows": 4209,
+      "splits": [
+        {
+          "date": "2021-07-20",
+          "ratio": "4.0:1.0"
+        },
+        {
+          "date": "2024-06-10",
+          "ratio": "10.0:1.0"
+        }
+      ],
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/NVDA?period1=1262304000&period2=1790640000&interval=1d&events=split,div"
+    }
+  },
+  "PLTR": {
+    "endExclusiveUtc": "2026-09-29",
+    "fetchedAtUtc": "2026-09-30T13:52:41+00:00",
+    "nasdaq": {
+      "first": "2020-09-30",
+      "last": "2026-09-28",
+      "rows": 1505,
+      "url": "https://api.nasdaq.com/api/quote/PLTR/historical?assetclass=stocks&fromdate=2015-09-01&todate=2026-09-28&limit=9999"
+    },
+    "yahoo": {
+      "first": "2020-09-30",
+      "last": "2026-09-28",
+      "rows": 1505,
+      "splits": [],
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/PLTR?period1=1262304000&period2=1790640000&interval=1d&events=split,div"
+    }
+  },
+  "SPY": {
+    "endExclusiveUtc": "2026-09-29",
+    "fetchedAtUtc": "2026-09-30T13:52:43+00:00",
+    "nasdaq": {
+      "first": "2016-09-29",
+      "last": "2026-09-28",
+      "rows": 2512,
+      "url": "https://api.nasdaq.com/api/quote/SPY/historical?assetclass=etf&fromdate=2015-09-01&todate=2026-09-28&limit=9999"
+    },
+    "yahoo": {
+      "first": "2010-01-04",
+      "last": "2026-09-28",
+      "rows": 4209,
+      "splits": [],
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/SPY?period1=1262304000&period2=1790640000&interval=1d&events=split,div"
+    }
+  }
+}
