@@ -224,7 +224,7 @@ days in the last two weeks at 30–50%.
 
 ## Toward the other teacher improvements
 
-- **Options calibration (step 2)** is a config change: teacher v3's jump sizes are ratios to vol,
+- **Options calibration (step 2)**, design in [options-calibration.md](options-calibration.md), is a config change: teacher v3's jump sizes are ratios to vol,
   so a negative `muJ` (skew) or a jump premium fitted to option smiles drops into the same
   `teacher_config_v3.json` format, and the K3 pipeline (sets, trainer, gate) relabels and
   retrains unchanged.
