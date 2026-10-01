@@ -1,0 +1,14 @@
+[Unit]
+Description=Surrogate Pricer: Nitro dev node sp-devnode (chain 412346, 127.0.0.1:8647)
+Documentation=file://@ROOT@/docs/backend.md
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=@ROOT@/backend/ops/node.sh
+ExecStop=@ROOT@/backend/devnode/down.sh
+TimeoutStartSec=900
+TimeoutStopSec=90
+
+[Install]
+WantedBy=default.target

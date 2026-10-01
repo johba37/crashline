@@ -1,3 +1,5 @@
 tools/.venv/
 __pycache__/
 target/
+# the dev node deployment, rewritten by backend/devnode/deploy.py and /demo/reset
+deployments/412346.json
