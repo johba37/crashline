@@ -263,39 +263,48 @@ def push_round(chain: Chain, key: str, feed: str, answer: int) -> dict:
 
 
 def stage(chain: Chain, key: str, addrs: dict, feed_name: str, path_bps: list[int], spot_bps: int,
-          observations_done: int, lead_secs: int, terms: dict | None = None, listing: dict | None = None,
-          initial: int = INITIAL, push_spot: bool = True) -> dict:
+          observations_done: int, lead_secs: int | None, terms: dict | None = None, listing: dict | None = None,
+          initial: int = INITIAL, push_spot: bool = True, next_observation: int | None = None) -> dict:
     """The e2e script's steps 3-4: a new feed with a staged history, a series whose strike is
-    (observations_done + 1) weeks before the next observation, the past fixings recorded,
+    (observations_done + 1) intervals before the next observation, the past fixings recorded,
     `advance()`; with `listing`, the listing, its spread and the feed's risk budget.
+    The next observation is `lead_secs` from now, or at `next_observation` (unix time, in
+    the future and within one interval), so several series can share one schedule.
+    `terms["interval"]` (default a week, at least an hour) is the observation interval; the
+    Desk lists weekly series only, a shorter one is for settling a series in minutes.
     `push_spot=False` leaves the last fixing as the latest round (a stale feed).
     Returns {feed, series, note, writer, recorder, strikeTime, nextObservation}."""
-    t = dict(K2_TERMS, **(terms or {}))
+    t = {**K2_TERMS, "interval": WEEK, **(terms or {})}
+    interval = int(t["interval"])
     done = int(observations_done)
+    if interval < 3600:
+        raise ValueError("interval must be at least 3600 s")
     if not 0 <= done <= t["count"]:
         raise ValueError(f"observationsDone {done} outside 0..{t['count']}")
     if len(path_bps) < done:
         raise ValueError(f"pathBps has {len(path_bps)} fixings, observationsDone needs {done}")
-    if not 0 < lead_secs < WEEK:
-        raise ValueError("leadSecs must be in 1..604799 (the next observation lies within a week)")
     if spot_bps <= 0 or any(p <= 0 for p in path_bps[:done]):
         raise ValueError("fixings and spot must be > 0")
     if feed_name in addrs.get("feeds", {}):
         raise ValueError(f"feed name {feed_name} is taken")
 
     now = poke(chain, key)["time"]
+    if next_observation is not None:
+        lead_secs = int(next_observation) - now
+    if lead_secs is None or not 0 < lead_secs < interval:
+        raise ValueError(f"the next observation must lie 1..{interval - 1} s ahead (leadSecs {lead_secs})")
     t_next = now + lead_secs
-    strike = t_next - (done + 1) * WEEK
+    strike = t_next - (done + 1) * interval
     feed = chain.deploy(key, bytecode("MockChainlinkFeed"), ["string"], [f"{feed_name} / USD (staged)"])
     f = chain.at("feed", feed)
     f.send(key, "pushRoundAt", initial, strike)
     for i in range(1, done + 1):
-        f.send(key, "pushRoundAt", initial * path_bps[i - 1] // 10_000, strike + i * WEEK)
+        f.send(key, "pushRoundAt", initial * path_bps[i - 1] // 10_000, strike + i * interval)
     if push_spot:
         f.send(key, "pushRound", initial * spot_bps // 10_000)
 
     factory = chain.at("factory", addrs["seriesFactory"])
-    terms_t = {"feed": feed, "strikeTime": strike, "observationInterval": WEEK, "observationCount": t["count"],
+    terms_t = {"feed": feed, "strikeTime": strike, "observationInterval": interval, "observationCount": t["count"],
                "kiBarrierBps": t["ki"], "acBarrierBps": t["ac"], "couponBpsPerPeriod": t["coupon"]}
     factory.send(key, "createSeries", terms_t)
     series = factory.call("seriesOf", factory.call("seriesId", terms_t))
@@ -303,7 +312,7 @@ def stage(chain: Chain, key: str, addrs: dict, feed_name: str, path_bps: list[in
     recorder = factory.call("recorderOf", feed)
     rec = chain.at("recorder", recorder)
     for i in range(done + 1):
-        rec.send(key, "recordFixing", strike + i * WEEK, ROUND_BASE + i + 1)
+        rec.send(key, "recordFixing", strike + i * interval, ROUND_BASE + i + 1)
     s.send(key, "advance")
     addrs.setdefault("feeds", {})[feed_name] = feed
     if listing is not None:

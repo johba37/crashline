@@ -7,6 +7,7 @@ DEMO_KEY; on the dev node Nitro's dev key, the curator and the feeds' owner).
   /demo/feed    {feed, spotBps}              pushRound(initial * spotBps / 1e4) on a mock feed
   /demo/fixing  {series, fixingBps}          round at the passed next observation, recordFixing, advance()
   /demo/stage   {feedName, pathBps, ...}     deploy.stage (+ listing): a new feed and series
+                                             (terms.interval, nextObservation: see docs/backend.md)
   /demo/reset   {}                           new chain, deploy.deploy_all, config.json rewritten
 
 Each route waits (up to 15 s) until the indexer has the transactions' block,
@@ -216,7 +217,7 @@ def stage(body: dict = Body(...), x_demo_token: str | None = Header(None)):
     if not isinstance(path, list) or not all(isinstance(x, int) and 0 < x <= 100_000 for x in path):
         raise ApiError(400, "BadRequest", {"pathBps": path})
     t = body.get("terms") or {}
-    terms = {k: int(t[k]) for k in ("ki", "ac", "coupon", "count") if k in t}
+    terms = {k: int(t[k]) for k in ("ki", "ac", "coupon", "count", "interval") if k in t}
     listing = None
     if body.get("list") is not None:
         lst = dict(body["list"])
@@ -225,10 +226,14 @@ def stage(body: dict = Body(...), x_demo_token: str | None = Header(None)):
         listing = {k: (int(v) if k != "capNotional" else v) for k, v in lst.items()
                    if k in dp.DEFAULT_LIST}
     addrs = {**cfg["addresses"], "feeds": dict(cfg["addresses"].get("feeds", {}))}
+    # the next observation: leadSecs from now, or at nextObservation (unix time; series staged
+    # with the same one share a schedule)
+    next_obs = _int(body, "nextObservation", 1) if body.get("nextObservation") is not None else None
+    lead = None if next_obs is not None else _int(body, "leadSecs", 1, 604_799)
     try:
         st = dp.stage(c.chain, key, addrs, name, path, _int(body, "spotBps", 1, 100_000),
-                      _int(body, "observationsDone", 0, 104), _int(body, "leadSecs", 1, 604_799),
-                      terms=terms, listing=listing)
+                      _int(body, "observationsDone", 0, 104), lead,
+                      terms=terms, listing=listing, next_observation=next_obs)
     except ValueError as e:
         raise ApiError(400, "BadStage", {"message": str(e)}) from None
     except Revert as e:

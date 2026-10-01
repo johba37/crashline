@@ -114,12 +114,34 @@ def test_stage_knock_in_lowers_the_mid(service, chain, cfg, token):
                                   "observationsDone": 3, "leadSecs": 100}, token, status=400)
 
 
+def test_stage_interval_and_shared_schedule(service, chain, cfg, token):
+    """terms.interval stages a series on an hourly grid (not listable: the Desk is weekly), all
+    its barrier observations past, maturing at nextObservation; two stages with the same
+    nextObservation share the strike time."""
+    t_next = dp.poke(chain, dp.DEV_KEY)["time"] + 1800
+    common = {"spotBps": 9000, "observationsDone": 26, "nextObservation": t_next,
+              "terms": {"interval": 3600}}
+    a = post(service, "/demo/stage", {"feedName": unique("HA"), "pathBps": [9000] * 26, **common}, token)
+    b = post(service, "/demo/stage", {"feedName": unique("HB"), "pathBps": [9000] * 3 + [5500] + [8000] * 22,
+                                      **common}, token)
+    for o in (a, b):
+        assert o["terms"]["observationInterval"] == 3600 and o["state"]["observationsDone"] == 26
+        assert o["state"]["nextObservation"] == o["state"]["maturity"] == t_next
+        assert o["terms"]["strikeTime"] == t_next - 27 * 3600 and o["listing"] is None
+    assert a["state"]["knockedIn"] is False and b["state"]["knockedIn"] is True
+    post(service, "/demo/stage", {"feedName": unique("HX"), "pathBps": [], "spotBps": 9000, "observationsDone": 0,
+                                  "leadSecs": 3600, "terms": {"interval": 3600}}, token, status=400)
+    post(service, "/demo/stage", {"feedName": unique("HY"), "pathBps": [], "spotBps": 9000, "observationsDone": 0,
+                                  "leadSecs": 100, "terms": {"interval": 600}}, token, status=400)
+
+
 def test_fixing_advances_the_series(service, chain, cfg, token):
     st = post(service, "/demo/stage", {"feedName": unique("FIX"), "pathBps": dp.PATH_BPS[:10], "spotBps": 8500,
                                        "observationsDone": 10, "leadSecs": 15, "list": {}}, token)
     r = service.client.post("/demo/fixing", json={"series": st["address"], "fixingBps": 9000}, headers=token)
     assert r.status_code == 409 and r.json()["error"] == "ObservationNotPassed"
-    time.sleep(max(0, st["state"]["nextObservation"] + 2 - time.time()))
+    while dp.poke(chain, dp.DEV_KEY)["time"] <= st["state"]["nextObservation"] + 1:  # chain time (dev clock)
+        time.sleep(0.5)
     r = post(service, "/demo/fixing", {"series": st["address"], "fixingBps": 9000}, token)
     s = r["series"]
     assert r["pushed"] is True and r["fixing"]["fixingBps"] == 9000
