@@ -1,0 +1,1600 @@
+{
+  "windows": {
+    "10y": [
+      "2016-09-28",
+      "2026-09-28"
+    ],
+    "5y": [
+      "2021-09-28",
+      "2026-09-28"
+    ]
+  },
+  "fits": [
+    {
+      "symbol": "TSLA",
+      "window": "10y",
+      "first": "2016-09-28",
+      "last": "2026-09-28",
+      "returns": 2512,
+      "returnsPerYear": 251.06243154435924,
+      "sample": {
+        "annVol": 0.5932032473397494,
+        "skew": -0.0661899602745723,
+        "excessKurtosis": 4.133515924104017,
+        "min": -0.23651788851955136,
+        "max": 0.20449057748473543
+      },
+      "trading_day": {
+        "m": 0.0012986330992971141,
+        "sigma_d": 0.024369337387466983,
+        "lambda": 0.2876970549133035,
+        "muJ": -5.961597932005331e-06,
+        "sigmaJ": 0.05261043287499273
+      },
+      "trading_day_stderr": {
+        "m": 0.0007244770642087611,
+        "sigma_d": 0.0012311653573464653,
+        "lambda": 0.06934548034418288,
+        "muJ": 0.002704723721189475,
+        "sigmaJ": 0.005154794631796797
+      },
+      "derived": {
+        "lambdaYear": 72.22992215468503,
+        "jumpVol": 0.44712654245347816,
+        "diffusionVol": 0.38613092554879,
+        "totalVol": 0.5907785004818364,
+        "jumpShare": 0.5728112493049902,
+        "sigmaJ_over_dailyVol": 1.4110358837207924
+      },
+      "derived_stderr": {
+        "lambdaYear": 17.410044911820012,
+        "jumpVol": 0.022517391523031657,
+        "diffusionVol": 0.019507753180870658,
+        "totalVol": 0.013808536505836357,
+        "jumpShare": 0.0442088515970849,
+        "sigmaJ_over_dailyVol": 0.1280564946195221
+      },
+      "lrStatVsGBM": 373.86273990810696,
+      "tail4": [
+        15,
+        10.59712115421054
+      ],
+      "clustering": {
+        "weeklyExcessKurtosis": 1.3115924447850826,
+        "weeklyExcessKurtosisMerton": 0.6842879794425822,
+        "acfAbsLag1to5": 0.1117522664495852,
+        "acfAbsLag20to60": 0.05044850054174547
+      },
+      "crossCheck": {
+        "commonDates": 2513,
+        "maxAbsLogRetDiff": 2.247570505531371e-05,
+        "over1e-3": 0
+      }
+    },
+    {
+      "symbol": "AAPL",
+      "window": "10y",
+      "first": "2016-09-28",
+      "last": "2026-09-28",
+      "returns": 2512,
+      "returnsPerYear": 251.06243154435924,
+      "sample": {
+        "annVol": 0.2904438048643099,
+        "skew": -0.11584839949665991,
+        "excessKurtosis": 6.618444631228893,
+        "min": -0.13770798958035257,
+        "max": 0.1426175141812136
+      },
+      "trading_day": {
+        "m": 0.001759302809688792,
+        "sigma_d": 0.009515276135805424,
+        "lambda": 0.5090929953986401,
+        "muJ": -0.001450917444124847,
+        "sigmaJ": 0.021233993345767106
+      },
+      "trading_day_stderr": {
+        "m": 0.0003477965118096599,
+        "sigma_d": 0.000660800150532217,
+        "lambda": 0.09729174415528517,
+        "muJ": 0.0008841212109449577,
+        "sigmaJ": 0.0016893327528181214
+      },
+      "derived": {
+        "lambdaYear": 127.81412530698387,
+        "jumpVol": 0.24062048608060393,
+        "diffusionVol": 0.1507690719182399,
+        "totalVol": 0.28395339647335355,
+        "jumpShare": 0.7180770784450262,
+        "sigmaJ_over_dailyVol": 1.1848830161576656
+      },
+      "derived_stderr": {
+        "lambdaYear": 24.42630185682021,
+        "jumpVol": 0.009093049440180554,
+        "diffusionVol": 0.010470345158379931,
+        "totalVol": 0.006383402265190539,
+        "jumpShare": 0.039014987215798734,
+        "sigmaJ_over_dailyVol": 0.08586073479667475
+      },
+      "lrStatVsGBM": 501.7295687024234,
+      "tail4": [
+        15,
+        7.491709879128915
+      ],
+      "clustering": {
+        "weeklyExcessKurtosis": 0.9327084460097108,
+        "weeklyExcessKurtosisMerton": 0.607701073548665,
+        "acfAbsLag1to5": 0.2052929513239487,
+        "acfAbsLag20to60": 0.05357546528915071
+      },
+      "crossCheck": {
+        "commonDates": 2512,
+        "maxAbsLogRetDiff": 0.000731360494857114,
+        "over1e-3": 0
+      }
+    },
+    {
+      "symbol": "NVDA",
+      "window": "10y",
+      "first": "2016-09-28",
+      "last": "2026-09-28",
+      "returns": 2512,
+      "returnsPerYear": 251.06243154435924,
+      "sample": {
+        "annVol": 0.4966926195029289,
+        "skew": 0.08075453122102032,
+        "excessKurtosis": 6.375739869653797,
+        "min": -0.20771184614462745,
+        "max": 0.2608764611292218
+      },
+      "trading_day": {
+        "m": 0.003015098143511272,
+        "sigma_d": 0.01990274866379078,
+        "lambda": 0.399109805723819,
+        "muJ": -0.0026277404859897345,
+        "sigmaJ": 0.03700573403269397
+      },
+      "trading_day_stderr": {
+        "m": 0.0006854771715300226,
+        "sigma_d": 0.0017127058383639945,
+        "lambda": 0.1437568248416936,
+        "muJ": 0.0019458884305804428,
+        "sigmaJ": 0.004827941392381736
+      },
+      "derived": {
+        "lambdaYear": 100.20147827821881,
+        "jumpVol": 0.3713626766491526,
+        "diffusionVol": 0.3153580518141977,
+        "totalVol": 0.48719702221182476,
+        "jumpShare": 0.5810148818394208,
+        "sigmaJ_over_dailyVol": 1.2035254081367728
+      },
+      "derived_stderr": {
+        "lambdaYear": 36.09193799585861,
+        "jumpVol": 0.024386921566420715,
+        "diffusionVol": 0.02713773788946045,
+        "totalVol": 0.010441783251499834,
+        "jumpShare": 0.07080765059957816,
+        "sigmaJ_over_dailyVol": 0.14963588047149237
+      },
+      "lrStatVsGBM": 344.1794602423852,
+      "tail4": [
+        14,
+        6.688876268010958
+      ],
+      "clustering": {
+        "weeklyExcessKurtosis": 1.4281765492143075,
+        "weeklyExcessKurtosisMerton": 0.5074883505573948,
+        "acfAbsLag1to5": 0.15009427029307415,
+        "acfAbsLag20to60": 0.0387840683726395
+      },
+      "crossCheck": {
+        "commonDates": 2512,
+        "maxAbsLogRetDiff": 0.00023192485738632307,
+        "over1e-3": 0
+      }
+    },
+    {
+      "symbol": "MSFT",
+      "window": "10y",
+      "first": "2016-09-28",
+      "last": "2026-09-28",
+      "returns": 2512,
+      "returnsPerYear": 251.06243154435924,
+      "sample": {
+        "annVol": 0.27661423668166985,
+        "skew": 0.01283993613008623,
+        "excessKurtosis": 8.83358674790561,
+        "min": -0.1594539856730055,
+        "max": 0.14415868991645198
+      },
+      "trading_day": {
+        "m": 0.0016364404581068023,
+        "sigma_d": 0.010203532049260972,
+        "lambda": 0.3692977216472497,
+        "muJ": -0.0019618897560677064,
+        "sigmaJ": 0.022407947245777257
+      },
+      "trading_day_stderr": {
+        "m": 0.00033227556842078634,
+        "sigma_d": 0.0006952949130818427,
+        "lambda": 0.0929269619195886,
+        "muJ": 0.0010802176030827897,
+        "sigmaJ": 0.0022560563949558087
+      },
+      "derived": {
+        "lambdaYear": 92.71678396055047,
+        "jumpVol": 0.21659053050692031,
+        "diffusionVol": 0.16167445225959035,
+        "totalVol": 0.2702777949049972,
+        "jumpShare": 0.6421821000509509,
+        "sigmaJ_over_dailyVol": 1.3136587765283227
+      },
+      "derived_stderr": {
+        "lambdaYear": 23.330469015559427,
+        "jumpVol": 0.010177751253503538,
+        "diffusionVol": 0.01101691293649316,
+        "totalVol": 0.006305354177264693,
+        "jumpShare": 0.04827274633103674,
+        "sigmaJ_over_dailyVol": 0.12244118174834401
+      },
+      "lrStatVsGBM": 504.69799433464686,
+      "tail4": [
+        15,
+        8.7470434852538
+      ],
+      "clustering": {
+        "weeklyExcessKurtosis": 4.717477533563883,
+        "weeklyExcessKurtosisMerton": 0.6699991605783091,
+        "acfAbsLag1to5": 0.2337761392351672,
+        "acfAbsLag20to60": 0.058873686883098214
+      },
+      "crossCheck": {
+        "commonDates": 2512,
+        "maxAbsLogRetDiff": 3.5296635958914635e-05,
+        "over1e-3": 0
+      }
+    },
+    {
+      "symbol": "AMZN",
+      "window": "10y",
+      "first": "2016-09-28",
+      "last": "2026-09-28",
+      "returns": 2512,
+      "returnsPerYear": 251.06243154435924,
+      "sample": {
+        "annVol": 0.32980765397292267,
+        "skew": 0.0909928489389564,
+        "excessKurtosis": 5.377507499605127,
+        "min": -0.15139791391675939,
+        "max": 0.14254579394614364
+      },
+      "trading_day": {
+        "m": 0.001142815049804761,
+        "sigma_d": 0.012900591473008783,
+        "lambda": 0.34152141618809995,
+        "muJ": -0.0012693285132029761,
+        "sigmaJ": 0.02739345363645915
+      },
+      "trading_day_stderr": {
+        "m": 0.00040747996632079094,
+        "sigma_d": 0.000749309942096879,
+        "lambda": 0.08229090571744761,
+        "muJ": 0.0013246729096905887,
+        "sigmaJ": 0.002649519892650806
+      },
+      "derived": {
+        "lambdaYear": 85.74319717265746,
+        "jumpVol": 0.2539290369516582,
+        "diffusionVol": 0.20440922321349508,
+        "totalVol": 0.32598019317428023,
+        "jumpShare": 0.6067954359965447,
+        "sigmaJ_over_dailyVol": 1.3315161612329636
+      },
+      "derived_stderr": {
+        "lambdaYear": 20.660154883434885,
+        "jumpVol": 0.012286283454351891,
+        "diffusionVol": 0.011872778355215108,
+        "totalVol": 0.007486657736594885,
+        "jumpShare": 0.046025816078608506,
+        "sigmaJ_over_dailyVol": 0.11941584964544306
+      },
+      "lrStatVsGBM": 407.6157081646252,
+      "tail4": [
+        13,
+        9.227593533243738
+      ],
+      "clustering": {
+        "weeklyExcessKurtosis": 3.3034580029592853,
+        "weeklyExcessKurtosisMerton": 0.6468693737720881,
+        "acfAbsLag1to5": 0.15604851896757124,
+        "acfAbsLag20to60": 0.06515731317214957
+      },
+      "crossCheck": {
+        "commonDates": 2512,
+        "maxAbsLogRetDiff": 0.0005207502586728197,
+        "over1e-3": 0
+      }
+    },
+    {
+      "symbol": "META",
+      "window": "10y",
+      "first": "2016-09-28",
+      "last": "2026-09-28",
+      "returns": 2512,
+      "returnsPerYear": 251.06243154435924,
+      "sample": {
+        "annVol": 0.39796125004907806,
+        "skew": -1.0808018908536137,
+        "excessKurtosis": 22.856062851179317,
+        "min": -0.30639058624500315,
+        "max": 0.20930723916277927
+      },
+      "trading_day": {
+        "m": 0.0014531603079115068,
+        "sigma_d": 0.014553397350187071,
+        "lambda": 0.22776113617408034,
+        "muJ": -0.0033720231350489664,
+        "sigmaJ": 0.039679834346000246
+      },
+      "trading_day_stderr": {
+        "m": 0.0003994926323898638,
+        "sigma_d": 0.0005814622340404546,
+        "lambda": 0.040691969498409926,
+        "muJ": 0.00205657082022453,
+        "sigmaJ": 0.0032929844200480594
+      },
+      "derived": {
+        "lambdaYear": 57.18226465917053,
+        "jumpVol": 0.30113627220663997,
+        "diffusionVol": 0.23059784922987395,
+        "totalVol": 0.37928672862091445,
+        "jumpShare": 0.630363192210709,
+        "sigmaJ_over_dailyVol": 1.6576508814056148
+      },
+      "derived_stderr": {
+        "lambdaYear": 10.21622480659805,
+        "jumpVol": 0.013534144629697474,
+        "diffusionVol": 0.009213239860887736,
+        "totalVol": 0.010381988879751822,
+        "jumpShare": 0.032223527157331455,
+        "sigmaJ_over_dailyVol": 0.12063486902975061
+      },
+      "lrStatVsGBM": 849.9703266358047,
+      "tail4": [
+        14,
+        13.11319068155563
+      ],
+      "clustering": {
+        "weeklyExcessKurtosis": 9.300004008393264,
+        "weeklyExcessKurtosisMerton": 1.0467390770810356,
+        "acfAbsLag1to5": 0.1218569766773423,
+        "acfAbsLag20to60": 0.05530539285402163
+      },
+      "crossCheck": {
+        "commonDates": 2512,
+        "maxAbsLogRetDiff": 2.862944346926355e-05,
+        "over1e-3": 0
+      }
+    },
+    {
+      "symbol": "GOOGL",
+      "window": "10y",
+      "first": "2016-09-28",
+      "last": "2026-09-28",
+      "returns": 2512,
+      "returnsPerYear": 251.06243154435924,
+      "sample": {
+        "annVol": 0.2954787153530412,
+        "skew": -0.12548822737509413,
+        "excessKurtosis": 4.32489285040617,
+        "min": -0.12368464429705961,
+        "max": 0.09734761498648847
+      },
+      "trading_day": {
+        "m": 0.0017175273920205648,
+        "sigma_d": 0.010736722107604065,
+        "lambda": 0.4230875036439242,
+        "muJ": -0.0020411577427583046,
+        "sigmaJ": 0.023036080835008122
+      },
+      "trading_day_stderr": {
+        "m": 0.00038040904273381395,
+        "sigma_d": 0.0007126656954940852,
+        "lambda": 0.09674189651564376,
+        "muJ": 0.0010139217313579756,
+        "sigmaJ": 0.002151904942254234
+      },
+      "derived": {
+        "lambdaYear": 106.22137742087656,
+        "jumpVol": 0.23834868845051296,
+        "diffusionVol": 0.17012282192381092,
+        "totalVol": 0.2928342053541566,
+        "jumpShare": 0.6624939616682758,
+        "sigmaJ_over_dailyVol": 1.2464580156315832
+      },
+      "derived_stderr": {
+        "lambdaYear": 24.288255771418086,
+        "jumpVol": 0.010355506550840388,
+        "diffusionVol": 0.011292152110359307,
+        "totalVol": 0.006658847989371918,
+        "jumpShare": 0.04456394355390815,
+        "sigmaJ_over_dailyVol": 0.10749888812102287
+      },
+      "lrStatVsGBM": 413.4483799517202,
+      "tail4": [
+        18,
+        8.637419223899556
+      ],
+      "clustering": {
+        "weeklyExcessKurtosis": 1.0042819371901999,
+        "weeklyExcessKurtosisMerton": 0.622396770219533,
+        "acfAbsLag1to5": 0.15239706203356213,
+        "acfAbsLag20to60": 0.04486054446597264
+      },
+      "crossCheck": {
+        "commonDates": 2512,
+        "maxAbsLogRetDiff": 0.000302358791752777,
+        "over1e-3": 0
+      }
+    },
+    {
+      "symbol": "AMD",
+      "window": "10y",
+      "first": "2016-09-28",
+      "last": "2026-09-28",
+      "returns": 2512,
+      "returnsPerYear": 251.06243154435924,
+      "sample": {
+        "annVol": 0.5668716412989313,
+        "skew": 0.02766276706691379,
+        "excessKurtosis": 4.5644889862435996,
+        "min": -0.2774555406679493,
+        "max": 0.21366258693718
+      },
+      "trading_day": {
+        "m": 0.0009979693297473159,
+        "sigma_d": 0.021482634716962996,
+        "lambda": 0.4366332804291708,
+        "muJ": 0.001839411460097939,
+        "sigmaJ": 0.042574205932440316
+      },
+      "trading_day_stderr": {
+        "m": 0.0007497881624276972,
+        "sigma_d": 0.0012647110788318028,
+        "lambda": 0.09376662125510102,
+        "muJ": 0.001907258181489998,
+        "sigmaJ": 0.0036596534052576843
+      },
+      "derived": {
+        "lambdaYear": 109.62221307773771,
+        "jumpVol": 0.44617044743477724,
+        "diffusionVol": 0.3403912668858046,
+        "totalVol": 0.5611900593705063,
+        "jumpShare": 0.6320939925452637,
+        "sigmaJ_over_dailyVol": 1.2020636163993736
+      },
+      "derived_stderr": {
+        "lambdaYear": 23.54127592998422,
+        "jumpVol": 0.020031501889803887,
+        "diffusionVol": 0.020039283451031335,
+        "totalVol": 0.01217889649007607,
+        "jumpShare": 0.04396802106094755,
+        "sigmaJ_over_dailyVol": 0.09595257105168291
+      },
+      "lrStatVsGBM": 343.88507939700503,
+      "tail4": [
+        13,
+        7.539262378294661
+      ],
+      "clustering": {
+        "weeklyExcessKurtosis": 2.5323481706360784,
+        "weeklyExcessKurtosisMerton": 0.5490308347914532,
+        "acfAbsLag1to5": 0.08300749831060505,
+        "acfAbsLag20to60": 0.025948593326241706
+      },
+      "crossCheck": {
+        "commonDates": 2512,
+        "maxAbsLogRetDiff": 0.0007939659011764189,
+        "over1e-3": 0
+      }
+    },
+    {
+      "symbol": "NFLX",
+      "window": "10y",
+      "first": "2016-09-28",
+      "last": "2026-09-28",
+      "returns": 2512,
+      "returnsPerYear": 251.06243154435924,
+      "sample": {
+        "annVol": 0.42052560819466905,
+        "skew": -1.7080186713989927,
+        "excessKurtosis": 34.16993834290147,
+        "min": -0.4325785090184753,
+        "max": 0.17418904498402954
+      },
+      "trading_day": {
+        "m": 0.0009021220836334485,
+        "sigma_d": 0.015872996307572745,
+        "lambda": 0.2348517424614586,
+        "muJ": -0.0005182809502278606,
+        "sigmaJ": 0.04078834540034632
+      },
+      "trading_day_stderr": {
+        "m": 0.00043589898016892914,
+        "sigma_d": 0.0006116082205211867,
+        "lambda": 0.04178820312604121,
+        "muJ": 0.002109304804418566,
+        "sigmaJ": 0.003273045456593589
+      },
+      "derived": {
+        "lambdaYear": 58.96244951480344,
+        "jumpVol": 0.3132267932066446,
+        "diffusionVol": 0.2515068283566762,
+        "totalVol": 0.40170475313661985,
+        "jumpShare": 0.6080004034131117,
+        "sigmaJ_over_dailyVol": 1.6088664046783474
+      },
+      "derived_stderr": {
+        "lambdaYear": 10.491447886685581,
+        "jumpVol": 0.01431264288666137,
+        "diffusionVol": 0.00969090150086117,
+        "totalVol": 0.010476813519462539,
+        "jumpShare": 0.033415704396848794,
+        "sigmaJ_over_dailyVol": 0.1147064755023206
+      },
+      "lrStatVsGBM": 753.0792198902564,
+      "tail4": [
+        12,
+        11.962603880322018
+      ],
+      "clustering": {
+        "weeklyExcessKurtosis": 9.915801480541807,
+        "weeklyExcessKurtosisMerton": 0.9444200334741091,
+        "acfAbsLag1to5": 0.10706407373549828,
+        "acfAbsLag20to60": 0.055550966529894164
+      },
+      "crossCheck": {
+        "commonDates": 2512,
+        "maxAbsLogRetDiff": 0.0007889670198162335,
+        "over1e-3": 0
+      }
+    },
+    {
+      "symbol": "COIN",
+      "window": "10y",
+      "first": "2021-04-14",
+      "last": "2026-09-28",
+      "returns": 1370,
+      "returnsPerYear": 250.90316106372305,
+      "sample": {
+        "annVol": 0.8397290814826973,
+        "skew": 0.1450121562767398,
+        "excessKurtosis": 2.466406272483134,
+        "min": -0.30653702779244885,
+        "max": 0.27090199909694057
+      },
+      "trading_day": {
+        "m": -0.004721758541949533,
+        "sigma_d": 0.036668397827857156,
+        "lambda": 0.4462518383315564,
+        "muJ": 0.009701804496326152,
+        "sigmaJ": 0.05599232207776663
+      },
+      "trading_day_stderr": {
+        "m": 0.0025961028469444008,
+        "sigma_d": 0.006798511713954625,
+        "lambda": 0.4106121033162293,
+        "muJ": 0.006396841126369182,
+        "sigmaJ": 0.01669831679786647
+      },
+      "derived": {
+        "lambdaYear": 111.965996867885,
+        "jumpVol": 0.6013051561320669,
+        "diffusionVol": 0.5808245986102077,
+        "totalVol": 0.836017407200184,
+        "jumpShare": 0.5173199361864326,
+        "sigmaJ_over_dailyVol": 1.060879909201555
+      },
+      "derived_stderr": {
+        "lambdaYear": 103.02387469302245,
+        "jumpVol": 0.10237109535201415,
+        "diffusionVol": 0.1076879021532549,
+        "totalVol": 0.02223808440673653,
+        "jumpShare": 0.17561828773840904,
+        "sigmaJ_over_dailyVol": 0.3092472677750832
+      },
+      "lrStatVsGBM": 95.14884344433085,
+      "tail4": [
+        7,
+        2.8170648973255394
+      ],
+      "clustering": {
+        "weeklyExcessKurtosis": 1.3866477801589436,
+        "weeklyExcessKurtosisMerton": 0.35961981681060146,
+        "acfAbsLag1to5": 0.1363695071954258,
+        "acfAbsLag20to60": 0.057190366042801685
+      },
+      "crossCheck": {
+        "commonDates": 1371,
+        "maxAbsLogRetDiff": 9.341418453479022e-05,
+        "over1e-3": 0
+      }
+    },
+    {
+      "symbol": "PLTR",
+      "window": "10y",
+      "first": "2020-09-30",
+      "last": "2026-09-28",
+      "returns": 1504,
+      "returnsPerYear": 250.78117862037462,
+      "sample": {
+        "annVol": 0.6840507209025728,
+        "skew": 0.6883375335776806,
+        "excessKurtosis": 5.182802533325617,
+        "min": -0.23962890205126097,
+        "max": 0.2685103325654712
+      },
+      "trading_day": {
+        "m": -0.00032252283063642574,
+        "sigma_d": 0.029829811424212288,
+        "lambda": 0.19807096808564087,
+        "muJ": 0.011639706684913988,
+        "sigmaJ": 0.06859696814424915
+      },
+      "trading_day_stderr": {
+        "m": 0.0010491772445843845,
+        "sigma_d": 0.002291110613215423,
+        "lambda": 0.09140793791560058,
+        "muJ": 0.0072839811875195105,
+        "sigmaJ": 0.01211912823754001
+      },
+      "derived": {
+        "lambdaYear": 49.67247082699562,
+        "jumpVol": 0.49037308552471615,
+        "diffusionVol": 0.4723870435616531,
+        "totalVol": 0.6808930032919635,
+        "jumpShare": 0.5186752300419781,
+        "sigmaJ_over_dailyVol": 1.5954144426428292
+      },
+      "derived_stderr": {
+        "lambdaYear": 22.923390405733436,
+        "jumpVol": 0.04042346737869105,
+        "diffusionVol": 0.0362821927922628,
+        "totalVol": 0.022136210026330504,
+        "jumpShare": 0.0727988617877992,
+        "sigmaJ_over_dailyVol": 0.2637706872197535
+      },
+      "lrStatVsGBM": 254.45611298442327,
+      "tail4": [
+        12,
+        7.957846485377198
+      ],
+      "clustering": {
+        "weeklyExcessKurtosis": 3.289576916954428,
+        "weeklyExcessKurtosisMerton": 0.8145066099344703,
+        "acfAbsLag1to5": 0.10364993420197703,
+        "acfAbsLag20to60": 0.038030003448829536
+      },
+      "crossCheck": {
+        "commonDates": 1505,
+        "maxAbsLogRetDiff": 1.2182454955933508e-07,
+        "over1e-3": 0
+      }
+    },
+    {
+      "symbol": "MSTR",
+      "window": "10y",
+      "first": "2016-09-28",
+      "last": "2026-09-28",
+      "returns": 2512,
+      "returnsPerYear": 251.06243154435924,
+      "sample": {
+        "annVol": 0.7481491895615042,
+        "skew": -0.09878405060557933,
+        "excessKurtosis": 6.430470045693388,
+        "min": -0.3011278984385788,
+        "max": 0.2558533317099405
+      },
+      "trading_day": {
+        "m": 6.959007898966396e-05,
+        "sigma_d": 0.011488483880202039,
+        "lambda": 0.9212690798552244,
+        "muJ": 0.0008848066958088542,
+        "sigmaJ": 0.045709527432461095
+      },
+      "trading_day_stderr": {
+        "m": 0.000542840257398455,
+        "sigma_d": 0.0007204144399595142,
+        "lambda": 0.061256578616773034,
+        "muJ": 0.0010949033000701184,
+        "sigmaJ": 0.0017062706204378105
+      },
+      "derived": {
+        "lambdaYear": 231.29605529508711,
+        "jumpVol": 0.695299943579784,
+        "diffusionVol": 0.18203444941002822,
+        "totalVol": 0.718733992735882,
+        "jumpShare": 0.9358538200558776,
+        "sigmaJ_over_dailyVol": 1.0076957136990434
+      },
+      "derived_stderr": {
+        "lambdaYear": 15.379225575612583,
+        "jumpVol": 0.01605619853213388,
+        "diffusionVol": 0.011414930576801425,
+        "totalVol": 0.01556524277402143,
+        "jumpShare": 0.008233182813081349,
+        "sigmaJ_over_dailyVol": 0.030483177843819556
+      },
+      "lrStatVsGBM": 876.2888324327614,
+      "tail4": [
+        21,
+        5.820518577340098
+      ],
+      "clustering": {
+        "weeklyExcessKurtosis": 4.180884775057944,
+        "weeklyExcessKurtosisMerton": 0.5704016186467382,
+        "acfAbsLag1to5": 0.27970553067223397,
+        "acfAbsLag20to60": 0.19436004373370075
+      },
+      "crossCheck": {
+        "commonDates": 2512,
+        "maxAbsLogRetDiff": 3.957321049430362e-05,
+        "over1e-3": 0
+      }
+    },
+    {
+      "symbol": "SPY",
+      "window": "10y",
+      "first": "2016-09-28",
+      "last": "2026-09-28",
+      "returns": 2512,
+      "returnsPerYear": 251.06243154435924,
+      "sample": {
+        "annVol": 0.1795894223253212,
+        "skew": -0.5925321222935891,
+        "excessKurtosis": 15.295296853116533,
+        "min": -0.11588631301604035,
+        "max": 0.09986283041456812
+      },
+      "trading_day": {
+        "m": 0.0013982257027402582,
+        "sigma_d": 0.006103072654403734,
+        "lambda": 0.2938827030373205,
+        "muJ": -0.0028338964831478375,
+        "sigmaJ": 0.016392767643986585
+      },
+      "trading_day_stderr": {
+        "m": 0.00017880828540337747,
+        "sigma_d": 0.00029643323335976405,
+        "lambda": 0.05163422390063629,
+        "muJ": 0.0008575952015172125,
+        "sigmaJ": 0.0012927350843850787
+      },
+      "derived": {
+        "lambdaYear": 73.78290601337854,
+        "jumpVol": 0.14289751445316198,
+        "diffusionVol": 0.09670287933017017,
+        "totalVol": 0.1725431728804043,
+        "jumpShare": 0.6858889237488197,
+        "sigmaJ_over_dailyVol": 1.5053773192561706
+      },
+      "derived_stderr": {
+        "lambdaYear": 12.963413803399465,
+        "jumpVol": 0.005769765152216386,
+        "diffusionVol": 0.004696969677126234,
+        "totalVol": 0.00456638624513706,
+        "jumpShare": 0.03160161062094009,
+        "sigmaJ_over_dailyVol": 0.10420914483381778
+      },
+      "lrStatVsGBM": 839.0139342101465,
+      "tail4": [
+        20,
+        11.829386477656229
+      ],
+      "clustering": {
+        "weeklyExcessKurtosis": 8.363811499089518,
+        "weeklyExcessKurtosisMerton": 0.9599330199949165,
+        "acfAbsLag1to5": 0.3697204526775037,
+        "acfAbsLag20to60": 0.08962608321760812
+      },
+      "crossCheck": {
+        "commonDates": 2512,
+        "maxAbsLogRetDiff": 0.002001672655966402,
+        "over1e-3": 2
+      }
+    },
+    {
+      "symbol": "TSLA",
+      "window": "5y",
+      "first": "2021-09-28",
+      "last": "2026-09-28",
+      "returns": 1254,
+      "returnsPerYear": 250.66265060240963,
+      "sample": {
+        "annVol": 0.596063651258761,
+        "skew": -0.01164992293205969,
+        "excessKurtosis": 2.580601426799639,
+        "min": -0.16754573858319421,
+        "max": 0.20449057748473543
+      },
+      "trading_day": {
+        "m": 0.0011142005118302848,
+        "sigma_d": 0.02853716420768443,
+        "lambda": 0.22502105923108454,
+        "muJ": -0.0038123688301485454,
+        "sigmaJ": 0.05150547072706248
+      },
+      "trading_day_stderr": {
+        "m": 0.001162621904803683,
+        "sigma_d": 0.002064223088258651,
+        "lambda": 0.11984313062824467,
+        "muJ": 0.005067598347120177,
+        "sigmaJ": 0.009851054216655991
+      },
+      "derived": {
+        "lambdaYear": 56.40437514822546,
+        "jumpVol": 0.38787894848901455,
+        "diffusionVol": 0.45180978060855986,
+        "totalVol": 0.5954680147031397,
+        "jumpShare": 0.424302452642751,
+        "sigmaJ_over_dailyVol": 1.369429679541498
+      },
+      "derived_stderr": {
+        "lambdaYear": 30.040196779774448,
+        "jumpVol": 0.04268568272210576,
+        "diffusionVol": 0.03268145965188941,
+        "totalVol": 0.01766379250458667,
+        "jumpShare": 0.08428676960253409,
+        "sigmaJ_over_dailyVol": 0.2517606064162093
+      },
+      "lrStatVsGBM": 96.61383013780323,
+      "tail4": [
+        5,
+        4.0228745549870855
+      ],
+      "clustering": {
+        "weeklyExcessKurtosis": 1.2976608887397445,
+        "weeklyExcessKurtosisMerton": 0.48003242471311947,
+        "acfAbsLag1to5": 0.04092602014399793,
+        "acfAbsLag20to60": 0.02322625692313325
+      },
+      "crossCheck": {
+        "commonDates": 1255,
+        "maxAbsLogRetDiff": 2.247570505531371e-05,
+        "over1e-3": 0
+      }
+    },
+    {
+      "symbol": "AAPL",
+      "window": "5y",
+      "first": "2021-09-28",
+      "last": "2026-09-28",
+      "returns": 1254,
+      "returnsPerYear": 250.66265060240963,
+      "sample": {
+        "annVol": 0.2787455428290971,
+        "skew": 0.1647078954900086,
+        "excessKurtosis": 5.715164846201057,
+        "min": -0.0970134209452631,
+        "max": 0.1426175141812136
+      },
+      "trading_day": {
+        "m": 0.0014403382860746737,
+        "sigma_d": 0.00902902809051069,
+        "lambda": 0.6815828749479262,
+        "muJ": -0.0010672822174714208,
+        "sigmaJ": 0.017815317243666147
+      },
+      "trading_day_stderr": {
+        "m": 0.0005599902723047742,
+        "sigma_d": 0.0012925643128700983,
+        "lambda": 0.2326442072277717,
+        "muJ": 0.0010578812192366235,
+        "sigmaJ": 0.002321080992483469
+      },
+      "derived": {
+        "lambdaYear": 170.8473700396579,
+        "jumpVol": 0.23327900374840058,
+        "diffusionVol": 0.14295054585639824,
+        "totalVol": 0.2735945031437739,
+        "jumpShare": 0.7270036120529828,
+        "sigmaJ_over_dailyVol": 1.030934341462155
+      },
+      "derived_stderr": {
+        "lambdaYear": 58.31521363102221,
+        "jumpVol": 0.01449308705780489,
+        "diffusionVol": 0.02046430382393912,
+        "totalVol": 0.00801509375410145,
+        "jumpShare": 0.0773816698246611,
+        "sigmaJ_over_dailyVol": 0.12604582819259533
+      },
+      "lrStatVsGBM": 180.62662134349284,
+      "tail4": [
+        6,
+        2.820054976886976
+      ],
+      "clustering": {
+        "weeklyExcessKurtosis": 6.231672543855806,
+        "weeklyExcessKurtosisMerton": 0.46526674757128317,
+        "acfAbsLag1to5": 0.1377672357741813,
+        "acfAbsLag20to60": 0.041651146594643224
+      },
+      "crossCheck": {
+        "commonDates": 1255,
+        "maxAbsLogRetDiff": 2.879737279659622e-05,
+        "over1e-3": 0
+      }
+    },
+    {
+      "symbol": "NVDA",
+      "window": "5y",
+      "first": "2021-09-28",
+      "last": "2026-09-28",
+      "returns": 1254,
+      "returnsPerYear": 250.66265060240963,
+      "sample": {
+        "annVol": 0.5141813243829556,
+        "skew": 0.25429478327101235,
+        "excessKurtosis": 3.724986461833928,
+        "min": -0.18594622891281176,
+        "max": 0.2180879516338705
+      },
+      "trading_day": {
+        "m": 0.0021192723415038115,
+        "sigma_d": 0.023910960983405966,
+        "lambda": 0.2876545912033676,
+        "muJ": -0.000693470113736383,
+        "sigmaJ": 0.04020911836795958
+      },
+      "trading_day_stderr": {
+        "m": 0.0011018515938059554,
+        "sigma_d": 0.0026956339132618544,
+        "lambda": 0.20939792556263226,
+        "muJ": 0.003577723410491536,
+        "sigmaJ": 0.010000948363040229
+      },
+      "derived": {
+        "lambdaYear": 72.1042622889887,
+        "jumpVol": 0.34148340203702254,
+        "diffusionVol": 0.378566207820447,
+        "totalVol": 0.5098267230837675,
+        "jumpShare": 0.44863588390565057,
+        "sigmaJ_over_dailyVol": 1.2486673872799896
+      },
+      "derived_stderr": {
+        "lambdaYear": 52.48823905219582,
+        "jumpVol": 0.047817153700387284,
+        "diffusionVol": 0.042678163747770205,
+        "totalVol": 0.01474259986538243,
+        "jumpShare": 0.1216969801312438,
+        "sigmaJ_over_dailyVol": 0.3008139656484116
+      },
+      "lrStatVsGBM": 102.30544785388884,
+      "tail4": [
+        5,
+        3.1827026042211135
+      ],
+      "clustering": {
+        "weeklyExcessKurtosis": 0.7198387816421614,
+        "weeklyExcessKurtosisMerton": 0.4198246451508038,
+        "acfAbsLag1to5": 0.09060117806584257,
+        "acfAbsLag20to60": 0.056200655299098914
+      },
+      "crossCheck": {
+        "commonDates": 1255,
+        "maxAbsLogRetDiff": 3.589304956541639e-05,
+        "over1e-3": 0
+      }
+    },
+    {
+      "symbol": "MSFT",
+      "window": "5y",
+      "first": "2021-09-28",
+      "last": "2026-09-28",
+      "returns": 1254,
+      "returnsPerYear": 250.66265060240963,
+      "sample": {
+        "annVol": 0.2800875137787888,
+        "skew": 0.35578025498650767,
+        "excessKurtosis": 6.133726742640771,
+        "min": -0.10528436047971468,
+        "max": 0.14415868991645198
+      },
+      "trading_day": {
+        "m": 0.0009255332395065736,
+        "sigma_d": 0.011695095924736507,
+        "lambda": 0.36457269064971476,
+        "muJ": -0.0011678587647792399,
+        "sigmaJ": 0.021305689330285912
+      },
+      "trading_day_stderr": {
+        "m": 0.0005802418988125243,
+        "sigma_d": 0.0016538926544189655,
+        "lambda": 0.2424940420933648,
+        "muJ": 0.0015899285561941413,
+        "sigmaJ": 0.005028031137606147
+      },
+      "derived": {
+        "lambdaYear": 91.38475697550982,
+        "jumpVol": 0.203978285584912,
+        "diffusionVol": 0.1851606097051651,
+        "totalVol": 0.2754842869866599,
+        "jumpShare": 0.5482444060959925,
+        "sigmaJ_over_dailyVol": 1.2244570927073521
+      },
+      "derived_stderr": {
+        "lambdaYear": 60.78419934643736,
+        "jumpVol": 0.023847770733970076,
+        "diffusionVol": 0.026184973107501848,
+        "totalVol": 0.008370044414766534,
+        "jumpShare": 0.12433831614353566,
+        "sigmaJ_over_dailyVol": 0.27775932156392236
+      },
+      "lrStatVsGBM": 155.79043397757687,
+      "tail4": [
+        6,
+        3.3763445552075346
+      ],
+      "clustering": {
+        "weeklyExcessKurtosis": 4.427403307529663,
+        "weeklyExcessKurtosisMerton": 0.4946669978687134,
+        "acfAbsLag1to5": 0.10253033350436624,
+        "acfAbsLag20to60": 0.05149526976734092
+      },
+      "crossCheck": {
+        "commonDates": 1255,
+        "maxAbsLogRetDiff": 1.5694821930090086e-05,
+        "over1e-3": 0
+      }
+    },
+    {
+      "symbol": "AMZN",
+      "window": "5y",
+      "first": "2021-09-28",
+      "last": "2026-09-28",
+      "returns": 1254,
+      "returnsPerYear": 250.66265060240963,
+      "sample": {
+        "annVol": 0.3628101496911477,
+        "skew": 0.12514366366070487,
+        "excessKurtosis": 5.294113864714369,
+        "min": -0.15139791391675939,
+        "max": 0.14254579394614364
+      },
+      "trading_day": {
+        "m": 0.00046519073296655766,
+        "sigma_d": 0.017916621265022272,
+        "lambda": 0.08874632745318108,
+        "muJ": -0.0016909134800688638,
+        "sigmaJ": 0.04789700730438151
+      },
+      "trading_day_stderr": {
+        "m": 0.0005906854120364693,
+        "sigma_d": 0.000616051712421304,
+        "lambda": 0.029001881959225363,
+        "muJ": 0.005645032399422233,
+        "sigmaJ": 0.0069658322448886085
+      },
+      "derived": {
+        "lambdaYear": 22.24538967064376,
+        "jumpVol": 0.22604705420537613,
+        "diffusionVol": 0.2836618475502409,
+        "totalVol": 0.36271381896826643,
+        "jumpShare": 0.3883913057616081,
+        "sigmaJ_over_dailyVol": 2.090687345706419
+      },
+      "derived_stderr": {
+        "lambdaYear": 7.269688604358888,
+        "jumpVol": 0.02275311353025644,
+        "diffusionVol": 0.00975353356791725,
+        "totalVol": 0.013624492354001747,
+        "jumpShare": 0.055546610623170914,
+        "sigmaJ_over_dailyVol": 0.2770141894079875
+      },
+      "lrStatVsGBM": 183.71321870384327,
+      "tail4": [
+        8,
+        8.356761244690691
+      ],
+      "clustering": {
+        "weeklyExcessKurtosis": 1.3770546903655383,
+        "weeklyExcessKurtosisMerton": 1.0198573049866289,
+        "acfAbsLag1to5": 0.08999790247404953,
+        "acfAbsLag20to60": 0.04174528423783776
+      },
+      "crossCheck": {
+        "commonDates": 1255,
+        "maxAbsLogRetDiff": 4.736057455634324e-05,
+        "over1e-3": 0
+      }
+    },
+    {
+      "symbol": "META",
+      "window": "5y",
+      "first": "2021-09-28",
+      "last": "2026-09-28",
+      "returns": 1254,
+      "returnsPerYear": 250.66265060240963,
+      "sample": {
+        "annVol": 0.45591426469008894,
+        "skew": -1.034334756161253,
+        "excessKurtosis": 22.561960279433375,
+        "min": -0.30639058624500315,
+        "max": 0.20930723916277927
+      },
+      "trading_day": {
+        "m": 0.0009399010985794139,
+        "sigma_d": 0.019053237461976024,
+        "lambda": 0.10540791164856947,
+        "muJ": -0.0032289659583849533,
+        "sigmaJ": 0.06280301690539647
+      },
+      "trading_day_stderr": {
+        "m": 0.000644462451565203,
+        "sigma_d": 0.00098256848624759,
+        "lambda": 0.04005481304862694,
+        "muJ": 0.0063315177848272414,
+        "sigmaJ": 0.011777660713246119
+      },
+      "derived": {
+        "lambdaYear": 26.421826528295032,
+        "jumpVol": 0.3232475030512245,
+        "diffusionVol": 0.3016571294515703,
+        "totalVol": 0.44213795582127174,
+        "jumpShare": 0.5345086768717636,
+        "sigmaJ_over_dailyVol": 2.2488864180818076
+      },
+      "derived_stderr": {
+        "lambdaYear": 10.040245608153029,
+        "jumpVol": 0.028126639911994482,
+        "diffusionVol": 0.015556347819756552,
+        "totalVol": 0.021360973496739103,
+        "jumpShare": 0.054190637784633754,
+        "sigmaJ_over_dailyVol": 0.3696235367539704
+      },
+      "lrStatVsGBM": 438.20915220531424,
+      "tail4": [
+        8,
+        10.819639730923125
+      ],
+      "clustering": {
+        "weeklyExcessKurtosis": 4.2032615746333315,
+        "weeklyExcessKurtosisMerton": 1.6262434039937534,
+        "acfAbsLag1to5": 0.07870107014977376,
+        "acfAbsLag20to60": 0.03758473099238731
+      },
+      "crossCheck": {
+        "commonDates": 1255,
+        "maxAbsLogRetDiff": 2.0615932717404917e-05,
+        "over1e-3": 0
+      }
+    },
+    {
+      "symbol": "GOOGL",
+      "window": "5y",
+      "first": "2021-09-28",
+      "last": "2026-09-28",
+      "returns": 1254,
+      "returnsPerYear": 250.66265060240963,
+      "sample": {
+        "annVol": 0.32044437236402745,
+        "skew": 0.01154509531218604,
+        "excessKurtosis": 2.9878372359413357,
+        "min": -0.09992411190837736,
+        "max": 0.09734761498648847
+      },
+      "trading_day": {
+        "m": 0.0008925855534463546,
+        "sigma_d": 0.014591698705274565,
+        "lambda": 0.23845378728677097,
+        "muJ": -0.0006161248508798883,
+        "sigmaJ": 0.02868225896246518
+      },
+      "trading_day_stderr": {
+        "m": 0.0006002611361447852,
+        "sigma_d": 0.0009913256591177267,
+        "lambda": 0.0992434567692102,
+        "muJ": 0.002440414473302759,
+        "sigmaJ": 0.004527397970566798
+      },
+      "derived": {
+        "lambdaYear": 59.77145836748518,
+        "jumpVol": 0.22179944496663692,
+        "diffusionVol": 0.2310205787357472,
+        "totalVol": 0.32025849182638044,
+        "jumpShare": 0.47964464684866137,
+        "sigmaJ_over_dailyVol": 1.4179388841624219
+      },
+      "derived_stderr": {
+        "lambdaYear": 24.876627928716125,
+        "jumpVol": 0.01998144739030176,
+        "diffusionVol": 0.015694994264263358,
+        "totalVol": 0.010010019966532781,
+        "jumpShare": 0.07286063882511708,
+        "sigmaJ_over_dailyVol": 0.2117965725463857
+      },
+      "lrStatVsGBM": 127.08640929338071,
+      "tail4": [
+        6,
+        4.786027579214909
+      ],
+      "clustering": {
+        "weeklyExcessKurtosis": 0.14384010188463847,
+        "weeklyExcessKurtosisMerton": 0.5788768312097314,
+        "acfAbsLag1to5": 0.05814535513978547,
+        "acfAbsLag20to60": 0.022938829365904783
+      },
+      "crossCheck": {
+        "commonDates": 1255,
+        "maxAbsLogRetDiff": 3.89981456621058e-05,
+        "over1e-3": 0
+      }
+    },
+    {
+      "symbol": "AMD",
+      "window": "5y",
+      "first": "2021-09-28",
+      "last": "2026-09-28",
+      "returns": 1254,
+      "returnsPerYear": 250.66265060240963,
+      "sample": {
+        "annVol": 0.5679951816015512,
+        "skew": 0.2870637021795522,
+        "excessKurtosis": 3.428821928161571,
+        "min": -0.1901252468929604,
+        "max": 0.21366258693718
+      },
+      "trading_day": {
+        "m": 0.00047203663796188694,
+        "sigma_d": 0.02282390630322419,
+        "lambda": 0.5106317224915996,
+        "muJ": 0.0018705453932497573,
+        "sigmaJ": 0.03806848564686892
+      },
+      "trading_day_stderr": {
+        "m": 0.0012718902519640745,
+        "sigma_d": 0.0026191672954989976,
+        "lambda": 0.22715113147561805,
+        "muJ": 0.002590048416826838,
+        "sigmaJ": 0.00603456187854363
+      },
+      "derived": {
+        "lambdaYear": 127.99630104141842,
+        "jumpVol": 0.4312091366716185,
+        "diffusionVol": 0.361355600172537,
+        "totalVol": 0.5626003815543826,
+        "jumpShare": 0.5874567034799228,
+        "sigmaJ_over_dailyVol": 1.0712982428021778
+      },
+      "derived_stderr": {
+        "lambdaYear": 56.93830470297793,
+        "jumpVol": 0.03824181787778237,
+        "diffusionVol": 0.04146751907597251,
+        "totalVol": 0.015873827892344372,
+        "jumpShare": 0.09472998596918666,
+        "sigmaJ_over_dailyVol": 0.1629597513749294
+      },
+      "lrStatVsGBM": 114.55033868492137,
+      "tail4": [
+        5,
+        2.718061081298581
+      ],
+      "clustering": {
+        "weeklyExcessKurtosis": 0.6665935790541044,
+        "weeklyExcessKurtosisMerton": 0.4055024730170652,
+        "acfAbsLag1to5": 0.0638606161492111,
+        "acfAbsLag20to60": 0.02704737536579921
+      },
+      "crossCheck": {
+        "commonDates": 1255,
+        "maxAbsLogRetDiff": 5.2052687505188544e-05,
+        "over1e-3": 0
+      }
+    },
+    {
+      "symbol": "NFLX",
+      "window": "5y",
+      "first": "2021-09-28",
+      "last": "2026-09-28",
+      "returns": 1254,
+      "returnsPerYear": 250.66265060240963,
+      "sample": {
+        "annVol": 0.4516388496159277,
+        "skew": -2.970710780715509,
+        "excessKurtosis": 47.823442255685784,
+        "min": -0.4325785090184753,
+        "max": 0.14889200740016006
+      },
+      "trading_day": {
+        "m": 0.00016884439337963694,
+        "sigma_d": 0.017330344937693625,
+        "lambda": 0.14974444379650215,
+        "muJ": -0.00022024205386753472,
+        "sigmaJ": 0.0525520268340546
+      },
+      "trading_day_stderr": {
+        "m": 0.0006033427251868045,
+        "sigma_d": 0.0006753058650700606,
+        "lambda": 0.033432263230681776,
+        "muJ": 0.004498647227738125,
+        "sigmaJ": 0.005922528003307077
+      },
+      "derived": {
+        "lambdaYear": 37.535339195014785,
+        "jumpVol": 0.32196855386439466,
+        "diffusionVol": 0.2743797276837189,
+        "totalVol": 0.42302243987916444,
+        "jumpShare": 0.5792954298161587,
+        "sigmaJ_over_dailyVol": 1.9668483631539233
+      },
+      "derived_stderr": {
+        "lambdaYear": 8.380219717037507,
+        "jumpVol": 0.023667302177879296,
+        "diffusionVol": 0.010691664824179097,
+        "totalVol": 0.01799435651502569,
+        "jumpShare": 0.04370648767077377,
+        "sigmaJ_over_dailyVol": 0.18818678381870904
+      },
+      "lrStatVsGBM": 498.8171078639907,
+      "tail4": [
+        5,
+        8.108745125888055
+      ],
+      "clustering": {
+        "weeklyExcessKurtosis": 18.78100046168355,
+        "weeklyExcessKurtosisMerton": 1.3446236258071276,
+        "acfAbsLag1to5": 0.09235279017477548,
+        "acfAbsLag20to60": 0.06261022978549255
+      },
+      "crossCheck": {
+        "commonDates": 1255,
+        "maxAbsLogRetDiff": 7.029070472164278e-05,
+        "over1e-3": 0
+      }
+    },
+    {
+      "symbol": "COIN",
+      "window": "5y",
+      "first": "2021-09-28",
+      "last": "2026-09-28",
+      "returns": 1254,
+      "returnsPerYear": 250.66265060240963,
+      "sample": {
+        "annVol": 0.860289982587918,
+        "skew": 0.12282740999688947,
+        "excessKurtosis": 2.3521613221551583,
+        "min": -0.30653702779244885,
+        "max": 0.27090199909694057
+      },
+      "trading_day": {
+        "m": -0.003483358790332646,
+        "sigma_d": 0.04039264146029182,
+        "lambda": 0.3084401183522525,
+        "muJ": 0.010825550675824037,
+        "sigmaJ": 0.06417389200208298
+      },
+      "trading_day_stderr": {
+        "m": 0.002134332601558242,
+        "sigma_d": 0.004356746318326439,
+        "lambda": 0.22096265260012632,
+        "muJ": 0.007121774225979245,
+        "sigmaJ": 0.015473122011263454
+      },
+      "derived": {
+        "lambdaYear": 77.31441761829655,
+        "jumpVol": 0.5722444791524434,
+        "diffusionVol": 0.6395096003078119,
+        "totalVol": 0.8581586524683583,
+        "jumpShare": 0.4446599875812718,
+        "sigmaJ_over_dailyVol": 1.1839561213796845
+      },
+      "derived_stderr": {
+        "lambdaYear": 55.38708418486684,
+        "jumpVol": 0.07891441722215294,
+        "diffusionVol": 0.06897744232487937,
+        "totalVol": 0.0241191474808067,
+        "jumpShare": 0.11812683486453479,
+        "sigmaJ_over_dailyVol": 0.2774429157001006
+      },
+      "lrStatVsGBM": 81.95222277559287,
+      "tail4": [
+        4,
+        2.9886234758807055
+      ],
+      "clustering": {
+        "weeklyExcessKurtosis": 2.669547898942901,
+        "weeklyExcessKurtosisMerton": 0.3844277905847625,
+        "acfAbsLag1to5": 0.12985238507484292,
+        "acfAbsLag20to60": 0.049798826222172354
+      },
+      "crossCheck": {
+        "commonDates": 1255,
+        "maxAbsLogRetDiff": 9.341418453479022e-05,
+        "over1e-3": 0
+      }
+    },
+    {
+      "symbol": "PLTR",
+      "window": "5y",
+      "first": "2021-09-28",
+      "last": "2026-09-28",
+      "returns": 1254,
+      "returnsPerYear": 250.66265060240963,
+      "sample": {
+        "annVol": 0.6556467631251253,
+        "skew": 0.5555536418785119,
+        "excessKurtosis": 5.921993358027441,
+        "min": -0.23962890205126097,
+        "max": 0.2685103325654712
+      },
+      "trading_day": {
+        "m": 0.0006782516155373956,
+        "sigma_d": 0.03116707004016947,
+        "lambda": 0.11167880441243282,
+        "muJ": 0.008217062630822489,
+        "sigmaJ": 0.08092965827614962
+      },
+      "trading_day_stderr": {
+        "m": 0.0010659504514711233,
+        "sigma_d": 0.001558495471797083,
+        "lambda": 0.04668160991920266,
+        "muJ": 0.009270689099164545,
+        "sigmaJ": 0.013699661706161928
+      },
+      "derived": {
+        "lambdaYear": 27.99370513012849,
+        "jumpVol": 0.43039281804512214,
+        "diffusionVol": 0.4934473157381463,
+        "totalVol": 0.6547734197674823,
+        "jumpShare": 0.4320638678065433,
+        "sigmaJ_over_dailyVol": 1.9568677654029583
+      },
+      "derived_stderr": {
+        "lambdaYear": 11.701336076738212,
+        "jumpVol": 0.04260061269681916,
+        "diffusionVol": 0.024674613499345972,
+        "totalVol": 0.02455080867386347,
+        "jumpShare": 0.0645663904564191,
+        "sigmaJ_over_dailyVol": 0.30876599011786854
+      },
+      "lrStatVsGBM": 208.05534751362666,
+      "tail4": [
+        10,
+        8.369720673340678
+      ],
+      "clustering": {
+        "weeklyExcessKurtosis": 2.591386778251107,
+        "weeklyExcessKurtosisMerton": 1.0028737092896642,
+        "acfAbsLag1to5": 0.06606850293102351,
+        "acfAbsLag20to60": 0.020702971159316522
+      },
+      "crossCheck": {
+        "commonDates": 1255,
+        "maxAbsLogRetDiff": 1.2182454955933508e-07,
+        "over1e-3": 0
+      }
+    },
+    {
+      "symbol": "MSTR",
+      "window": "5y",
+      "first": "2021-09-28",
+      "last": "2026-09-28",
+      "returns": 1254,
+      "returnsPerYear": 250.66265060240963,
+      "sample": {
+        "annVol": 0.9058168513947926,
+        "skew": -0.1284310080315318,
+        "excessKurtosis": 2.8414822173737555,
+        "min": -0.29509570094442683,
+        "max": 0.232020720106763
+      },
+      "trading_day": {
+        "m": -0.0005948357705251389,
+        "sigma_d": 0.04485206064246233,
+        "lambda": 0.15180674052278162,
+        "muJ": 0.009213169981447644,
+        "sigmaJ": 0.09079541419662172
+      },
+      "trading_day_stderr": {
+        "m": 0.0018377582462229623,
+        "sigma_d": 0.0023382079924417127,
+        "lambda": 0.0696942192241502,
+        "muJ": 0.009582335499043434,
+        "sigmaJ": 0.015963387642073883
+      },
+      "derived": {
+        "lambdaYear": 38.05227995875267,
+        "jumpVol": 0.5629614850816379,
+        "diffusionVol": 0.710112593221716,
+        "totalVol": 0.9061928761237277,
+        "jumpShare": 0.38593670077529174,
+        "sigmaJ_over_dailyVol": 1.586310081488667
+      },
+      "derived_stderr": {
+        "lambdaYear": 17.46973772241167,
+        "jumpVol": 0.05953912610545561,
+        "diffusionVol": 0.03701927887417741,
+        "totalVol": 0.028357791824499212,
+        "jumpShare": 0.06889008035301165,
+        "sigmaJ_over_dailyVol": 0.2669677258885969
+      },
+      "lrStatVsGBM": 109.8956926901833,
+      "tail4": [
+        6,
+        5.2565723104102275
+      ],
+      "clustering": {
+        "weeklyExcessKurtosis": 1.3989586279401607,
+        "weeklyExcessKurtosisMerton": 0.5886569564822208,
+        "acfAbsLag1to5": 0.14059695175129416,
+        "acfAbsLag20to60": 0.03583017182584421
+      },
+      "crossCheck": {
+        "commonDates": 1255,
+        "maxAbsLogRetDiff": 3.957321049430362e-05,
+        "over1e-3": 0
+      }
+    },
+    {
+      "symbol": "SPY",
+      "window": "5y",
+      "first": "2021-09-28",
+      "last": "2026-09-28",
+      "returns": 1254,
+      "returnsPerYear": 250.66265060240963,
+      "sample": {
+        "annVol": 0.17103449619664057,
+        "skew": 0.15437216869547665,
+        "excessKurtosis": 7.922450799071035,
+        "min": -0.06032676569463913,
+        "max": 0.09986283041456812
+      },
+      "trading_day": {
+        "m": 0.0013094532799534713,
+        "sigma_d": 0.00574046084997467,
+        "lambda": 0.6709784437126056,
+        "muJ": -0.0011966803721877343,
+        "sigmaJ": 0.010718368930690605
+      },
+      "trading_day_stderr": {
+        "m": 0.0003599614307257331,
+        "sigma_d": 0.0008322193739597432,
+        "lambda": 0.2448633172106168,
+        "muJ": 0.0006765059330751826,
+        "sigmaJ": 0.0014406447550015214
+      },
+      "derived": {
+        "lambdaYear": 168.18923519808143,
+        "jumpVol": 0.1398678341342918,
+        "diffusionVol": 0.09088486642694106,
+        "totalVol": 0.1668024879036901,
+        "jumpShare": 0.7031219432616982,
+        "sigmaJ_over_dailyVol": 1.0173514103185277
+      },
+      "derived_stderr": {
+        "lambdaYear": 61.378088127359774,
+        "jumpVol": 0.009611055810843558,
+        "diffusionVol": 0.013175971166250718,
+        "totalVol": 0.004811246312799409,
+        "jumpShare": 0.08536571459725845,
+        "sigmaJ_over_dailyVol": 0.12905058293426697
+      },
+      "lrStatVsGBM": 182.66407512805836,
+      "tail4": [
+        6,
+        2.581856595227296
+      ],
+      "clustering": {
+        "weeklyExcessKurtosis": 3.589271976310142,
+        "weeklyExcessKurtosisMerton": 0.44203850071943673,
+        "acfAbsLag1to5": 0.19386492834902205,
+        "acfAbsLag20to60": 0.07856548895064387
+      },
+      "crossCheck": {
+        "commonDates": 1255,
+        "maxAbsLogRetDiff": 0.002001672655966402,
+        "over1e-3": 2
+      }
+    }
+  ]
+}

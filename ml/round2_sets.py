@@ -65,6 +65,10 @@ VAL_POINT_SEED = 0x7A11_0001       # V: points
 VAL_LABEL_SEED = 0x7A11_0002       # V: teacher paths
 
 DOMAIN_PATH = ROOT / "tools" / "domains" / "k2.json"
+# The frozen K2 teacher: byte-identical copies of ml/teacher.py, teacher_torch.py and
+# teacher_config.json as they labelled every K2 set (sha256 recorded in each cache).
+# ml/teacher.py moved on to v3; K2 keeps labelling and gating with this copy.
+K2_TEACHER_DIR = HERE / "reference" / "k2"
 SHARD = 512                        # rows per labelling shard (fixed: seeds depend on it)
 CUDA_MAX_ELEMS = 1 << 23          # labels x paths per GPU chunk (the 3090 is shared); part of the RNG layout, recorded
 
@@ -208,18 +212,38 @@ def train_points(n: int, rng: np.random.Generator) -> np.ndarray:
 # labelling
 # ---------------------------------------------------------------------------
 
+def _k2_teacher():
+    """(teacher, teacher_torch) from K2_TEACHER_DIR. The copies import each other
+    by their plain names, so the directory goes first on sys.path; a process that
+    already imported ml/teacher.py (v3) fails here instead of labelling K2 with it."""
+    if sys.path[0] != str(K2_TEACHER_DIR):
+        sys.path.insert(0, str(K2_TEACHER_DIR))
+    import teacher
+    assert pathlib.Path(teacher.__file__).resolve().parent == K2_TEACHER_DIR, \
+        f"K2 needs the frozen teacher, got {teacher.__file__}"
+    return teacher
+
+
+def _k2_teacher_torch():
+    _k2_teacher()
+    import teacher_torch
+    assert pathlib.Path(teacher_torch.__file__).resolve().parent == K2_TEACHER_DIR, \
+        f"K2 needs the frozen teacher, got {teacher_torch.__file__}"
+    return teacher_torch
+
+
 def teacher_fingerprint() -> dict:
-    """sha256 of the teacher code (numpy and CUDA backends) and its pinned
-    config, None for a file that doesn't exist."""
+    """sha256 of the frozen K2 teacher code (numpy and CUDA backends) and its
+    pinned config, None for a file that doesn't exist."""
     out = {}
     for name in ("teacher.py", "teacher_config.json", "teacher_torch.py"):
-        p = HERE / name
+        p = K2_TEACHER_DIR / name
         out[name] = hashlib.sha256(p.read_bytes()).hexdigest() if p.exists() else None
     return out
 
 
 def _to_F(X: np.ndarray) -> dict:
-    import teacher
+    teacher = _k2_teacher()
     F = {k: X[:, i].astype(np.float64) for i, k in enumerate(teacher.FEATURE_KEYS)}
     F["obs"] = X[:, 8].astype(np.int64)
     F["knockedIn"] = X[:, 9].astype(np.int64)
@@ -234,12 +258,12 @@ def _label_shard(args):
     X, paths, seed = args
     import torch
     torch.set_num_threads(1)
-    import teacher
+    teacher = _k2_teacher()
     return teacher.price_batch(_to_F(X), total_paths=paths, seed=seed)
 
 
 def _cuda_results(jobs):
-    import teacher_torch
+    teacher_torch = _k2_teacher_torch()
     for X, paths, seed in jobs:
         yield teacher_torch.price_batch(_to_F(X), total_paths=paths, seed=seed, device="cuda", max_elems=CUDA_MAX_ELEMS)
 

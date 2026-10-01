@@ -1,5 +1,4 @@
-"""Monte Carlo teacher pricer, v3: Merton jump-diffusion calibrated to TSLA,
-with jump sizes that scale with the listing's vol (v3) or pinned (v2).
+"""Monte Carlo teacher pricer, v2: Merton jump-diffusion calibrated to TSLA.
 
 Weekly-observed autocallable on the feed series (payoff: docs/teacher-spec.md
 section 5, normative in contracts/src/interfaces/INoteSeries.sol), priced under
@@ -16,23 +15,7 @@ ml/teacher_config.json (fitted to TSLA daily returns, ml/calibrate_jumps.py);
 the diffusion takes the rest: sigma_d^2 = vol^2 - jump variance, which must be
 > 0 (ValueError otherwise). Q jump parameters = fitted P parameters.
 
-Vol-scaled jumps (teacher v3, docs/k3-vol-input.md): a config with vol_ref > 0
-keeps the jump rate and scales the jump sizes with each label's total vol,
-muJ(vol) = muJ * vol / vol_ref and sigJ(vol) = sigJ * vol / vol_ref, so the jumps
-carry a fixed share of the variance at every vol, jump_var_year / vol_ref^2, and
-no vol is refused. `load_config(CONFIG_V3_PATH)` is TSLA's 10-year shape at its
-fitted total vol (57% share); vol_ref = 0 is exactly the v2 code path.
-
-Rates: `r` is the risk-neutral drift of the stock; `r_disc` discounts the
-payouts. They are separate because the pair's escrow earns nothing on chain:
-a pair redeems for maxPayout at any time, so NOTE + WRITER = maxPayout holds
-only if payouts are discounted at what the escrow earns (config `rDiscount`).
-`r_disc` None (no `rDiscount` in the config, as in the pinned v2 teacher)
-discounts at `r` and takes the v2 code path unchanged. The v3 config sets
-rDiscount 0.
-
-Configs: `load_config()` (default, the pinned v2 jump teacher),
-`load_config(CONFIG_V3_PATH)` (v3: vol-scaled jumps, rDiscount 0) and `GBM` (lam = 0).
+Configs: `load_config()` (default, the pinned jump teacher) and `GBM` (lam = 0).
 With lam = 0 the code takes the original K1 GBM path and is bit-identical to
 ml/reference/teacher_gbm_k1.py for the same seed (checked by ml/test_teacher.py),
 except where K1 was wrong: a spot exactly on a barrier at tNext = 0 (below).
@@ -84,7 +67,6 @@ R_FREE = 0.04
 SMOOTH_TERMS = 24          # Poisson terms in the smoothed last step (n = 0..23)
 
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "teacher_config.json")
-CONFIG_V3_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "teacher_config_v3.json")
 
 FEATURE_KEYS = (
     "spot", "dist", "vol", "ki", "ac", "coupon", "ttm", "tNext", "obs", "knockedIn"
@@ -95,32 +77,14 @@ FEATURE_KEYS = (
 class TeacherConfig:
     """Pinned teacher constants. Rates are per calendar year (365 d)."""
     name: str
-    r: float = R_FREE          # risk-neutral drift
-    r_disc: float | None = None  # discount rate of the payouts; None = r
+    r: float = R_FREE
     lambda_year: float = 0.0   # jumps per year
-    mu_j: float = 0.0          # mean log jump size (at vol_ref when vol_ref > 0)
-    sigma_j: float = 0.0       # std of log jump size (at vol_ref when vol_ref > 0)
-    vol_ref: float = 0.0       # > 0: jump sizes scale with total vol / vol_ref (v3)
+    mu_j: float = 0.0          # mean log jump size
+    sigma_j: float = 0.0       # std of log jump size
 
     @property
     def jumps(self) -> bool:
         return self.lambda_year > 0.0
-
-    @property
-    def disc(self) -> float:
-        return self.r if self.r_disc is None else self.r_disc
-
-    @property
-    def jump_share(self) -> float:
-        """Jump share of total variance, the same at every vol (vol_ref > 0 only)."""
-        assert self.vol_ref > 0.0
-        return self.jump_var_year / self.vol_ref**2
-
-    def scaled_jumps(self, total_vol: np.ndarray):
-        """Per-label (muJ, sigJ, kappa) at the given total vol (vol_ref > 0 only)."""
-        js = np.asarray(total_vol, dtype=np.float64) / self.vol_ref
-        mu, sj = self.mu_j * js, self.sigma_j * js
-        return mu, sj, np.expm1(mu + 0.5 * sj**2)
 
     @property
     def kappa(self) -> float:
@@ -135,11 +99,6 @@ class TeacherConfig:
         total_vol = np.asarray(total_vol, dtype=np.float64)
         if not self.jumps:
             return total_vol
-        if self.vol_ref > 0.0:
-            share = self.jump_share
-            if not 0.0 <= share < 1.0:
-                raise ValueError(f"jump share {share:.4f} leaves no diffusion variance ({self.name})")
-            return total_vol * math.sqrt(1.0 - share)
         dv = total_vol**2 - self.jump_var_year
         if np.any(dv <= 0):
             bad = float(np.min(total_vol[dv <= 0]))
@@ -160,10 +119,8 @@ def load_config(path: str = CONFIG_PATH) -> TeacherConfig:
         return _PINNED
     with open(path) as f:
         c = json.load(f)
-    cfg = TeacherConfig(name=c["name"], r=c["rFree"], r_disc=c.get("rDiscount"),
-                        lambda_year=c["jumps"]["lambdaYear"],
-                        mu_j=c["jumps"]["muJ"], sigma_j=c["jumps"]["sigmaJ"],
-                        vol_ref=c["jumps"].get("volRef", 0.0))
+    cfg = TeacherConfig(name=c["name"], r=c["rFree"], lambda_year=c["jumps"]["lambdaYear"],
+                        mu_j=c["jumps"]["muJ"], sigma_j=c["jumps"]["sigmaJ"])
     assert c["yearSecs"] == YEAR_SECS and c["weekSecs"] == WEEK_SECS
     assert c["smoothingPoissonTerms"] == SMOOTH_TERMS
     if path == CONFIG_PATH:
@@ -203,19 +160,6 @@ def log_increment(rng, dt_y: np.ndarray, sig: np.ndarray, cfg: TeacherConfig, P:
         Z = rng.standard_normal((G, P), dtype=np.float32)
         return (mu[:, None] + sd[:, None] * np.concatenate([Z, -Z], axis=1)).astype(np.float32)
     sd_d = cfg.diffusion_vol(sig)
-    if cfg.vol_ref > 0.0:                       # v3: per-label jump sizes, same stream order
-        mu_js, sig_js, kap = cfg.scaled_jumps(sig)
-        mu = (cfg.r - cfg.lambda_year * kap - 0.5 * sd_d**2) * dt_y
-        sd = sd_d * np.sqrt(dt_y)
-        Z = rng.standard_normal((G, P), dtype=np.float32)
-        inc = (mu[:, None] + sd[:, None] * np.concatenate([Z, -Z], axis=1)).astype(np.float32)
-        n = rng.poisson((cfg.lambda_year * dt_y)[:, None], size=(G, P)).astype(np.float32)
-        zj = rng.standard_normal((G, P), dtype=np.float32)
-        base = n * mu_js.astype(np.float32)[:, None]
-        spread = np.sqrt(n) * sig_js.astype(np.float32)[:, None] * zj
-        inc[:, :P] += base + spread
-        inc[:, P:] += base - spread
-        return inc
     mu = (cfg.r - cfg.lambda_year * cfg.kappa - 0.5 * sd_d**2) * dt_y
     sd = sd_d * np.sqrt(dt_y)
     Z = rng.standard_normal((G, P), dtype=np.float32)
@@ -239,11 +183,7 @@ def smoothed_capped_spot(s_last: np.ndarray, sig: np.ndarray, dY: np.ndarray, cf
     sd_d = cfg.diffusion_vol(sig)
     lam_t = cfg.lambda_year * dY
     ln_s = np.log(s_last)
-    if cfg.vol_ref > 0.0:                       # v3: per-path jump sizes
-        mu_j, sig_j, kap = cfg.scaled_jumps(sig)
-    else:
-        mu_j, sig_j, kap = cfg.mu_j, cfg.sigma_j, cfg.kappa
-    drift = (cfg.r - cfg.lambda_year * kap - 0.5 * sd_d**2) * dY
+    drift = (cfg.r - cfg.lambda_year * cfg.kappa - 0.5 * sd_d**2) * dY
     out = np.zeros_like(s_last, dtype=np.float64)
     wsum = np.zeros_like(out)
     for n in range(SMOOTH_TERMS):
@@ -253,8 +193,8 @@ def smoothed_capped_spot(s_last: np.ndarray, sig: np.ndarray, dY: np.ndarray, cf
             if n > np.max(lam_t):
                 break
             continue
-        m = ln_s + drift + n * mu_j
-        v = sd_d**2 * dY + n * sig_j**2
+        m = ln_s + drift + n * cfg.mu_j
+        v = sd_d**2 * dY + n * cfg.sigma_j**2
         sv = np.sqrt(v)
         term = np.exp(m + 0.5 * v) * _ndtr(-(m + v) / sv) + _ndtr(m / sv)
         out += w * term
@@ -279,8 +219,7 @@ def _simulate(F, idx: np.ndarray, N: int, total_paths: int, rng, smooth: bool,
     t_next = F["tNext"][idx].astype(np.float64)
     T = F["ttm"][idx].astype(np.float64)
     ki0 = F["knockedIn"][idx].astype(bool)
-    r = cfg.r                                         # drift (the steps use cfg.r too)
-    rd = cfg.disc                                     # discounting
+    r = cfg.r
 
     x = np.repeat(np.log(s0)[:, None], 2 * P, axis=1).astype(np.float32)
     redeemed = np.zeros((G, 2 * P), dtype=bool)
@@ -306,7 +245,7 @@ def _simulate(F, idx: np.ndarray, N: int, total_paths: int, rng, smooth: bool,
                 hit[now] = (s0[now] >= ac[now])[:, None]
                 kin[now] = (s0[now] < ki[now])[:, None]
         if hit.any():
-            val = np.exp(-rd * tau / YEAR_SECS) * (1e4 + cpn * tau / WEEK_SECS)
+            val = np.exp(-r * tau / YEAR_SECS) * (1e4 + cpn * tau / WEEK_SECS)
             pay[hit] = np.broadcast_to(val[:, None], pay.shape)[hit]
         redeemed |= hit
         ki_latch |= kin
@@ -317,18 +256,15 @@ def _simulate(F, idx: np.ndarray, N: int, total_paths: int, rng, smooth: bool,
         dY = np.maximum((T - tau_last) / YEAR_SECS, 1e-9)
         s_last = np.exp(x).astype(np.float64)
         strike = np.ones(G)                            # initial fixing (teacher-spec s5)
-        disc = np.exp(-rd * dY[:, None])
+        disc = np.exp(-r * dY[:, None])
         if smooth and not cfg.jumps:                   # K1 GBM closed form (bit-identical path)
             sq = sig[:, None] * np.sqrt(dY[:, None])
             d2 = (np.log(s_last / strike[:, None])
                   + (r - 0.5 * sig[:, None] ** 2) * dY[:, None]) / sq
             d1 = d2 + sq
-            # disc * E[min(S_T, 1)]; with rd = r the forward factor e^(r dY) cancels disc
-            capped = (disc * _phi(d2) + s_last * _phi(-d1) if cfg.r_disc is None
-                      else disc * (_phi(d2) + s_last * np.exp(r * dY[:, None]) * _phi(-d1)))
             cont = np.where(
                 ki_latch,
-                1e4 * capped,
+                1e4 * (disc * _phi(d2) + s_last * _phi(-d1)),
                 1e4 * disc,
             )
         elif smooth:                                   # exact Poisson-lognormal sum
@@ -345,7 +281,7 @@ def _simulate(F, idx: np.ndarray, N: int, total_paths: int, rng, smooth: bool,
             sT = s_last * np.exp(inc)
             cont = disc * np.where(ki_latch & (sT < strike[:, None]), 1e4 * sT, 1e4)
         cont = cont + disc * (cpn[:, None] * T[:, None] / WEEK_SECS)
-        fv = np.exp(-rd * tau_last[:, None] / YEAR_SECS) * cont
+        fv = np.exp(-r * tau_last[:, None] / YEAR_SECS) * cont
         pay[live] = fv[live]
 
     pair_mean = 0.5 * (pay[:, :P] + pay[:, P:])

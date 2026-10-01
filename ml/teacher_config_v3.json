@@ -1,0 +1,38 @@
+{
+  "name": "merton-tsla-share-2016-2026",
+  "teacherVersion": 3,
+  "rFree": 0.04,
+  "rDiscount": 0.0,
+  "yearSecs": 31536000,
+  "weekSecs": 604800,
+  "clock": "calendar time, 365-day year, uniform diffusion and jump intensity",
+  "jumps": {
+    "lambdaYear": 72.2299,
+    "muJ": -5.9616e-06,
+    "sigmaJ": 0.0526104,
+    "derived_jumpVarYear": 0.199922,
+    "derived_jumpVolYear": 0.447126,
+    "derived_kappa": 0.00137892,
+    "volRef": 0.590779,
+    "derived_jumpShare": 0.572809
+  },
+  "volConvention": "volBpsAnnual is TOTAL vol; jump sizes scale with vol / volRef (muJ, sigmaJ are the sizes at volRef, lambdaYear is fixed), so jump variance = derived_jumpShare * vol^2 and diffusion variance = (1 - derived_jumpShare) * vol^2",
+  "riskNeutral": "drift rFree - lambdaYear*kappa(vol), kappa(vol) = exp(muJ(vol) + sigmaJ(vol)^2/2) - 1; payouts discounted at rDiscount (the escrow earns nothing, so NOTE + WRITER = maxPayout); Q jump parameters = fitted P parameters (no jump risk premium)",
+  "maturityStrike": "initial fixing (10000 bps)",
+  "smoothingPoissonTerms": 24,
+  "calibration": {
+    "script": "ml/calibrate_jumps.py",
+    "log": "ml/calibrate_jumps.log",
+    "fit": "ml/jump_fit.json",
+    "data": "ml/data/tsla_daily.csv",
+    "source": "https://query1.finance.yahoo.com/v8/finance/chart/TSLA?period1=1262304000&period2=1790640000&interval=1d&events=split",
+    "window": [
+      "2016-09-28",
+      "2026-09-28"
+    ],
+    "returns": 2512,
+    "returnsPerYear": 251.06243154435924,
+    "clockConversion": "lambdaYear = lambda_per_trading_day * returnsPerYear; muJ, sigmaJ per jump (unchanged)",
+    "volRef": "the fit's model total vol, calendar_year.totalVolYear in ml/jump_fit.json"
+  }
+}
