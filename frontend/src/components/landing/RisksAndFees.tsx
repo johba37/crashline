@@ -4,7 +4,10 @@ import { GITHUB } from './links.ts'
 import Section from './Section.tsx'
 
 // Sources: contracts/src/interfaces/INoteSeries.sol (payouts; Earn never pays below 0, so a buyer
-// loses at most what they paid, docs/pitch.md "no leverage"), docs/k3-vol-input.md (38.0 bps on the clean sets), and
+// loses at most what they paid, docs/pitch.md "no leverage"; cover pays only after a knock-in at an
+// observation), docs/teacher-v2.md (jumps calibrated to 10 years of TSLA closes),
+// docs/multi-stock-jumps.md (that jump shape on 12 more stocks: AAPL, MSFT, AMZN, GOOGL, NVDA within
+// 7.6 bps of their own fit; META, NFLX, PLTR, with rare large drops, 16-27 bps off), and
 // docs/interfaces.md + plans/max-frontend-submission.md "Ground rules" (MAX_FEE_BPS 200 of the
 // amount on NOTE trades, MAX_COVER_FEE_BPS 1000 of the premium on cover trades, BACKSTOP_SHARE_BPS
 // 5000; the spread stays in the vault). Testnet, staged feed, no outside audit, not financial
@@ -13,15 +16,15 @@ import Section from './Section.tsx'
 const RISKS = [
   {
     title: 'Earn can lose money in a crash',
-    text: 'If TSLA is below the crash line at a weekly check and ends below its starting price, Earn gets back only the share of value TSLA kept, plus the weekly income. You can lose most of what you paid, but never more.',
+    text: 'If the stock is below the crash line at a weekly check and ends below its starting price, Earn gets back only the share of value the stock kept, plus the weekly income. You can lose most of what you paid, but never more.',
   },
   {
-    title: 'Protect pays nothing without a crash',
-    text: 'Like any insurance: if no crash comes, cover pays nothing at the end. A dip between two weekly checks doesn’t count.',
+    title: 'Protect only pays in a crash',
+    text: 'Like any insurance: if no crash comes, cover pays nothing at the end. A dip between two weekly checks doesn’t count, and neither does a fall that never reaches the crash line. And if the stock is back at or above its starting price at a weekly check, the note ends early: you get the unused weeks back, but your cover ends too.',
   },
   {
     title: 'The model can be wrong',
-    text: 'Where it was tested, it was at most 0.38% off the simulation, and the simulation itself can be wrong about TSLA. A wrong price changes what you trade at, never what a note pays: payouts follow the weekly checks, and every payout is fully backed.',
+    text: 'The model follows its simulation closely, but the simulation can be wrong about a stock. Its sudden drops are modelled on ten years of Tesla’s prices: a check on 12 more stocks found that shape close for large companies like Apple and Microsoft, and further off for stocks with rare, very large drops. A wrong price changes what you trade at, never what a note pays: payouts follow the weekly checks, and the money is already in the pot.',
   },
   {
     title: 'Trading pauses at times',
@@ -30,8 +33,8 @@ const RISKS = [
 ]
 
 const FEE_CAPS = [
-  { label: 'Fee cap on Earn', value: '2%', of: 'of the amount' },
-  { label: 'Fee cap on Protect', value: '10%', of: 'of the premium' },
+  { label: 'Fee cap on Earn', value: '2%', of: 'of the stock value a note covers' },
+  { label: 'Fee cap on Protect', value: '10%', of: 'of the price of cover' },
 ]
 
 export default function RisksAndFees() {
@@ -62,8 +65,8 @@ export default function RisksAndFees() {
           </dl>
         </div>
         <p className="mt-6 max-w-prose type-body text-ink-muted md:col-span-7 md:mt-0">
-          Apps that sell through the Desk can add a fee, and the contract caps it. This app shows the fee before you buy.
-          Half of every fee stays in the Desk as a safety buffer. The Desk can also sell a little above the model’s price
+          Apps that sell through the Desk can add a fee, up to a limit that is built in. This app shows the fee before you buy.
+          Half of every fee stays in the Desk as a reserve against its own losses, and the other half goes to the app. The Desk can also sell a little above the model’s price
           and buy a little below it. That gap stays in the Desk too.
         </p>
       </div>
@@ -73,8 +76,8 @@ export default function RisksAndFees() {
         <div>
           <p className="type-label text-ink">Testnet only</p>
           <p className="mt-1 type-body text-ink-muted">
-            Surrogate Pricer runs on Robinhood Chain’s test network with a staged TSLA price feed. No real money is
-            involved, the contracts have had no outside audit yet, and nothing here is financial advice.
+            Surrogate Pricer runs on Robinhood Chain’s test network, with stock prices we set ourselves for testing. No
+            real money is involved, the contracts have had no outside audit yet, and nothing here is financial advice.
           </p>
         </div>
       </div>

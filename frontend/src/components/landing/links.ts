@@ -14,3 +14,6 @@ export const GITHUB = {
   contractsReview: doc('contracts-review.md'),
   perpetualNote: doc('v2-perpetual-note.md'),
 }
+
+// Arbitrum's own introduction to Stylus (PriceEngine.tsx).
+export const STYLUS_DOCS = 'https://docs.arbitrum.io/stylus/gentle-introduction'

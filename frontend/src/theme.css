@@ -47,8 +47,21 @@
   --color-panel-well: #202528;
   --color-panel-line: #3a4145;
   --color-panel-line-strong: #879297;
-  --color-panel-ink-muted: #aab3b7;
+  --color-panel-ink-muted: #d5dbdd;
   --color-panel-ink-faint: #6f7a80;
+  --color-plate-top: #f0f4f5;
+  --color-plate: #c5d0d4;
+  --color-plate-protect-top: #e3eff4;
+  --color-plate-protect: #b3cdd8;
+  --color-plate-earn-top: #f7eeda;
+  --color-plate-earn: #dcc890;
+  --color-plate-accent-top: #f9e6dc;
+  --color-plate-accent: #e3bba6;
+  --color-plate-edge: #89a3ab;
+  --color-plate-ink: #0c1b27;
+  --color-plate-ink-muted: #273c46;
+  --color-protect: #8ac1d1;
+  --color-earn: #ecb860;
 
   --font-display: "Syne", "Arial Black", sans-serif;
   --font-sans: "Jost", "Futura", "Century Gothic", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -63,10 +76,10 @@
   --text-display--line-height: 1.08;
   --text-display--letter-spacing: -0.015em;
   --text-display--font-weight: 800;
-  --text-title: 1.375rem;
+  --text-title: 1.75rem;
   --text-title--line-height: 1.2;
   --text-title--letter-spacing: -0.01em;
-  --text-title--font-weight: 800;
+  --text-title--font-weight: 600;
   --text-readout: clamp(2rem, 1.6892rem + 1.326vw, 2.75rem);
   --text-readout--line-height: 1.1;
   --text-readout--letter-spacing: -0.01em;
@@ -121,6 +134,7 @@
   --shadow-raised: var(--elevation-raised);
   --shadow-ignition: var(--elevation-ignition);
   --shadow-panel: var(--elevation-panel);
+  --shadow-plate: var(--elevation-plate);
 
   --blur-glass: 24px;
   --blur-glass-strong: 40px;
@@ -147,6 +161,7 @@
   --elevation-raised: inset 0px 1px 0px 0px rgb(255 255 255 / 0.05);
   --elevation-ignition: 0px 8px 28px -6px rgb(235 93 39 / 0.55);
   --elevation-panel: inset 0px 1px 0px 0px rgb(255 255 255 / 0.1), inset 0px -1px 0px 0px rgb(0 0 0 / 0.35), 0px 16px 32px -16px rgb(3 8 10 / 0.7);
+  --elevation-plate: inset 0px 1px 0px 0px rgb(255 255 255 / 0.9), inset 0px -1px 0px 0px rgb(12 27 39 / 0.28), 0px 14px 28px -14px rgb(3 8 10 / 0.75);
   --duration-instant: 100ms;
   --duration-fast: 160ms;
   --duration-base: 240ms;
@@ -217,11 +232,25 @@
     --color-panel-line-strong: #6f7a80;
     --color-panel-ink-muted: #4c565b;
     --color-panel-ink-faint: #879297;
+    --color-plate-top: #f0f4f5;
+    --color-plate: #c5d0d4;
+    --color-plate-protect-top: #e3eff4;
+    --color-plate-protect: #b3cdd8;
+    --color-plate-earn-top: #f7eeda;
+    --color-plate-earn: #dcc890;
+    --color-plate-accent-top: #f9e6dc;
+    --color-plate-accent: #e3bba6;
+    --color-plate-edge: #89a3ab;
+    --color-plate-ink: #0c1b27;
+    --color-plate-ink-muted: #273c46;
+    --color-protect: #2e6f8a;
+    --color-earn: #8a5a00;
     --elevation-glass: inset 0px 1px 0px 0px rgb(255 255 255 / 0.95), 0px 0px 0px 1px rgb(6 18 23 / 0.06), 0px 12px 32px -14px rgb(6 18 23 / 0.22);
     --elevation-glass-lifted: inset 0px 1px 0px 0px rgb(255 255 255 / 0.95), 0px 0px 0px 1px rgb(6 18 23 / 0.06), 0px 18px 44px -16px rgb(6 18 23 / 0.3);
     --elevation-raised: 0px 1px 2px 0px rgb(6 18 23 / 0.06), 0px 8px 24px -12px rgb(6 18 23 / 0.16);
     --elevation-ignition: 0px 8px 24px -8px rgb(235 93 39 / 0.45);
     --elevation-panel: inset 0px 1px 0px 0px rgb(255 255 255 / 0.95), 0px 1px 2px 0px rgb(6 18 23 / 0.1), 0px 10px 24px -14px rgb(6 18 23 / 0.28);
+    --elevation-plate: inset 0px 1px 0px 0px rgb(255 255 255 / 0.95), inset 0px -1px 0px 0px rgb(6 18 23 / 0.14), 0px 1px 2px 0px rgb(6 18 23 / 0.14), 0px 10px 24px -14px rgb(6 18 23 / 0.35);
   }
 }
 [data-theme="light"] {
@@ -270,11 +299,25 @@
   --color-panel-line-strong: #6f7a80;
   --color-panel-ink-muted: #4c565b;
   --color-panel-ink-faint: #879297;
+  --color-plate-top: #f0f4f5;
+  --color-plate: #c5d0d4;
+  --color-plate-protect-top: #e3eff4;
+  --color-plate-protect: #b3cdd8;
+  --color-plate-earn-top: #f7eeda;
+  --color-plate-earn: #dcc890;
+  --color-plate-accent-top: #f9e6dc;
+  --color-plate-accent: #e3bba6;
+  --color-plate-edge: #89a3ab;
+  --color-plate-ink: #0c1b27;
+  --color-plate-ink-muted: #273c46;
+  --color-protect: #2e6f8a;
+  --color-earn: #8a5a00;
   --elevation-glass: inset 0px 1px 0px 0px rgb(255 255 255 / 0.95), 0px 0px 0px 1px rgb(6 18 23 / 0.06), 0px 12px 32px -14px rgb(6 18 23 / 0.22);
   --elevation-glass-lifted: inset 0px 1px 0px 0px rgb(255 255 255 / 0.95), 0px 0px 0px 1px rgb(6 18 23 / 0.06), 0px 18px 44px -16px rgb(6 18 23 / 0.3);
   --elevation-raised: 0px 1px 2px 0px rgb(6 18 23 / 0.06), 0px 8px 24px -12px rgb(6 18 23 / 0.16);
   --elevation-ignition: 0px 8px 24px -8px rgb(235 93 39 / 0.45);
   --elevation-panel: inset 0px 1px 0px 0px rgb(255 255 255 / 0.95), 0px 1px 2px 0px rgb(6 18 23 / 0.1), 0px 10px 24px -14px rgb(6 18 23 / 0.28);
+  --elevation-plate: inset 0px 1px 0px 0px rgb(255 255 255 / 0.95), inset 0px -1px 0px 0px rgb(6 18 23 / 0.14), 0px 1px 2px 0px rgb(6 18 23 / 0.14), 0px 10px 24px -14px rgb(6 18 23 / 0.35);
 }
 /* data-theme works on any element, so a section can force its theme (the landing hero is always dark). */
 [data-theme="dark"] {
@@ -321,13 +364,27 @@
   --color-panel-well: #202528;
   --color-panel-line: #3a4145;
   --color-panel-line-strong: #879297;
-  --color-panel-ink-muted: #aab3b7;
+  --color-panel-ink-muted: #d5dbdd;
   --color-panel-ink-faint: #6f7a80;
+  --color-plate-top: #f0f4f5;
+  --color-plate: #c5d0d4;
+  --color-plate-protect-top: #e3eff4;
+  --color-plate-protect: #b3cdd8;
+  --color-plate-earn-top: #f7eeda;
+  --color-plate-earn: #dcc890;
+  --color-plate-accent-top: #f9e6dc;
+  --color-plate-accent: #e3bba6;
+  --color-plate-edge: #89a3ab;
+  --color-plate-ink: #0c1b27;
+  --color-plate-ink-muted: #273c46;
+  --color-protect: #8ac1d1;
+  --color-earn: #ecb860;
   --elevation-glass: inset 0px 1px 0px 0px rgb(255 255 255 / 0.28), inset 0px -1px 0px 0px rgb(255 255 255 / 0.04), 0px 12px 32px -12px rgb(0 0 0 / 0.7);
   --elevation-glass-lifted: inset 0px 1px 0px 0px rgb(255 255 255 / 0.28), inset 0px -1px 0px 0px rgb(255 255 255 / 0.04), 0px 18px 48px -12px rgb(0 0 0 / 0.85);
   --elevation-raised: inset 0px 1px 0px 0px rgb(255 255 255 / 0.05);
   --elevation-ignition: 0px 8px 28px -6px rgb(235 93 39 / 0.55);
   --elevation-panel: inset 0px 1px 0px 0px rgb(255 255 255 / 0.1), inset 0px -1px 0px 0px rgb(0 0 0 / 0.35), 0px 16px 32px -16px rgb(3 8 10 / 0.7);
+  --elevation-plate: inset 0px 1px 0px 0px rgb(255 255 255 / 0.9), inset 0px -1px 0px 0px rgb(12 27 39 / 0.28), 0px 14px 28px -14px rgb(3 8 10 / 0.75);
 }
 
 @layer base {
@@ -347,6 +404,9 @@
   }
   h1, h2, h3, h4 { text-wrap: balance; }
   p { text-wrap: pretty; }
+  /* Anything you can press or choose shows the hand (Tailwind 4 leaves buttons on the arrow). */
+  a[href], button, summary, select, label[for], [role="button"], [role="radio"], [role="switch"], [role="tab"] { cursor: pointer; }
+  :disabled, [aria-disabled="true"] { cursor: not-allowed; }
   ::view-transition-group(*) {
     animation-duration: var(--duration-base);
     animation-timing-function: var(--ease-out);
@@ -439,6 +499,49 @@
   }
 }
 
+/* Polished plate: bright silver in both themes, with a diagonal sheen. The material of diagram
+   nodes (the landing flow map), where gunmetal would sink into the ground. Text on it is dark in
+   both themes: ink, ink-muted and line re-point to plate values. plate-protect (blued steel),
+   plate-earn (brass) and plate-accent (copper) tint it; use them together with plate. */
+@utility plate {
+  --color-ink: var(--color-plate-ink);
+  --color-ink-muted: var(--color-plate-ink-muted);
+  --color-line: var(--color-plate-edge);
+  color: var(--color-plate-ink);
+  background-color: var(--plate-base, var(--color-plate));
+  background-image:
+    linear-gradient(112deg, transparent 28%, rgb(255 255 255 / 0.55) 44%, transparent 60%),
+    linear-gradient(to bottom, var(--plate-top, var(--color-plate-top)), var(--plate-base, var(--color-plate)));
+  border: 1px solid var(--color-plate-edge);
+  box-shadow: var(--elevation-plate);
+  /* Chosen: an accent ring outside the plate, with a gap in the page's ground colour. */
+  &[aria-pressed="true"] {
+    box-shadow: var(--elevation-plate), 0 0 0 2px var(--page-surface), 0 0 0 4px var(--color-accent);
+  }
+  @media (forced-colors: active) {
+    border-color: CanvasText;
+    &[aria-pressed="true"] {
+      outline: 2px solid Highlight;
+      outline-offset: 2px;
+    }
+  }
+}
+
+@utility plate-protect {
+  --plate-top: var(--color-plate-protect-top);
+  --plate-base: var(--color-plate-protect);
+}
+
+@utility plate-earn {
+  --plate-top: var(--color-plate-earn-top);
+  --plate-base: var(--color-plate-earn);
+}
+
+@utility plate-accent {
+  --plate-top: var(--color-plate-accent-top);
+  --plate-base: var(--color-plate-accent);
+}
+
 /* Film grain over the whole landing page, nav included. Fixed to the viewport, so the page
    scrolls under a still grain, like film. Put it on one empty, aria-hidden element. */
 @utility film-grain {
@@ -474,7 +577,7 @@
 }
 
 @utility type-title {
-  font-family: var(--font-display);
+  font-family: var(--font-sans);
   font-size: var(--text-title);
   line-height: var(--text-title--line-height);
   letter-spacing: var(--text-title--letter-spacing);
