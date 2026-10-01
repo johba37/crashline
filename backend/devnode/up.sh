@@ -14,13 +14,29 @@
 # ("wrong msgIdx"); this script detects that with a 0-value self-transfer and
 # exits 3, and `--recreate` (or ops/start.sh, which then redeploys) starts over.
 #
-# Env: DEVNODE_PORT (8647), DEVNODE_NAME (sp-devnode), DEVNODE_VOLUME (sp-devnode-data).
+# Env: DEVNODE_PORT (8647), DEVNODE_NAME (sp-devnode), DEVNODE_VOLUME (sp-devnode-data),
+#      DEVNODE_IMAGE (offchainlabs/nitro-node:v3.11.4-7d5ac27; DEVNODE_CLOCK=1 makes it
+#      the DEV ONLY clock image), DEVNODE_CLOCK (1 when the image is the clock image).
+#
+# Dev clock (DEV ONLY, docs/backend.md): on sp-nitro-node:v3.11.4-7d5ac27-clock the
+# container gets SP_CLOCK_OFFSET_FILE=/tmp/dev-test/clock-offset (in the volume, so the
+# offset survives restarts) and backend/devnode/clock.sh moves block time forward.
+# Image and env are fixed when the container is created: switching needs --recreate.
 set -euo pipefail
 
 PORT="${DEVNODE_PORT:-8647}"
 NAME="${DEVNODE_NAME:-sp-devnode}"
 VOLUME="${DEVNODE_VOLUME:-sp-devnode-data}"
-IMAGE="offchainlabs/nitro-node:v3.11.4-7d5ac27"
+CLOCK_IMAGE="sp-nitro-node:v3.11.4-7d5ac27-clock"
+CLOCK="${DEVNODE_CLOCK:-0}"
+if [ "$CLOCK" = 1 ]; then
+  IMAGE="${DEVNODE_IMAGE:-$CLOCK_IMAGE}"
+else
+  IMAGE="${DEVNODE_IMAGE:-offchainlabs/nitro-node:v3.11.4-7d5ac27}"
+fi
+[ "$IMAGE" = "$CLOCK_IMAGE" ] && CLOCK=1
+CLOCK_ENV=()
+[ "$CLOCK" = 1 ] && CLOCK_ENV=(-e SP_CLOCK_OFFSET_FILE=/tmp/dev-test/clock-offset)
 RPC="http://127.0.0.1:$PORT"
 CAST="${CAST:-$(command -v cast || echo "$HOME/.foundry/bin/cast")}"
 DEV_KEY=0xb6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659
@@ -37,6 +53,9 @@ if docker container inspect "$NAME" >/dev/null 2>&1; then
 else
   state=missing
 fi
+if [ "$state" != missing ] && [ "$(docker container inspect -f '{{.Config.Image}}' "$NAME")" != "$IMAGE" ]; then
+  echo "warning: $NAME runs $(docker container inspect -f '{{.Config.Image}}' "$NAME"), not $IMAGE; --recreate to switch" >&2
+fi
 if [ "$state" = missing ]; then
   if (exec 3<>"/dev/tcp/127.0.0.1/$PORT") 2>/dev/null; then
     echo "port $PORT is taken by something else; set DEVNODE_PORT (and record it in backend/config.json)" >&2
@@ -45,11 +64,12 @@ if [ "$state" = missing ]; then
   docker volume create "$VOLUME" >/dev/null
   # --dev keeps its data in /tmp/dev-test and runs as uid 1000: hand it the fresh volume
   docker run --rm -v "$VOLUME:/tmp/dev-test" --user root --entrypoint chown "$IMAGE" 1000:1000 /tmp/dev-test
-  docker run -d --name "$NAME" --stop-timeout 60 \
+  docker run -d --name "$NAME" --stop-timeout 60 "${CLOCK_ENV[@]}" \
     -v "$VOLUME:/tmp/dev-test" -p "127.0.0.1:$PORT:8547" "$IMAGE" \
     --dev --http.addr 0.0.0.0 --http.api=net,web3,eth,debug \
     --http.corsdomain='*' --http.vhosts='*' --execution.caching.archive >/dev/null
   echo "created $NAME ($IMAGE) on $RPC, data in volume $VOLUME"
+  [ "$CLOCK" = 1 ] && echo "DEV ONLY clock: offset file /tmp/dev-test/clock-offset, move time with backend/devnode/clock.sh"
 elif [ "$state" = false ]; then
   docker start "$NAME" >/dev/null
   echo "started $NAME on $RPC"
