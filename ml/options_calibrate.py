@@ -1,7 +1,9 @@
 """Listed option smiles and a Merton jump fit to them (teacher improvement 2, step 1).
 
     python ml/options_calibrate.py --fetch   # snapshot -> ml/data/options/<symbol>_<asof>.json
+                                             # (a day already on disk is skipped; cron runs it daily)
     python ml/options_calibrate.py           # smiles + fits from the latest snapshot -> log, json
+    python ml/options_calibrate.py --history # every snapshot day: fits side by side (stability)
     /opt/ai/cache/venv-cuda/bin/python ml/options_calibrate.py --prices >> ml/options_calibrate.log
 
 History (ml/calibrate_jumps.py) says how a stock moved; option prices say what the market
@@ -61,26 +63,44 @@ def _get(sym, aclass, expiry):
     url = (f"https://api.nasdaq.com/api/quote/{sym}/option-chain?assetclass={aclass}&limit=1000"
            f"&fromdate={expiry}&todate={expiry}&money=all&type=all")
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        return url, json.load(r)
+    for attempt in (1, 2):
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r:
+                return url, json.load(r)
+        except Exception:  # noqa: BLE001  (one retry on a transient network error)
+            if attempt == 2:
+                raise
+            import time
+            time.sleep(30)
 
 
-def fetch():
+def _asof(js):
+    last = js["data"]["lastTrade"]                   # "LAST TRADE: $354.81 (AS OF SEP 30, 2026)"
+    return dt.datetime.strptime(last.split("AS OF ")[1].rstrip(")"), "%b %d, %Y").date().isoformat()
+
+
+def fetch(force=False):
     os.makedirs(DATA, exist_ok=True)
     for sym, aclass in SYMBOLS.items():
         snap = {"symbol": sym, "fetchedAtUtc": dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat(),
                 "expiries": {}, "urls": []}
-        for e in EXPIRIES:
+        for k, e in enumerate(EXPIRIES):
             url, js = _get(sym, aclass, e)
+            if k == 0 and js.get("data") and not force:
+                done = os.path.join(DATA, f"{sym.lower()}_{_asof(js).replace('-', '')}.json")
+                if os.path.exists(done):
+                    print(f"{sym}: {os.path.basename(done)} already on disk, skipped", file=sys.stderr)
+                    break
             d = js.get("data") or {}
             rows = [{k: r.get(k) for k in KEEP} for r in ((d.get("table") or {}).get("rows") or []) if r.get("strike")]
             snap["urls"].append(url)
             if not rows:
                 continue
-            last = d["lastTrade"]                       # "LAST TRADE: $354.81 (AS OF SEP 30, 2026)"
-            snap["spot"] = float(last.split("$")[1].split()[0].replace(",", ""))
-            snap["asOf"] = dt.datetime.strptime(last.split("AS OF ")[1].rstrip(")"), "%b %d, %Y").date().isoformat()
+            snap["spot"] = float(d["lastTrade"].split("$")[1].split()[0].replace(",", ""))
+            snap["asOf"] = _asof(js)
             snap["expiries"][e] = rows
+        if not snap["expiries"]:
+            continue
         path = os.path.join(DATA, f"{sym.lower()}_{snap['asOf'].replace('-', '')}.json")
         with open(path, "w") as f:
             json.dump(snap, f, indent=0)
@@ -225,13 +245,63 @@ def model_iv(F, K, T, p):
     return implied_vol(price, np.full(len(K), F), K, np.full(len(K), T), put)
 
 
+def fit_snapshot(path):
+    """(rec, pts-by-expiry) for one symbol's snapshot file: smiles and the joint Merton fit."""
+    snap = json.load(open(path))
+    S, asof = snap["spot"], dt.date.fromisoformat(snap["asOf"])
+    pts, sm = [], {}
+    for e, rows in snap["expiries"].items():
+        T = (dt.date.fromisoformat(e) - asof).days / 365.0
+        s = smile(rows, S, T)
+        if s is None or len(s[1]) < 6:
+            continue
+        F, K, mid, put, iv = s
+        pts.append((F, K, T, put, mid, black_vega(F, K, T, iv)))
+        sm[e] = (F, K, T, iv)
+    p, r = fit_merton(pts)
+    sd, lam, mu, dj = p
+    jv = lam * (mu**2 + dj**2)
+    tot = math.sqrt(sd**2 + jv)
+    fit = {"sigma_d": sd, "lambdaYear": lam, "muJ": mu, "sigmaJ": dj, "totalVol": tot, "jumpShare": jv / tot**2,
+           "rmseVolPts": float(np.sqrt(np.mean(r**2)) * 100),
+           "atBound": [n for n, v, (lo, hi) in zip(PARAMS, p, BOUNDS) if _at_bound(n, v, lo, hi)]}
+    grid = {e: {m: iv_at(m, K, F, iv) * 100 for m in GRID} for e, (F, K, T, iv) in sm.items()}
+    return {"asOf": snap["asOf"], "spot": S, "fit": fit, "ivGrid": grid}
+
+
+def history():
+    """Every snapshot day per symbol, side by side: is the fitted shape stable?"""
+    files = sorted(os.listdir(DATA))
+    print("# fits per snapshot day (6-month expiry for ATM IV and skew)")
+    print("| symbol | as of | spot | ATM IV | skew 0.7 - ATM | lambda/yr | muJ | sigmaJ | jump share | RMSE | bound |")
+    print("|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|")
+    out = {}
+    for sym in SYMBOLS:
+        for f in (f for f in files if f.startswith(sym.lower() + "_")):
+            rec = fit_snapshot(os.path.join(DATA, f))
+            g = rec["ivGrid"].get("2027-03-19") or list(rec["ivGrid"].values())[-1]
+            fit = rec["fit"]
+            print(f"| {sym} | {rec['asOf']} | {rec['spot']} | {g[1.0]:.1f} | {g[0.7] - g[1.0]:+.1f} | "
+                  f"{fit['lambdaYear']:.2f} | {fit['muJ']:+.3f} | {fit['sigmaJ']:.3f} | {fit['jumpShare']:.0%} | "
+                  f"{fit['rmseVolPts']:.2f} | {', '.join(fit['atBound'])} |", flush=True)
+            out.setdefault(sym, []).append({k: rec[k] for k in ("asOf", "spot", "fit")})
+    with open(os.path.join(HERE, "options_history.json"), "w") as fh:
+        json.dump(out, fh, indent=1)
+        fh.write("\n")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--fetch", action="store_true")
+    ap.add_argument("--force", action="store_true", help="--fetch: refetch a day already on disk")
+    ap.add_argument("--history", action="store_true", help="fits for every snapshot day")
     ap.add_argument("--prices", action="store_true", help="note prices under the fitted jumps (CUDA venv)")
     args = ap.parse_args()
     if args.fetch:
-        fetch()
+        fetch(args.force)
+        return
+    if args.history:
+        history()
         return
     if args.prices:
         note_prices()
