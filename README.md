@@ -8,6 +8,8 @@ Architecture and the lessons it's built on: [docs/architecture.md](docs/architec
 Frontend guide to the frozen v1 interfaces: [docs/interfaces.md](docs/interfaces.md).
 Roadmap: [docs/v2-perpetual-note.md](docs/v2-perpetual-note.md), a perpetual note with
 no expiry and one token per stock, priced by a closed form plus a learned correction.
+Also on the roadmap: [docs/roadmap-usdg-yield.md](docs/roadmap-usdg-yield.md), interest on
+the USDG that sits idle in the Desk and in the series.
 
 ```
 contracts/src/interfaces/  frozen v1 interfaces (factory, series, tokens, quoter, Desk, recorder, pricer)
