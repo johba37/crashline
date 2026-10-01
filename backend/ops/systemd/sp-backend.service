@@ -1,5 +1,5 @@
 [Unit]
-Description=Surrogate Pricer: REST service and indexer (127.0.0.1:8650)
+Description=Crashline: REST service and indexer (127.0.0.1:8650)
 Documentation=file://@ROOT@/docs/backend.md
 Wants=sp-devnode.service
 After=sp-devnode.service

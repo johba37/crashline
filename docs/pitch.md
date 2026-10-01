@@ -16,7 +16,7 @@ flaws, never "a 2008 product". Use only the verified numbers below.
 
 ## The three fixes (one slide)
 
-| 2008 | Surrogate Pricer | How |
+| 2008 | Crashline | How |
 |---|---|---|
 | **Priced wrong:** ratings and private bank models hid the real risk | **A public price anyone can recompute** | The pricer runs on-chain in Stylus; every `NoteQuoted` event carries the inputs and the model's `weightsHash`; anyone can re-run the Monte Carlo teacher and check the quote |
 | **Sellers couldn't pay:** AIG sold protection it couldn't cover | **Fully collateralized** | Minting locks the note's maximum payout in the series' own USDG escrow. There is no AIG that can fail |

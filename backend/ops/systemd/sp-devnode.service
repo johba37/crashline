@@ -1,5 +1,5 @@
 [Unit]
-Description=Surrogate Pricer: Nitro dev node sp-devnode (chain 412346, 127.0.0.1:8647)
+Description=Crashline: Nitro dev node sp-devnode (chain 412346, 127.0.0.1:8647)
 Documentation=file://@ROOT@/docs/backend.md
 
 [Service]
