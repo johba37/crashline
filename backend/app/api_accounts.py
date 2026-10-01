@@ -4,16 +4,12 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Query
 
-from .accounting import fifo, note_per_unit, position
+from .accounting import UNIT, fifo, note_per_unit, position
 from .chain import Revert
-from .service import SERVICE, ApiError, addr
+from .service import ApiError, addr
 from .views import Ctx, known_feeds, mark_inputs, s, share_price, trades
 
 router = APIRouter()
-
-
-def ctx() -> Ctx:
-    return Ctx(SERVICE.snap())
 
 
 def _risk_json(at_risk: int, limit: int) -> dict:
@@ -23,7 +19,7 @@ def _risk_json(at_risk: int, limit: int) -> dict:
 
 @router.get("/vault")
 def get_vault():
-    c = ctx()
+    c = Ctx.now()
     feeds = known_feeds(c)
     head = c.calls([(c.desk, "totalAssets", ()), (c.desk, "totalSupply", ()),
                     (c.usdg, "balanceOf", (c.desk.address,)), (c.desk, "reservedAssets", ()),
@@ -60,7 +56,7 @@ def get_vault():
 
 @router.get("/feeds/{address}")
 def get_feed(address: str, frm: int | None = Query(None, alias="from", ge=0), to: int | None = Query(None, ge=0)):
-    c = ctx()
+    c = Ctx.now()
     feed = addr(address)
     if feed not in known_feeds(c):
         raise ApiError(404, "UnknownFeed", {"address": feed})
@@ -89,7 +85,7 @@ def get_feed(address: str, frm: int | None = Query(None, alias="from", ge=0), to
 
 @router.get("/accounts/{address}")
 def get_account(address: str):
-    c = ctx()
+    c = Ctx.now()
     a = addr(address)
     rows = c.series_rows()
     q_ids = [int(r["args_id"]) for r in c.db.query(
@@ -114,8 +110,8 @@ def get_account(address: str):
         b = books.get(r["address"])
         positions.append({
             "series": r["address"], "note": s(n), "writer": s(w),
-            "noteMark": s(n * per // 10**6) if per is not None else None,
-            "coverMark": s(w * (m["maxPayout"] - per) // 10**6) if per is not None else None,
+            "noteMark": s(n * per // UNIT) if per is not None else None,
+            "coverMark": s(w * (m["maxPayout"] - per) // UNIT) if per is not None else None,
             "costBasis": {"note": s(b.basis("note") if b else 0), "writer": s(b.basis("writer") if b else 0)},
             "realized": str(b.realized if b else 0),
         })

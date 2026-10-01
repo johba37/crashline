@@ -192,7 +192,6 @@ class Function:
 class Event:
     name: str
     inputs: list[dict]
-    contract: str = ""
 
     @property
     def signature(self) -> str:
@@ -269,7 +268,7 @@ class Registry:
                         iface.functions.setdefault(f.signature, f)
                         iface.functions.setdefault(f.name, f)
                     elif item["type"] == "event":
-                        iface.events.setdefault(item["name"], Event(item["name"], item["inputs"], kind))
+                        iface.events.setdefault(item["name"], Event(item["name"], item["inputs"]))
             self.kinds[kind] = iface
         for items in self.raw.values():
             for item in items:
@@ -304,15 +303,11 @@ REGISTRY = Registry()
 # RPC
 # ---------------------------------------------------------------------------
 
-def _hex(n: int) -> str:
-    return hex(n)
-
-
 def block_tag(block: int | str | None) -> str:
     if block is None:
         return "latest"
     if isinstance(block, int):
-        return _hex(block)
+        return hex(block)
     return block
 
 
@@ -397,7 +392,7 @@ class Chain:
 
     def get_logs(self, from_block: int, to_block: int, topics: list | None = None,
                  address: str | list[str] | None = None) -> list[dict]:
-        f: dict[str, Any] = {"fromBlock": _hex(from_block), "toBlock": _hex(to_block)}
+        f: dict[str, Any] = {"fromBlock": hex(from_block), "toBlock": hex(to_block)}
         if topics is not None:
             f["topics"] = topics
         if address is not None:
@@ -408,12 +403,9 @@ class Chain:
     def at(self, kind: str, address: str) -> "Contract":
         return Contract(self, self.registry.kinds[kind], address.lower())
 
-    def eth_call(self, to: str, data: str, block: int | str | None = None, sender: str | None = None) -> str:
-        tx: dict[str, Any] = {"to": to, "data": data}
-        if sender:
-            tx["from"] = sender
+    def eth_call(self, to: str, data: str, block: int | str | None = None) -> str:
         try:
-            return self.rpc("eth_call", [tx, block_tag(block)])
+            return self.rpc("eth_call", [{"to": to, "data": data}, block_tag(block)])
         except RpcError as e:
             raise self._revert_from(e) from None
 
@@ -426,21 +418,19 @@ class Chain:
         return e
 
     # --- transactions ----------------------------------------------------------
-    def send_tx(self, key: str, to: str | None, data: str = "0x", value: int = 0,
-                gas: int | None = None, wait: bool = True, timeout: float = 60.0) -> dict:
+    def send_tx(self, key: str, to: str | None, data: str = "0x", value: int = 0) -> dict:
         """Signs with `key`, sends, waits for the receipt; raises Revert on a
         failed estimate or a status-0 receipt. Sends from one process are serialized."""
         acct = Account.from_key(key)
         with self._send_lock:
-            tx: dict[str, Any] = {"from": acct.address, "data": data, "value": _hex(value)}
+            tx: dict[str, Any] = {"from": acct.address, "data": data, "value": hex(value)}
             if to is not None:
                 tx["to"] = to
-            if gas is None:
-                try:
-                    est = int(self.rpc("eth_estimateGas", [tx, "latest"]), 16)
-                except RpcError as e:
-                    raise self._revert_from(e) from None
-                gas = est * 12 // 10 + 50_000
+            try:
+                est = int(self.rpc("eth_estimateGas", [tx, "latest"]), 16)
+            except RpcError as e:
+                raise self._revert_from(e) from None
+            gas = est * 12 // 10 + 50_000
             base = int(self.rpc("eth_getBlockByNumber", ["latest", False])["baseFeePerGas"], 16)
             nonce = int(self.rpc("eth_getTransactionCount", [acct.address, "pending"]), 16)
             raw = {"type": 2, "chainId": self.chain_id, "nonce": nonce, "value": value, "data": data,
@@ -449,13 +439,11 @@ class Chain:
                 raw["to"] = to_checksum_address(to)
             signed = acct.sign_transaction(raw)
             tx_hash = self.rpc("eth_sendRawTransaction", ["0x" + signed.raw_transaction.hex()])
-            if not wait:
-                return {"transactionHash": tx_hash}
-            receipt = self.wait_receipt(tx_hash, timeout)
+            receipt = self.wait_receipt(tx_hash)
         if receipt["status"] != "0x1":
             # replay as a call at the parent block to get the revert data
             try:
-                self.rpc("eth_call", [dict(tx, gas=_hex(gas)), _hex(int(receipt["blockNumber"], 16) - 1)])
+                self.rpc("eth_call", [dict(tx, gas=hex(gas)), hex(int(receipt["blockNumber"], 16) - 1)])
             except RpcError as e:
                 raise self._revert_from(e) from None
             raise Revert("TxFailed", {"txHash": tx_hash})
@@ -489,16 +477,9 @@ class Contract:
     iface: Interface
     address: str
 
-    def encode(self, fn: str, *args) -> str:
-        return self.iface.fn(fn).encode(*args)
-
-    def call(self, fn: str, *args, block: int | str | None = None, sender: str | None = None) -> Any:
+    def call(self, fn: str, *args, block: int | str | None = None) -> Any:
         f = self.iface.fn(fn)
-        return f.decode(self.chain.eth_call(self.address, f.encode(*args), block, sender))
-
-    def call_data(self, fn: str, *args) -> tuple[str, list]:
-        """(method, params-without-block) pieces for Chain.batch."""
-        return self.address, self.iface.fn(fn).encode(*args)
+        return f.decode(self.chain.eth_call(self.address, f.encode(*args), block))
 
     def send(self, key: str, fn: str, *args, value: int = 0) -> dict:
         return self.chain.send_tx(key, self.address, self.iface.fn(fn).encode(*args), value=value)

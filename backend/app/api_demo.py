@@ -137,7 +137,7 @@ def feed(body: dict = Body(...), x_demo_token: str | None = Header(None)):
             break
     fc = c.chain.at("feed", f)
     if not initial:
-        initial = c.call(fc, "getRoundData", 2**64 + 1)[1]
+        initial = c.call(fc, "getRoundData", dp.ROUND_BASE + 1)[1]
     answer = initial * spot_bps // 10_000
     try:
         r = dp.push_round(c.chain, key, f, answer)
@@ -153,7 +153,7 @@ def feed(body: dict = Body(...), x_demo_token: str | None = Header(None)):
 @router.post("/fixing")
 def fixing(body: dict = Body(...), x_demo_token: str | None = Header(None)):
     cfg, key = guard(x_demo_token)
-    c = Ctx(SERVICE.snap())
+    c = Ctx.now()
     r = c.series_row(addr(body.get("series", ""), "series"))
     fixing_bps = _int(body, "fixingBps", 1, 100_000)
     chain = c.chain
@@ -165,7 +165,7 @@ def fixing(body: dict = Body(...), x_demo_token: str | None = Header(None)):
     t_next = st["nextObservation"]
     if t_next >= now:
         raise ApiError(409, "ObservationNotPassed", {"obsTime": t_next, "now": now, "until": t_next + 1})
-    initial = st["initialFixing"] or chain.at("feed", r["feed"]).call("getRoundData", 2**64 + 1)[1]
+    initial = st["initialFixing"] or chain.at("feed", r["feed"]).call("getRoundData", dp.ROUND_BASE + 1)[1]
     fc = chain.at("feed", r["feed"])
     rec = chain.at("recorder", r["recorder"])
     pushed = False
@@ -209,7 +209,7 @@ def _round_in_force(fc, t: int) -> int:
 @router.post("/stage")
 def stage(body: dict = Body(...), x_demo_token: str | None = Header(None)):
     cfg, key = guard(x_demo_token)
-    c = Ctx(SERVICE.snap())
+    c = Ctx.now()
     name = body.get("feedName")
     if not isinstance(name, str) or not name or len(name) > 32:
         raise ApiError(400, "BadRequest", {"feedName": name})
