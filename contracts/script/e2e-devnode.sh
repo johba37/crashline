@@ -20,7 +20,9 @@
 # Env: PRICER_MODEL_DIR (default <repo>/model/k2), E2E_PORT (8647),
 #      E2E_LEAD_SECS (240), REQUIRE_MIDLIFE (1: the sell must happen with
 #      observationsRemaining < 26), KEEP_NODE (0: stop the container on exit),
-#      CARGO_TARGET_DIR (default <repo>/stylus/pricer-model/target).
+#      CARGO_TARGET_DIR (default <repo>/stylus/pricer-model/target),
+#      E2E_IMAGE (offchainlabs/nitro-node:v3.11.4-7d5ac27; e.g. the DEV ONLY
+#      clock image sp-nitro-node:v3.11.4-7d5ac27-clock, docs/backend.md).
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)" # contracts/
@@ -36,7 +38,7 @@ RPC="http://127.0.0.1:$PORT"
 LEAD="${E2E_LEAD_SECS:-240}"
 REQUIRE_MIDLIFE="${REQUIRE_MIDLIFE:-1}"
 KEEP_NODE="${KEEP_NODE:-0}"
-IMAGE="offchainlabs/nitro-node:v3.11.4-7d5ac27"
+IMAGE="${E2E_IMAGE:-offchainlabs/nitro-node:v3.11.4-7d5ac27}"
 CONTAINER="sp-e2e-devnode-$PORT"
 
 # Nitro's well-known dev key (prefunded on --dev), and three anvil test keys for the LP, the buyer and the hedger.

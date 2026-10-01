@@ -1,0 +1,61 @@
+diff --git a/execution/gethexec/devclock.go b/execution/gethexec/devclock.go
+new file mode 100644
+index 0000000..f6245a2
+--- /dev/null
++++ b/execution/gethexec/devclock.go
+@@ -0,0 +1,42 @@
++// DEV ONLY (SurrogatePricer dev clock patch, not part of upstream Nitro).
++//
++// Lets a local --dev node stamp blocks in the future so time-based contracts
++// (weekly observations, maturities) can be exercised in a test run. The
++// sequencer adds the offset (int64 seconds, >= 0) read from the file named by
++// $SP_CLOCK_OFFSET_FILE to time.Now() for every block it creates. Unset env,
++// a missing file, a parse error or a negative value all mean offset 0, i.e.
++// stock Nitro behaviour. Never run this build on a public chain.
++
++package gethexec
++
++import (
++	"os"
++	"strconv"
++	"strings"
++	"sync/atomic"
++
++	"github.com/ethereum/go-ethereum/log"
++)
++
++var (
++	devClockOffsetFile = os.Getenv("SP_CLOCK_OFFSET_FILE")
++	devClockLastOffset atomic.Int64
++)
++
++// devClockOffset returns the DEV ONLY block timestamp offset in seconds. It
++// re-reads the (tiny) file on every call; createBlock calls it once per block.
++func devClockOffset() int64 {
++	if devClockOffsetFile == "" {
++		return 0
++	}
++	var offset int64
++	if raw, err := os.ReadFile(devClockOffsetFile); err == nil {
++		if v, err := strconv.ParseInt(strings.TrimSpace(string(raw)), 10, 64); err == nil && v > 0 {
++			offset = v
++		}
++	}
++	if prev := devClockLastOffset.Swap(offset); prev != offset {
++		log.Warn("DEV ONLY: block timestamp offset changed", "file", devClockOffsetFile, "offsetSeconds", offset, "previous", prev)
++	}
++	return offset
++}
+diff --git a/execution/gethexec/sequencer.go b/execution/gethexec/sequencer.go
+index 85e6050..3bf8580 100644
+--- a/execution/gethexec/sequencer.go
++++ b/execution/gethexec/sequencer.go
+@@ -1411,7 +1411,7 @@ func (s *Sequencer) createBlock(ctx context.Context) (returnValue bool) {
+ 		return false
+ 	}
+ 
+-	timestamp := time.Now().Unix()
++	timestamp := time.Now().Unix() + devClockOffset() // DEV ONLY: SurrogatePricer dev clock patch, see devclock.go
+ 	s.L1BlockAndTimeMutex.Lock()
+ 	l1Block := s.l1BlockNumber.Load()
+ 	l1Timestamp := s.l1Timestamp

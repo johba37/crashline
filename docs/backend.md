@@ -139,6 +139,69 @@ backend/devnode/up.sh --recreate                        # start over with an emp
   `0x91d25f…0daa`), so a reset is recognized by the hash of the deployment
   block, which `config.json` records (`deploymentBlockHash`).
 
+### Dev clock (DEV ONLY)
+
+Nitro has no time-travel RPC (no `evm_increaseTime`), so a weekly note can't
+mature in a test run on the stock node. The dev clock is a patched image,
+**`sp-nitro-node:v3.11.4-7d5ac27-clock`**, that only a local `--dev` node
+uses. **Robinhood testnet and any mainnet run stock Nitro.** Nothing in
+`contracts/` or the backend depends on the patch.
+
+```sh
+backend/devnode/nitro-clock/build.sh                      # build the image (~9 min cold, docker buildx, ~25 GB cache)
+DEVNODE_CLOCK=1 backend/devnode/up.sh --recreate          # a dev node on the clock image (fresh chain)
+backend/devnode/clock.sh show                             # offset and latest block timestamp
+backend/devnode/clock.sh advance 604800                   # +1 week; mines a block at the new time
+backend/devnode/clock.sh set-absolute 1792000000          # next block at that time (never backwards)
+```
+
+- **The patch** (`backend/devnode/nitro-clock/sequencer-clock.patch`, against
+  OffchainLabs/nitro v3.11.4 = 7d5ac27, the stock image's commit) changes one
+  line, where the sequencer stamps a block (`execution/gethexec/sequencer.go`,
+  `timestamp := time.Now().Unix()`). It becomes `time.Now().Unix() +
+  devClockOffset()`, and adds `devclock.go`. The offset is an integer number
+  of seconds, re-read for every block from the file named by
+  `SP_CLOCK_OFFSET_FILE`. If the env is unset, the file is missing or the
+  value is unparsable or negative, the offset is 0, which is stock behaviour.
+  The node logs `DEV ONLY: block timestamp offset changed` when the offset
+  changes. ArbOS still never lets a block's time fall below its parent's.
+- **The image** is the stock image with `/usr/local/bin/nitro` replaced.
+  `build.sh` shallow-clones nitro (default `~/.cache/sp-nitro-src`, set
+  `NITRO_SRC`), applies the patch and appends `Dockerfile.clock` to Nitro's
+  own Dockerfile. Only the stages the node binary needs are built: brotli,
+  contracts, `libstylus.a` and the Go build. The JIT, prover and replay
+  machines are skipped; `--dev` doesn't validate. Stylus works as on stock
+  (deploy, activation and calls).
+- **Disk.** A cold build needs about **25 GB of BuildKit cache** (21 GB
+  measured). With docker's default builder and the containerd image store,
+  that cache lives under `/var/lib/containerd`, which is on the **root disk**
+  on this host, even though docker's data-root is `/opt/ai/docker`. So
+  `build.sh` prunes the whole build cache when it finishes
+  (`docker builder prune -af`). Set `KEEP_BUILD_CACHE=1` to keep it.
+  `SP_BUILDER=container` builds in a throwaway `docker-container` builder
+  instead: its state is a docker volume under the data-root, and the builder
+  and the volume are removed afterwards. That path isn't exercised yet. Only
+  the image stays: about 1.5 GB of content, about 5.2 GB with the stock layers
+  it shares.
+- **`up.sh`**: `DEVNODE_CLOCK=1` (or `DEVNODE_IMAGE=<the clock image>`) runs
+  the clock image with `SP_CLOCK_OFFSET_FILE=/tmp/dev-test/clock-offset`. That
+  file is inside the chain's volume, so the offset survives restarts and block
+  time stays monotonic. Image and env are fixed at container creation, so
+  switching an existing node needs `--recreate`, and `up.sh` warns on a
+  mismatch. `DEVNODE_IMAGE` alone selects any image. The default is still the
+  stock image.
+- **`clock.sh`** (honors `DEVNODE_NAME`/`DEVNODE_PORT`) writes the offset
+  through `docker exec`. The offset only grows. `advance` and `set-absolute`
+  send a 0-value self-transfer from the dev key, print the old and new latest
+  block timestamps, and exit 1 unless `latest.timestamp` moved by at least the
+  request. On a stock container it refuses, because there is no offset file.
+- Blocks are still made only by transactions, so the dev node shows the new
+  time only after a block. `advance` mines one; after that, every block is
+  wall clock + offset.
+- `contracts/script/e2e-devnode.sh` runs on the clock image with
+  `E2E_IMAGE=sp-nitro-node:v3.11.4-7d5ac27-clock` (offset 0: no offset file is
+  passed).
+
 ### What `deploy.py` does
 
 The e2e script's steps 0-6, without the trades
