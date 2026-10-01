@@ -1,0 +1,128 @@
+happy path, mode HYBRID (no dev clock: settlement on hourly twins, see the docstring), started 2026-10-01 06:21:24 UTC
+
+== a. fresh chain on sp-happy (http://127.0.0.1:8847), image stock  [06:21:24]
+   removed sp-happy and its volume sp-happy-data
+   created sp-happy (offchainlabs/nitro-node:v3.11.4-7d5ac27) on http://127.0.0.1:8847, data in volume sp-happy-data
+   chain 412346 at block 1, sequencing ok
+   1. Stylus pricer (deployer 0x8f0d0e0ed93e94feb5c453a9d2266d5693151ddb)
+   pricer 0xe8d75ecc6c6056027f12b593403d713823fc8def
+   usdg             0x151a631c10b344aad879f8977784994dd39bf6ce
+   desk             0x6172c8ab357072128f9b3a26fc759bfd57127f50
+   4-5. default scenario, listed at vol 5500 +- 200, spread 20/30
+   done in 12 s
+   backend on :8850, model model/k3 0x745cd5f814984c94…, teacher device cuda
+   /demo/faucet: LP 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 +50,000.000000 USDG -> 150,000.000000
+   baseline: USDG supply 450,000.000000, all of it in 7 tracked accounts
+   LP deposits 50,000.000000 USDG: 50,000.000000 shares; vault totalAssets 150,000.000000, share price 1.000000000000 (house LP: the dev account's 100,000.000000)
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 1 series (min slack 0 base units), Desk >= reserve
+
+== b. two weekly series, same product and strike: A stays above the knock-in, B knocked in  [06:21:45]
+   series A 0xae2ba1c621a16720a837c2b7b5a9667adcd61bc1 on HAPPY-A 0x0702aa6ec5fbc66a4ccddaaa9b29cb667f6528e3: strike 2026-07-19, initial 250.00, 10 done, knockedIn False, spot 8800 bps; listed vol 4200 +- 300, spread 25/35
+   series B 0xb63ccf99220164797e99c2bb971fde968e5251ff on HAPPY-B 0x9e607dbb3e6d7458b7570d1b2f6ceb96e597acc2: strike 2026-07-19, initial 250.00, 10 done, knockedIn True, spot 8000 bps; listed vol 4200 +- 300, spread 25/35
+   A /series: mid NOTE 10242 / cover 433 bps; NOTE bid/ask 10117/10378, cover bid/ask 297/558 (maxBps 10675)
+   B /series: mid NOTE 8619 / cover 2056 bps; NOTE bid/ask 8572/8681, cover bid/ask 1994/2103 (maxBps 10675)
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 3 series (min slack 0 base units), Desk >= reserve
+
+== c. mid-life trades at 16 observations to go, the partial sell right after  [06:22:02]
+   A /series: mid NOTE 10242 / cover 433 bps; NOTE bid/ask 10117/10378, cover bid/ask 297/558 (maxBps 10675)
+   buy 10,000.000000 by buyer: 10378 bps, 10,388.000000 USDG (paid, fee 10 bps, integrator +5.000000), Desk -292.000000
+     band quotes 10343@3900, 10142@4500 -> priced at vol 3900: NOTE quote 10343 + 35; formula 10378 == 10378
+     student 10343 (clean 10079 + accrued 264) vs teacher v3 (merton-tsla-share-2016-2026, torch, 262144 paths) 10338.2 +- 1.89: diff +4.8 bps, tolerance 45.7 -> OK; observationsRemaining 16
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 3 series (min slack 0 base units), Desk >= reserve
+   B /series: mid NOTE 8619 / cover 2056 bps; NOTE bid/ask 8572/8681, cover bid/ask 1994/2103 (maxBps 10675)
+   buy 10,000.000000 by buyer: 8681 bps, 8,691.000000 USDG (paid, fee 10 bps, integrator +5.000000), Desk -1,989.000000
+     band quotes 8646@3900, 8597@4500 -> priced at vol 3900: NOTE quote 8646 + 35; formula 8681 == 8681
+     student 8646 (clean 8382 + accrued 264) vs teacher v3 (merton-tsla-share-2016-2026, torch, 262144 paths) 8648.5 +- 0.77: diff -2.5 bps, tolerance 42.3 -> OK; observationsRemaining 16
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 3 series (min slack 0 base units), Desk >= reserve
+   A /series: mid NOTE 10242 / cover 433 bps; NOTE bid/ask 10117/10378, cover bid/ask 297/558 (maxBps 10675)
+   risk room on HAPPY-A: 37,119.000000 USDG (quotes don't check it)
+   buyCover 12,000.000000 by hedger: 558 bps, 682.992000 USDG (paid, fee 200 bps, integrator +6.696000), Desk -1,458.704000
+     band quotes 10343@3900, 10142@4500 -> priced at vol 4500: NOTE quote 10142 - 25; formula 558 == 558
+     student 10142 (clean 9878 + accrued 264) vs teacher v3 (merton-tsla-share-2016-2026, torch, 262144 paths) 10150.4 +- 2.38: diff -8.4 bps, tolerance 47.2 -> OK; observationsRemaining 16
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 3 series (min slack 0 base units), Desk >= reserve
+   B /series: mid NOTE 8619 / cover 2056 bps; NOTE bid/ask 8572/8681, cover bid/ask 1994/2103 (maxBps 10675)
+   risk room on HAPPY-B: 35,535.174000 USDG (quotes don't check it)
+   buyCover 12,000.000000 by hedger: 2103 bps, 2,574.072000 USDG (paid, fee 200 bps, integrator +25.236000), Desk 413.836000
+     band quotes 8646@3900, 8597@4500 -> priced at vol 4500: NOTE quote 8597 - 25; formula 2103 == 2103
+     student 8597 (clean 8333 + accrued 264) vs teacher v3 (merton-tsla-share-2016-2026, torch, 262144 paths) 8598.7 +- 1.01: diff -1.7 bps, tolerance 43.0 -> OK; observationsRemaining 16
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 3 series (min slack 0 base units), Desk >= reserve
+   A /series: mid NOTE 10242 / cover 433 bps; NOTE bid/ask 10117/10378, cover bid/ask 297/558 (maxBps 10675)
+   sell 4,000.000000 by buyer: 10117 bps, 4,042.800000 USDG (received, fee 10 bps, integrator +2.000000), Desk -4,044.800000
+     band quotes 10343@3900, 10142@4500 -> priced at vol 4500: NOTE quote 10142 - 25; formula 10117 == 10117
+     student 10142 (clean 9878 + accrued 264) vs teacher v3 (merton-tsla-share-2016-2026, torch, 262144 paths) 10150.4 +- 2.38: diff -8.4 bps, tolerance 47.2 -> OK; observationsRemaining 16
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 3 series (min slack 0 base units), Desk >= reserve
+   B /series: mid NOTE 8619 / cover 2056 bps; NOTE bid/ask 8572/8681, cover bid/ask 1994/2103 (maxBps 10675)
+   sell 4,000.000000 by buyer: 8572 bps, 3,424.800000 USDG (received, fee 10 bps, integrator +2.000000), Desk -3,426.800000
+     band quotes 8646@3900, 8597@4500 -> priced at vol 4500: NOTE quote 8597 - 25; formula 8572 == 8572
+     student 8597 (clean 8333 + accrued 264) vs teacher v3 (merton-tsla-share-2016-2026, torch, 262144 paths) 8598.7 +- 1.01: diff -1.7 bps, tolerance 43.0 -> OK; observationsRemaining 16
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 3 series (min slack 0 base units), Desk >= reserve
+   /accounts buyer A: NOTE 6,000.000000, cost basis 6,232.800000, mark 6,145.200000, realized -112.400000
+   /accounts buyer B: NOTE 6,000.000000, cost basis 5,214.600000, mark 5,171.400000, realized -51.600000
+
+== d. HYBRID: hourly twins of A and B, every barrier observation past, maturing in minutes  [06:22:27]
+   twin TA 0x842510d6519b92bc149fbfc4b63441727b3485bf: interval 3600 s, 26 done, knockedIn False, maturity 1790835987
+   TA: hedger mints 6,000.000000 pairs for 6,405.000000 USDG, sells the NOTE to the buyer at A's ask 10378 bps (6,226.800000 USDG), keeps the WRITER
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 4 series (min slack 0 base units), Desk >= reserve
+   twin TB 0xf7ce2c70c538deeceba28469cdf97358d43cff3d: interval 3600 s, 26 done, knockedIn True, maturity 1790835987
+   TB: hedger mints 6,000.000000 pairs for 6,405.000000 USDG, sells the NOTE to the buyer at B's ask 8681 bps (5,208.600000 USDG), keeps the WRITER
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 5 series (min slack 0 base units), Desk >= reserve
+   LP queues 12,500.000000 shares (25%): /vault queuedShares 12,500.000000, navError None
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 5 series (min slack 0 base units), Desk >= reserve
+   processQueue + claim: LP gets 12,543.260999 USDG for its queued shares
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 5 series (min slack 0 base units), Desk >= reserve
+   waiting 209 s of wall clock
+   TA: maturity fixing 9200 bps -> Settled, payoutPerNote 1.067500
+   TB: maturity fixing 7800 bps -> Settled, payoutPerNote 0.847500
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 5 series (min slack 0 base units), Desk >= reserve
+
+== e. HYBRID settlement on the twins; the weekly A and B stay open at the Desk (marked)  [06:26:34]
+   TA: Settled True, autocalled False, knockedIn False, payoutPerNote 1.067500 (independent payoff 1.067500), WRITER 0.000000
+   TB: Settled True, autocalled False, knockedIn True, payoutPerNote 0.847500 (independent payoff 0.847500), WRITER 0.220000
+   TA: buyer redeems NOTE 6,000.000000 + WRITER 0.000000 for 6,405.000000 USDG
+   TA: hedger redeems NOTE 0.000000 + WRITER 6,000.000000 for 0.000000 USDG
+   TA: escrow left 0 base units
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 5 series (min slack 0 base units), Desk >= reserve
+   TB: buyer redeems NOTE 6,000.000000 + WRITER 0.000000 for 5,085.000000 USDG
+   TB: hedger redeems NOTE 0.000000 + WRITER 6,000.000000 for 1,320.000000 USDG
+   TB: escrow left 0 base units
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 5 series (min slack 0 base units), Desk >= reserve
+   LP redeems its other 37,500.000000 shares: LP P&L 173.043999 USDG on 50,000.000000; house LP 100,000.000000 -> 100,346.088000; vault 100,346.088001, share price 1.003460880009
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 5 series (min slack 0 base units), Desk >= reserve
+
+== f. A vs B (HYBRID: trades on the weekly series, settlement on their hourly twins)  [06:26:36]
+                                                A (no knock-in)         B (knocked in)
+trade 1: buy 10,000                                   10378 bps               8681 bps
+  before: NOTE bid/ask                              10117/10378              8572/8681
+  before: cover bid/ask                                 297/558              1994/2103
+  observations to go / vol used                       16 / 3900              16 / 3900
+  model vs teacher v3 (bps)                    10343 vs 10338.2         8646 vs 8648.5
+  diff / tolerance                                  +4.8 / 45.7            -2.5 / 42.3
+  USDG                                            10,388.000000           8,691.000000
+trade 2: buyCover 12,000                                558 bps               2103 bps
+  before: NOTE bid/ask                              10117/10378              8572/8681
+  before: cover bid/ask                                 297/558              1994/2103
+  observations to go / vol used                       16 / 4500              16 / 4500
+  model vs teacher v3 (bps)                    10142 vs 10150.4         8597 vs 8598.7
+  diff / tolerance                                  -8.4 / 47.2            -1.7 / 43.0
+  USDG                                               682.992000           2,574.072000
+trade 3: sell 4,000                                   10117 bps               8572 bps
+  before: NOTE bid/ask                              10117/10378              8572/8681
+  before: cover bid/ask                                 297/558              1994/2103
+  observations to go / vol used                       16 / 4500              16 / 4500
+  model vs teacher v3 (bps)                    10142 vs 10150.4         8597 vs 8598.7
+  diff / tolerance                                  -8.4 / 47.2            -1.7 / 43.0
+  USDG                                             4,042.800000           3,424.800000
+payoutPerNote (NOTE)                                   1.067500               0.847500
+payoutPerWriter (WRITER)                               0.000000               0.220000
+buyer: NOTE redeemed for                           6,405.000000           5,085.000000
+hedger: WRITER redeemed for                            0.000000           1,320.000000
+buyer P&L, weekly trades (open)                   -6,345.200000          -5,266.200000
+buyer P&L, twin (OTC + redeem)                       178.200000            -123.600000
+hedger P&L, weekly (open)                           -682.992000          -2,574.072000
+hedger P&L, twin (mint, sale, redeem)               -178.200000             123.600000
+Desk cash flow, weekly (positions open)           -5,795.504000          -5,001.964000
+LP: deposited 50,000.000000, P&L 173.043999; house LP 100,000.000000 -> 100,346.088000 (346.088000) (at the marked NAV: the Desk's weekly A and B positions are open)
+integrator fees received: 45.932000
+
+HAPPY PATH PASS (hybrid): 16 invariant checks, 6 trades verified against teacher v3, 311 s
+log: /opt/ai/sp-worktrees/k3-happy/backend/scenarios/logs/happy_path-hybrid.log

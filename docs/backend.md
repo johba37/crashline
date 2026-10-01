@@ -843,6 +843,65 @@ addresses, `demo: false`, and `/demo/*` answers 403.
   indexer rolls back lost blocks instead of trusting its db.
 - `backend/ops/make-config.py` writes the testnet variant of `config.json`.
 
+## Happy path scenario
+
+```sh
+backend/.venv/bin/python backend/scenarios/happy_path.py                 # clock mode if the clock image exists
+backend/.venv/bin/python backend/scenarios/happy_path.py --mode hybrid   # the stock image (no dev clock)
+```
+
+One script, driven through this service's HTTP API, on a **fresh node of its
+own**: container `DEVNODE_NAME` (default `sp-happy`) on `DEVNODE_PORT` (8847),
+volume `DEVNODE_VOLUME` (`sp-happy-data`), a service on `BACKEND_PORT` (8850)
+with its own `config.json` and database in a temp dir. It refuses
+`sp-devnode`, 8647 and 8650, so the shared node and service are never
+touched, and removes its container, volume and temp dir at the end
+(`--keep` leaves them). About 2.5 minutes in clock mode, 5 in hybrid
+(`TEACHER_DEVICE=cuda` is set when there is a GPU).
+
+1. `up.sh --recreate` (with `DEVNODE_CLOCK=1` in clock mode), `deploy.py
+   --model-dir model/k3`, `run.sh`; `/demo/faucet` gives the LP 50,000 USDG and
+   it deposits them in the Desk.
+2. `/demo/stage` with one `nextObservation`: series **A** (path between the
+   knock-in and the autocall barrier) and **B** (knocked in at observation 3),
+   both on the K2 terms with the same strike time and initial ($250.00), 10
+   observations done, listed with k3 at **vol 4200 ± 300 bps**, spread 25/35, a
+   25 % risk budget.
+3. The buyer buys 10,000 NOTE on each, a hedger buys 12,000 WRITER (cover) on
+   each, and the buyer sells 4,000 NOTE back mid-life. Before each trade the
+   script reads `/series` (`quotes`: both legs' bid and ask); after it,
+   `/verify-quote` on the tx must say `priceMatches` (the Desk's formula at the
+   band end it used) and `within` (teacher v3 at that vol, 3 stdErr + 40 bps),
+   and the off-chain student must equal the on-chain quote.
+4. **Clock mode**: `clock.sh advance` past each observation and `/demo/fixing`
+   for A and B, through maturity (17 steps). The LP queues 25 % of its shares
+   while a fixing is pending (`/vault` shows `navError: FixingPending`), and
+   `processQueue` + `claim` pay it once the fixings are in; the partial sell
+   happens with 12 observations to go. **Hybrid mode** (labelled HYBRID in the
+   output): the trades happen on the weekly series (the sell right away), then
+   two hourly twins of A and B are staged (`terms.interval` 3600, every
+   barrier observation past, maturity four minutes out), a hedger mints 6,000
+   pairs of each and sells the NOTE to the buyer at the weekly series' ask,
+   and the script waits for maturity on the wall clock.
+5. Settlement: A (no knock-in) must pay 1 + c(N + 1) = 1.0675 per NOTE and
+   WRITER nothing; B (knocked in, maturity fixing 78 %) 0.78 + 0.0675 = 0.8475
+   per NOTE and 0.22 per WRITER, both against an independent payoff function.
+   NOTE and WRITER holders redeem, the Desk collects (clock mode), the LP
+   redeems the rest of its shares.
+6. A table, A vs B: each trade's price, both legs' bid/ask before it, the vol
+   the Desk priced at, model vs teacher v3, payoutPerNote and per WRITER, what
+   the NOTE and WRITER holders received, each party's P&L per series, the
+   LPs' P&L. Clock mode also checks that the Desk's P&L over A and B equals
+   the LPs' gain (to share rounding) and that buyer + hedger + Desk +
+   integrator + escrow dust add up to zero.
+
+After every step: USDG is conserved to the base unit (the supply doesn't move
+after the baseline and the balances of every account, the Desk and every
+series sum to it), every series' escrow covers its claims (pairs while live,
+NOTE and WRITER payouts once settled), and the Desk's balance covers what it
+set aside for claims. Exit 0 only if everything passes; the logs of passing
+runs are `backend/scenarios/logs/happy_path-{clock,hybrid}.log`.
+
 ## Tests
 
 ```sh
