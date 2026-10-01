@@ -259,8 +259,10 @@ def reset(body: dict = Body(default={}), x_demo_token: str | None = Header(None)
                            env=dict(os.environ, **env), timeout=300)
         if p.returncode != 0:
             raise ApiError(500, "NodeRestartFailed", {"output": (p.stdout + p.stderr)[-2000:]})
+        dl = cfg.get("defaultListing", {})
         new = dp.deploy_all(cfg["rpcUrl"], cfg.get("publicRpcUrl"), cfg.get("modelDir", dp.DEFAULT_MODEL_DIR),
-                            int(body.get("leadSecs", dp.DEFAULT_LEAD)), key=key, write=False)
+                            int(body.get("leadSecs", dp.DEFAULT_LEAD)), key=key, write=False,
+                            vol_bps=dl.get("volBps"), vol_band_bps=dl.get("volBandBps"))
         for k in ("backendPort", "db", "pollSecs", "historyStepSecs", "replayStepSecs", "demo"):
             if k in cfg:
                 new[k] = cfg[k]

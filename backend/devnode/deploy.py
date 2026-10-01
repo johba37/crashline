@@ -3,16 +3,19 @@
 
     backend/.venv/bin/python backend/devnode/deploy.py            # deploy + stage + list
     backend/.venv/bin/python backend/devnode/deploy.py --if-missing  # no-op if config.json's deployment is on chain
+    backend/.venv/bin/python backend/devnode/deploy.py --model-dir model/k2   # the one-vol K2 student (band 0)
 
 Mirrors contracts/script/e2e-devnode.sh steps 0-6 (without the trades):
-  1. the Stylus pricer from model/k2 (`cargo stylus deploy`, build dir backend/.build/stylus-target)
+  1. the Stylus pricer from --model-dir (default model/k3; `cargo stylus deploy`, build dir
+     backend/.build/stylus-target, or CARGO_TARGET_DIR)
   2. MockUSDG, SeriesFactory, NoteQuoter(93600), Desk(curator = dev key, band 60 s), from a fresh deployer key,
      built with forge in backend/.build/sol (a copy of contracts/src, so nothing under contracts/ is written)
   3. funds the three anvil test accounts (1 ETH, 100,000 USDG each) and seeds the vault
      with 100,000 USDG from the dev account
   4. stages the default series: feed history with the e2e PATH_BPS, spot 8500 bps of initial,
      16 observations remaining, the next observation --lead-secs from now; past fixings recorded
-  5. lists it: vol 5500, cap 100,000 NOTE, spread 20/30/0, risk budget 2000 bps on its feed
+  5. lists it: vol 5500 (--vol), cap 100,000 NOTE, spread 20/30 with a vol band of 200 bps
+     (--vol-band; 0 for a model whose vol is pinned, like K2), risk budget 2000 bps on its feed
   6. writes backend/config.json and deployments/412346.json
 
 The functions are reused by the service's /demo/stage and /demo/reset.
@@ -76,11 +79,18 @@ LP_SEED = 100_000 * USDG
 FUND_ETH = 1 * ETH
 FUND_USDG = 100_000 * USDG
 DEPLOYER_ETH = 5 * ETH
-DEFAULT_MODEL_DIR = "model/k2"
+DEFAULT_MODEL_DIR = "model/k3"
+DEFAULT_VOL_BAND = 200  # 2 vol points either side (docs/k3-vol-input.md, the S set); 0 where vol is pinned
 
 
 def log(msg: str) -> None:
     print(msg, flush=True)
+
+
+def rel(p: Path) -> str:
+    """`p` relative to the repo when it lies inside it (BACKEND_CONFIG may point elsewhere)."""
+    p = Path(p).resolve()
+    return str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else str(p)
 
 
 # ---------------------------------------------------------------------------
@@ -184,7 +194,8 @@ def wait_for_node(rpc_url: str, timeout: float = 120) -> Chain:
 
 def deploy_pricer(rpc_url: str, key: str, model_dir: Path) -> str:
     """`cargo stylus deploy` of stylus/pricer-model with the model's weights compiled in."""
-    env = dict(os.environ, PRICER_MODEL_DIR=str(model_dir), CARGO_TARGET_DIR=str(BUILD / "stylus-target"),
+    env = dict(os.environ, PRICER_MODEL_DIR=str(model_dir),
+               CARGO_TARGET_DIR=os.environ.get("CARGO_TARGET_DIR") or str(BUILD / "stylus-target"),
                PATH=f"{CARGO_BIN}:{os.environ.get('PATH', '')}")
     log(f"  cargo stylus deploy ({model_dir.relative_to(ROOT)})")
     p = subprocess.run(["cargo", "stylus", "deploy", "--endpoint", rpc_url, "--private-key", key, "--no-verify"],
@@ -309,12 +320,29 @@ def list_series(chain: Chain, key: str, addrs: dict, series: str, feed: str, lis
     desk.send(key, "setRiskBudget", feed, lst["riskBudgetBps"])
 
 
-def default_scenario(chain: Chain, key: str, addrs: dict, lead_secs: int = DEFAULT_LEAD) -> dict:
+def default_listing(chain: Chain, pricer: str, vol_bps: int | None = None, vol_band_bps: int | None = None) -> dict:
+    """DEFAULT_LIST at `vol_bps` (5500) with a vol band of `vol_band_bps`; by default
+    DEFAULT_VOL_BAND, or 0 when the model's certified vol is a single value (K2)."""
+    lst = dict(DEFAULT_LIST)
+    if vol_bps is not None:
+        lst["volBps"] = int(vol_bps)
+    lo, hi = chain.at("pricer", pricer).call("certifiedRange", 2)
+    if vol_band_bps is None:
+        vol_band_bps = 0 if lo == hi else min(DEFAULT_VOL_BAND, lst["volBps"] - lo, hi - lst["volBps"])
+    lst["volBandBps"] = int(vol_band_bps)
+    if not lo <= lst["volBps"] - lst["volBandBps"] <= lst["volBps"] + lst["volBandBps"] <= hi:
+        raise ValueError(f"vol {lst['volBps']} +- band {lst['volBandBps']} outside the model's certified "
+                         f"vol {lo}..{hi}")
+    return lst
+
+
+def default_scenario(chain: Chain, key: str, addrs: dict, lead_secs: int = DEFAULT_LEAD,
+                     listing: dict | None = None) -> dict:
     """16 observations remaining (or the pricer's nearest certified bound), as in the e2e script."""
     lo, hi = chain.at("pricer", addrs["surrogatePricer"]).call("certifiedRange", 8)
     rem = min(max(TARGET_REM, lo), hi)
     return stage(chain, key, addrs, FEED_NAME, PATH_BPS, SPOT_BPS, K2_TERMS["count"] - rem, lead_secs,
-                 listing=dict(DEFAULT_LIST))
+                 listing=listing or default_listing(chain, addrs["surrogatePricer"]))
 
 
 def check_quotable(chain: Chain, addrs: dict, series: str) -> tuple[int, int]:
@@ -341,7 +369,8 @@ def make_config(chain: Chain, core: dict, model_dir: Path, rpc_url: str, public_
         "curator": address_of(DEV_KEY),
         "modelDir": str(model_dir.relative_to(ROOT)),
         "demo": {"enabled": demo, "keyEnv": "DEMO_KEY", "tokenEnv": "DEMO_TOKEN"},
-        "devnode": {"container": "sp-devnode", "volume": "sp-devnode-data", "port": cfgmod.devnode_port()},
+        "devnode": {"container": os.environ.get("DEVNODE_NAME", "sp-devnode"),
+                    "volume": os.environ.get("DEVNODE_VOLUME", "sp-devnode-data"), "port": cfgmod.devnode_port()},
         "backendPort": cfgmod.backend_port(),
         "db": f"backend/data/{chain.chain_id}.sqlite",
         "pollSecs": 2,
@@ -378,7 +407,8 @@ def deployed(chain: Chain, cfg: dict) -> bool:
 
 
 def deploy_all(rpc_url: str, public_rpc_url: str | None = None, model_dir: str = DEFAULT_MODEL_DIR,
-               lead_secs: int = DEFAULT_LEAD, key: str = DEV_KEY, write: bool = True) -> dict:
+               lead_secs: int = DEFAULT_LEAD, key: str = DEV_KEY, write: bool = True,
+               vol_bps: int | None = None, vol_band_bps: int | None = None) -> dict:
     """Steps 1-6; returns the new config (written to backend/config.json when `write`).
 
     The contracts come from a fresh deployer key, funded by `key`: a new dev chain
@@ -404,17 +434,20 @@ def deploy_all(rpc_url: str, public_rpc_url: str | None = None, model_dir: str =
         log(f"   {name:7s} {address_of(k)}: {FUND_ETH / ETH:g} ETH, {FUND_USDG // USDG:,} USDG")
     seed_vault(chain, key, core["addresses"])
     log(f"   vault seeded with {LP_SEED // USDG:,} USDG by the dev account")
-    log("4-5. default scenario, listed")
-    st = default_scenario(chain, key, core["addresses"], lead_secs)
+    lst = default_listing(chain, pricer, vol_bps, vol_band_bps)
+    log(f"4-5. default scenario, listed at vol {lst['volBps']} +- {lst['volBandBps']}, "
+        f"spread {lst['bidBps']}/{lst['askBps']}")
+    st = default_scenario(chain, key, core["addresses"], lead_secs, listing=lst)
     cost, price = check_quotable(chain, core["addresses"], st["series"])
     log(f"   series {st['series']} on {st['feedName']} {st['feed']}; next observation in {lead_secs} s")
     log(f"   quoteBuy(1 NOTE) = {cost} USDG base units at {price} bps")
     cfg = make_config(chain, core, mdir, rpc_url, public_rpc_url or rpc_url.replace("127.0.0.1", "localhost"))
     cfg["deployer"] = address_of(deployer_key)
+    cfg["defaultListing"] = {"volBps": lst["volBps"], "volBandBps": lst["volBandBps"]}
     if write:
         cfgmod.save(cfg)
         p = write_deployments(cfg)
-        log(f"6. wrote {cfgmod.CONFIG_PATH.relative_to(ROOT)} and {p.relative_to(ROOT)}")
+        log(f"6. wrote {rel(cfgmod.CONFIG_PATH)} and {rel(p)}")
     log(f"done in {time.monotonic() - t0:.0f} s")
     return cfg
 
@@ -424,18 +457,22 @@ def main() -> None:
     port = cfgmod.devnode_port()
     ap.add_argument("--rpc", default=f"http://127.0.0.1:{port}")
     ap.add_argument("--public-rpc", default=f"http://localhost:{port}", help="the RPC URL /config reports")
-    ap.add_argument("--model-dir", default=DEFAULT_MODEL_DIR)
+    ap.add_argument("--model-dir", default=os.environ.get("PRICER_MODEL_DIR", DEFAULT_MODEL_DIR),
+                    help="model/k3 (default, vol 20-90%%), model/k2 (vol pinned at 5500), ...")
+    ap.add_argument("--vol", type=int, default=None, help="listing vol of the default series, bps (5500)")
+    ap.add_argument("--vol-band", type=int, default=None,
+                    help="its vol band, bps (200; 0 for a model whose vol is pinned)")
     ap.add_argument("--lead-secs", type=int, default=int(os.environ.get("DEVNODE_LEAD_SECS", DEFAULT_LEAD)))
     ap.add_argument("--if-missing", action="store_true", help="do nothing if config.json's deployment is on chain")
     a = ap.parse_args()
     if a.if_missing and cfgmod.CONFIG_PATH.exists():
         chain = wait_for_node(a.rpc)
         if deployed(chain, cfgmod.load()):
-            log(f"deployment in {cfgmod.CONFIG_PATH.relative_to(ROOT)} is on chain; nothing to do")
+            log(f"deployment in {rel(cfgmod.CONFIG_PATH)} is on chain; nothing to do")
             return
     try:
-        deploy_all(a.rpc, a.public_rpc, a.model_dir, a.lead_secs)
-    except Revert as e:
+        deploy_all(a.rpc, a.public_rpc, a.model_dir, a.lead_secs, vol_bps=a.vol, vol_band_bps=a.vol_band)
+    except (Revert, ValueError) as e:
         raise SystemExit(f"deploy failed: {e}")
 
 
