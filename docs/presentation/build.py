@@ -14,7 +14,8 @@ the target times, P presenter window (script + clock), S script on the stage
 Numbers on the slides and where they come from:
   149.4B, 1-3% markup   ~/arb-hackathon/docs/structured-notes-market.md (facts 1 and 4)
   0.25%/week, 1.0675    backend/scenarios/happy_path.py TERMS (coupon 25 bps, 26 + 1 periods)
-  0.8475 / 0.22         happy_path-clock.log, series B (ends at 78%, knocked in)
+  0.8475                happy_path-clock.log, series B (ends at 78%, knocked in)
+  $757 cover premium    model/k3 at strike, vol 42% +- 3, bid 25 bps (see scene_sides)
   10,343 vs 10,338.2    happy_path-clock.log, trade 1 on series A (student vs teacher v3)
   8.4 max over 6 trades happy_path-clock.log, section f
   37.9 / 14.1 / 2.65    docs/k3-vol-input.md, set T (130,752 points, gate 50)
@@ -266,49 +267,54 @@ def scene_payoff():
 
 
 def scene_sides():
-    x0, scale, bh = 80, 520, 44  # px per dollar
-    full = 1.0675 * scale
+    # A stock holder with $10,000 of stock tokens buys 10,000 COVER at the start.
+    # Premium: model/k3 at strike, spot at par, listing vol 42% with a 3-point band
+    # and a 25 bps bid (the happy-path listing): NOTE 9943 at vol 45%, so
+    # cover = 10675 - (9943 - 25) = 757 bps. The model's mid at 42% is 688.
+    # Payouts are (1.0675 - note payout) per COVER, see NoteSeries._redeemValue.
+    cx = [80, 900, 1180, 1520]  # label, stock, cover pays, together (right edges after the first)
 
-    def bar(y, label, segments):
-        out = [T(x0, y, label, 26, INK)]
-        x = x0
-        for width, fill in segments:
-            out.append(rect(x, y + 18, width, bh, 4, fill))
-            x += width + 2
-        return out
-
-    base = [head("Two tokens", "The cash is locked up front. Two tokens split it.")]
-    base += bar(250, "Locked up front, per note", [(full, NEUTRAL)])
-    base.append(T(x0 + full + 18, 250 + 18 + 31, "$1.0675 in USDG", 26, INK2))
-
-    base += bar(410, "If the stock holds up", [(full, GOLD)])
-    base.append(T(x0, 410 + 18 + bh + 36, "NOTE $1.0675", 26, INK2))
-    base.append(T(x0 + full, 410 + 18 + bh + 36, "COVER $0", 26, INK2, "end"))
-
-    note_w, cover_w = 0.8475 * scale - 1, 0.22 * scale - 1
-    base += bar(580, "If it crashes and ends at 78%", [(note_w, GOLD), (cover_w, CRASH)])
-    base.append(T(x0, 580 + 18 + bh + 36, "NOTE $0.8475", 26, INK2))
-    base.append(T(x0 + full, 580 + 18 + bh + 36, "COVER $0.22", 26, INK2, "end"))
-
-    def holder(y, label, fill, title, rows):
+    def row(y, color, label, stock, cover, total, bold=False):
+        w = 700 if bold else 400
         return "\n".join([
-            panel(920, y, 600, 220),
-            chip(952, y + 30, 150, 58, label, fill),
-            T(1124, y + 70, title, 30, INK, weight=700),
-            lines(952, y + 136, rows, 26, INK2, 38),
+            rect(80, y - 34, 8, 46, 4, color),
+            T(112, y, label, 28, INK, weight=w),
+            T(cx[1], y, stock, 28, INK2, "end"),
+            T(cx[2], y, cover, 28, INK, "end", 700 if bold else 400),
+            T(cx[3], y, total, 28, INK, "end", w),
+            seg(80, y + 26, 1520, y + 26, LINE, 1),
         ])
 
+    base = [
+        head("Two tokens", "The cash is locked up front. Two tokens split it."),
+        T(80, 250, "$1.0675 of USDG is locked per note, and split between", 30, INK2),
+        chip(830, 212, 130, 54, "NOTE", GOLD, size=26),
+        T(984, 250, "and", 30, INK2),
+        chip(1056, 212, 150, 54, "COVER", CRASH, size=26),
+    ]
+    table_head = [
+        T(80, 350, "You hold $10,000 of stock tokens and buy cover on all of it for $757.", 32, INK, weight=700),
+        T(112, 428, "What the stock does", 24, MUTED),
+        T(cx[1], 428, "Stock is worth", 24, MUTED, "end"),
+        T(cx[2], 428, "COVER pays", 24, MUTED, "end"),
+        T(cx[3], 428, "Together, before the premium", 24, MUTED, "end"),
+        seg(80, 448, 1520, 448, LINE, 1.5),
+        row(500, EARLY, "Back at the start by week 6", "$10,100", "$525", "$10,625"),
+        row(572, HOLD, "Dips to 78%, never below 60% on a check", "$7,800", "$0", "$7,800"),
+    ]
+    crash = [
+        row(644, CRASH, "Below 60% on a check, ends at 78%", "$7,800", "$2,200", "$10,000", True),
+        row(716, CRASH, "Below 60% on a check, ends at 50%", "$5,000", "$5,000", "$10,000", True),
+    ]
+    other = [
+        T(80, 800, "The other side: a cash holder keeps NOTE, earns 0.25% a week, and takes that loss.", 28, INK2),
+        T(80, 844, "Fully funded on both sides. No margin calls, no liquidations.", 28, INK, weight=700),
+    ]
     return "\n".join([
         "\n".join(base),
-        step(1, holder(215, "NOTE", GOLD, "goes to a cash holder", [
-            "Earns 0.25% a week.",
-            "Takes the loss if the stock crashes.",
-        ])),
-        step(2, holder(455, "COVER", CRASH, "goes to a stock holder", [
-            "Crash insurance, for a premium.",
-            "Keeps the stock, and all its upside.",
-        ])),
-        step(2, T(80, 810, "Fully funded on both sides. No margin calls, no liquidations.", 32, INK, weight=700)),
+        step(1, *table_head),
+        step(2, *crash),
+        step(3, *other),
     ])
 
 
@@ -510,7 +516,7 @@ SCENES = [
     },
     {
         "name": "The note",
-        "seconds": 20,
+        "seconds": 19,
         "svg": scene_payoff,
         "say": [
             "The note: one stock token, checked once a week for twenty-six weeks.",
@@ -521,12 +527,13 @@ SCENES = [
     },
     {
         "name": "Two tokens",
-        "seconds": 15,
+        "seconds": 21,
         "svg": scene_sides,
         "say": [
-            "The worst case is locked in USDG up front, and split into two tokens.",
-            "A cash holder keeps the note, for the coupon.",
-            "A stock holder buys the cover: crash insurance, without selling the stock.",
+            "The cash is locked up front and split into two tokens: the note, and the cover.",
+            "Hold ten thousand dollars of stock: cover costs about seven hundred fifty.",
+            "Cross the sixty percent line, and it pays your whole loss back.",
+            "A cash holder takes the other side, for the coupon.",
         ],
     },
     {
@@ -542,7 +549,7 @@ SCENES = [
     },
     {
         "name": "Proof",
-        "seconds": 32,
+        "seconds": 31,
         "svg": scene_proof,
         "say": [
             "A real trade from our test chain: ten thousand dollars of notes.",
@@ -554,7 +561,7 @@ SCENES = [
     },
     {
         "name": "Close",
-        "seconds": 13,
+        "seconds": 11,
         "svg": scene_close,
         "say": [
             "Crash cover for stock-token holders. A coupon for cash. A price anyone can check.",
