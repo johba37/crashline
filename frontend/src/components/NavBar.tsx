@@ -1,6 +1,8 @@
 import { type RefObject, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { GITHUB } from './landing/links.ts'
+import Logo from './Logo.tsx'
+import Wordmark from './Wordmark.tsx'
 
 // Sections on the landing page. Labels stay short so the links fit next to the wordmark at md.
 const LINKS = [
@@ -38,8 +40,9 @@ export default function NavBar({ revealAfter }: { revealAfter: RefObject<HTMLEle
         aria-label="Main"
         className="glass-strong mx-auto flex h-14 max-w-app items-center gap-2 rounded-full pr-2 pl-5 [--elevation-glass:var(--elevation-glass-lifted)]"
       >
-        <a href="#top" className="type-wordmark whitespace-nowrap text-ink">
-          Crashline
+        <a href="#top" className="inline-flex items-center gap-2 text-ink">
+          <Logo className="h-7 w-auto" />
+          <Wordmark />
         </a>
         <ul className="ml-auto hidden items-center gap-1 md:flex">
           {LINKS.map((link) => (

@@ -27,6 +27,8 @@ import { usePositions } from '../market/usePositions.ts'
 import { usePracticeTrade } from '../market/usePracticeTrade.ts'
 import { useTrade } from '../market/useTrade.ts'
 import { API_URL } from '../wagmi.ts'
+import Logo from '../components/Logo.tsx'
+import Wordmark from '../components/Wordmark.tsx'
 
 const NAMES: Record<string, string> = { TSLA: 'Tesla', NVDA: 'Nvidia', AAPL: 'Apple' }
 
@@ -142,7 +144,10 @@ export default function AppPage() {
     <div className="min-h-dvh bg-horizon text-ink">
       <header className="sticky top-[max(0.75rem,env(safe-area-inset-top))] z-(--z-nav) px-4 sm:px-6">
         <nav className="glass-strong mx-auto mt-3 flex h-14 max-w-3xl items-center justify-between gap-4 rounded-full pr-2 pl-5">
-          <Link to="/" className="type-wordmark text-ink">Crashline</Link>
+          <Link to="/" className="inline-flex items-center gap-2 text-ink">
+            <Logo className="h-7 w-auto" />
+            <Wordmark />
+          </Link>
           <div className="hidden sm:block">{tabs}</div>
           <ConnectButton showBalance={false} chainStatus="icon" accountStatus="address" />
         </nav>

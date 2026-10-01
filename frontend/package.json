@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@fontsource/jost": "^5.3.0",
+    "@fontsource/russo-one": "^5.3.0",
     "@fontsource/syne": "^5.3.0",
     "@number-flow/react": "^0.6.2",
     "@phosphor-icons/react": "^2.1.10",
