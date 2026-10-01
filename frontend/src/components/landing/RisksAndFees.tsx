@@ -76,7 +76,7 @@ export default function RisksAndFees() {
         <div>
           <p className="type-label text-ink">Testnet only</p>
           <p className="mt-1 type-body text-ink-muted">
-            Surrogate Pricer runs on Robinhood Chain’s test network, with stock prices we set ourselves for testing. No
+            Crashline runs on Robinhood Chain’s test network, with stock prices we set ourselves for testing. No
             real money is involved, the contracts have had no outside audit yet, and nothing here is financial advice.
           </p>
         </div>

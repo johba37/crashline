@@ -39,7 +39,7 @@ export default function NavBar({ revealAfter }: { revealAfter: RefObject<HTMLEle
         className="glass-strong mx-auto flex h-14 max-w-app items-center gap-2 rounded-full pr-2 pl-5 [--elevation-glass:var(--elevation-glass-lifted)]"
       >
         <a href="#top" className="type-wordmark whitespace-nowrap text-ink">
-          Surrogate Pricer
+          Crashline
         </a>
         <ul className="ml-auto hidden items-center gap-1 md:flex">
           {LINKS.map((link) => (

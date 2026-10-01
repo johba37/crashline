@@ -1,4 +1,4 @@
-import { CaretDown, CheckCircle, Coins, FlagCheckered, Info, Pulse, ShieldCheck, TrendDown } from '@phosphor-icons/react'
+import { CaretDown, CheckCircle, FlagCheckered, Info, Pulse, ShieldCheck, TrendDown } from '@phosphor-icons/react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useState, type ReactNode } from 'react'
 import { useAccount } from 'wagmi'
@@ -11,6 +11,7 @@ import PositionGraph from './PositionGraph.tsx'
 import StatusChip from './StatusChip.tsx'
 import { confirmed, refusalStatus, type Status } from './status.ts'
 import Term from './Term.tsx'
+import TickerBadge from './TickerBadge.tsx'
 
 const BUTTON = 'h-12 rounded-full bg-accent px-6 type-button text-on-accent transition-[background-color,box-shadow] duration-160 ease-out hover:bg-accent-hover hover:shadow-ignition active:bg-accent-pressed disabled:cursor-not-allowed disabled:bg-surface-overlay disabled:text-ink-faint disabled:shadow-none'
 
@@ -76,7 +77,6 @@ function Row({ p, now, trade, active, onAct }: { p: Position; now: number; trade
   const { isConnected } = useAccount()
   const { series: s, side, amount } = p
   const r = read(p)
-  const Icon = r.cover ? ShieldCheck : Coins
   const busy = active && ['quoting', 'approving', 'trading'].includes(trade.state.step)
   const bid = r.cover ? s.coverBid : s.noteBid
 
@@ -89,7 +89,7 @@ function Row({ p, now, trade, active, onAct }: { p: Position; now: number; trade
     <li>
       <details className="panel group rounded-lg">
         <summary className="flex cursor-pointer list-none items-center gap-4 rounded-lg p-5 [&::-webkit-details-marker]:hidden">
-          <Icon size={24} weight="bold" aria-hidden="true" className="shrink-0 text-ink-muted" />
+          <TickerBadge symbol={s.symbol} />
           <span className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-6 gap-y-3">
             <span className="flex flex-col gap-1">
               <span className="type-heading text-ink">

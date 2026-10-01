@@ -9,6 +9,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Route, Routes } from 'react-router'
 import { WagmiProvider } from 'wagmi'
+import ScrollToTop from './components/ScrollToTop.tsx'
 import './index.css'
 import AppPage from './pages/AppPage.tsx'
 import Landing from './pages/Landing.tsx'
@@ -23,6 +24,7 @@ createRoot(document.getElementById('root')!).render(
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider theme={rainbowKitTheme}>
           <BrowserRouter basename={import.meta.env.BASE_URL}>
+            <ScrollToTop />
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/app" element={<AppPage />} />

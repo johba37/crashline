@@ -30,7 +30,7 @@ export default function WhatsNext() {
     <Section
       id="roadmap"
       title="What’s next"
-      intro="Today Surrogate Pricer runs on a test network. Here is what comes next."
+      intro="Today Crashline runs on a test network. Here is what comes next."
     >
       <div className="panel mt-10 grid divide-y divide-line rounded-lg md:grid-cols-3 md:divide-x md:divide-y-0">
         {NEXT.map((item) => (

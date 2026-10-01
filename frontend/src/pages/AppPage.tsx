@@ -16,6 +16,7 @@ import { Calendar, PriceDetails } from '../components/dashboard/SeriesDetail.tsx
 import Step from '../components/dashboard/Step.tsx'
 import Switch from '../components/dashboard/Switch.tsx'
 import Term from '../components/dashboard/Term.tsx'
+import TickerBadge from '../components/dashboard/TickerBadge.tsx'
 import { refusalStatus, seriesStatus } from '../components/dashboard/status.ts'
 import InfoTip from '../components/Tooltip.tsx'
 import { UNIT, bestCase, coverRoom, date, fromFeed, parseAmount, pct, span, toUnits, tradeAmounts, trigger, usd, usdg } from '../market/format.ts'
@@ -71,7 +72,7 @@ export default function AppPage() {
       type="button"
       aria-current={view === to ? 'page' : undefined}
       onClick={() => { trade.reset(); set({ view: to === 'buy' ? null : to }) }}
-      className={`h-9 rounded-full px-4 type-label whitespace-nowrap transition-colors duration-160 ${view === to ? 'bg-surface-overlay text-ink' : 'text-ink-muted hover:text-ink'}`}
+      className={`h-9 rounded-full px-4 type-label whitespace-nowrap transition-colors duration-160 ${view === to ? 'bg-surface-overlay text-ink shadow-[inset_0_0_0_1px_var(--color-line)]' : 'text-ink-muted hover:text-ink'}`}
     >
       {label}
     </button>
@@ -141,7 +142,7 @@ export default function AppPage() {
     <div className="min-h-dvh bg-horizon text-ink">
       <header className="sticky top-[max(0.75rem,env(safe-area-inset-top))] z-(--z-nav) px-4 sm:px-6">
         <nav className="glass-strong mx-auto mt-3 flex h-14 max-w-3xl items-center justify-between gap-4 rounded-full pr-2 pl-5">
-          <Link to="/" className="type-wordmark text-ink">Surrogate Pricer</Link>
+          <Link to="/" className="type-wordmark text-ink">Crashline</Link>
           <div className="hidden sm:block">{tabs}</div>
           <ConnectButton showBalance={false} chainStatus="icon" accountStatus="address" />
         </nav>
@@ -188,7 +189,7 @@ export default function AppPage() {
                 onChange={(v) => set({ stock: v })}
                 choices={stocks.map((sym) => {
                   const price = all.find((s) => s.symbol === sym && s.spot)?.spot
-                  return { value: sym, title: sym, aside: price ? usd(price) : undefined, body: NAMES[sym] ? `${NAMES[sym]}, price right now` : 'Price right now' }
+                  return { value: sym, icon: <TickerBadge symbol={sym} />, title: NAMES[sym] ?? sym, aside: price ? usd(price) : undefined, body: 'Price right now' }
                 })}
               />
               {stocks.length === 1 && (

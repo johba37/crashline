@@ -24,7 +24,7 @@ export default function Footer() {
     <footer className="border-t border-line">
       <div className="mx-auto grid max-w-landing gap-10 px-4 py-12 sm:px-6 md:grid-cols-12 md:gap-8 lg:px-8 lg:py-16">
         <div className="md:col-span-6">
-          <p className="type-wordmark text-ink">Surrogate Pricer</p>
+          <p className="type-wordmark text-ink">Crashline</p>
           <p className="mt-3 max-w-sm type-body text-ink-muted">
             Crash insurance and a weekly income on tokenized stocks, priced in public on Robinhood Chain testnet.
           </p>
