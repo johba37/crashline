@@ -4,7 +4,7 @@
 //! PRICER_MODEL_DIR selects (default model/k3; also run model/k2, model/k1-r1 and model/synthetic).
 
 use serde_json::Value;
-use surrogate_pricer_model::{
+use crashline_pricer_model::{
     Inconsistent, OutOfRange, PricerError, SurrogatePricer, Uncertified,
     engine::{self, Refusal},
 };

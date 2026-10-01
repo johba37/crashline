@@ -1,4 +1,4 @@
-# Surrogate Pricer
+# Crashline
 
 On-chain fair-value quotes for path-dependent payoffs (autocallables on stock
 tokens): an integer MLP distilled from a Monte Carlo teacher, running as a
@@ -6,7 +6,7 @@ Stylus contract, behind a model-free note core on Robinhood Chain, settled in US
 
 > **The Big Short, fixed.** In 2008 crash insurance was **priced wrong**, the sellers
 > **couldn't pay** (AIG needed $182B), and the **banks decided what positions were worth**.
-> Surrogate Pricer keeps the good part (crash protection, and yield for taking risk) and fixes all
+> Crashline keeps the good part (crash protection, and yield for taking risk) and fixes all
 > three: a **public price anyone can recompute**, **full collateral** locked from day one, and
 > **marks computed in public**. See [docs/pitch.md](docs/pitch.md).
 

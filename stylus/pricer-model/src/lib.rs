@@ -1,4 +1,4 @@
-//! Surrogate Pricer — Stylus student model.
+//! Crashline — Stylus student model.
 //!
 //! A pure function from a note's state to its fair value in bps of notional:
 //! an integer MLP distilled from an off-chain Monte Carlo teacher, with the

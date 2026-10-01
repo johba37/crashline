@@ -1,8 +1,8 @@
 [package]
-name = "surrogate-pricer-model"
+name = "crashline-pricer-model"
 version = "0.1.0"
 edition = "2024"
-description = "Stylus student model for the Surrogate Pricer: integer MLP distilled from a Monte Carlo teacher"
+description = "Stylus student model for Crashline: integer MLP distilled from a Monte Carlo teacher"
 license = "MIT"
 
 [dependencies]

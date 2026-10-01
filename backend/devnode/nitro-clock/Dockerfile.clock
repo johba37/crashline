@@ -19,4 +19,4 @@ FROM offchainlabs/nitro-node:v3.11.4-7d5ac27 AS sp-nitro-node-clock
 USER root
 COPY --from=sp-clock-node-builder /workspace/target/bin/nitro /usr/local/bin/nitro
 USER user
-LABEL org.opencontainers.image.description="DEV ONLY: Nitro v3.11.4 with SP_CLOCK_OFFSET_FILE block-timestamp offset (SurrogatePricer)"
+LABEL org.opencontainers.image.description="DEV ONLY: Nitro v3.11.4 with SP_CLOCK_OFFSET_FILE block-timestamp offset (Crashline)"

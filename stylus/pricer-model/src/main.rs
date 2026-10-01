@@ -6,5 +6,5 @@ pub extern "C" fn main() {}
 
 #[cfg(feature = "export-abi")]
 fn main() {
-    surrogate_pricer_model::print_from_args();
+    crashline_pricer_model::print_from_args();
 }

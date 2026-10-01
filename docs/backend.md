@@ -38,16 +38,16 @@ certified domain and the Desk's fee caps and queue constants.
 import { defineChain } from 'viem'
 import { robinhoodTestnet } from 'wagmi/chains'
 
-export const surrogateDevnode = defineChain({
+export const crashlineDevnode = defineChain({
   id: 412346,
-  name: 'Surrogate Pricer dev node',
+  name: 'Crashline dev node',
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
   rpcUrls: { default: { http: [import.meta.env.VITE_RPC_URL ?? 'http://localhost:8647'] } },
   testnet: true,
 })
 
 const chainId = Number(import.meta.env.VITE_CHAIN_ID ?? robinhoodTestnet.id)
-const chain = chainId === surrogateDevnode.id ? surrogateDevnode : robinhoodTestnet
+const chain = chainId === crashlineDevnode.id ? crashlineDevnode : robinhoodTestnet
 export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8650'
 // getDefaultConfig({ ..., chains: [chain], transports: { [chain.id]: http(import.meta.env.VITE_RPC_URL) } })
 ```

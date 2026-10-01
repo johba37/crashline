@@ -9,9 +9,9 @@ requires an Arbitrum One wallet for prize payout.
 
 ## Registration: "Do you already have an idea?" (≤ 300 chars)
 
-> SurrogatePricer: fair-value quotes for path-dependent payoffs. A 16-bit integer model distilled from a Monte Carlo teacher runs on-chain in Stylus (~45k gas), pricing autocallable notes on stock tokens at mint and exit. No closed form, no pricing API; settlement is exact. USDG on Robinhood Chain.
+> Crashline: fair-value quotes for path-dependent payoffs. A 16-bit integer model distilled from a Monte Carlo teacher runs on-chain in Stylus (~45k gas), pricing autocallable notes on stock tokens at mint and exit. No closed form, no pricing API; settlement is exact. USDG on Robinhood Chain.
 
-(297 chars.)
+(291 chars.)
 
 ## Project submission form
 
