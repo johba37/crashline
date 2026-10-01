@@ -1,4 +1,4 @@
-import { Coins, ShieldCheck } from '@phosphor-icons/react'
+import { CalendarCheck, CaretDown, Coins, FlagCheckered, ShieldCheck, TrendDown } from '@phosphor-icons/react'
 import FlowMap from './FlowMap.tsx'
 import Section from './Section.tsx'
 
@@ -27,9 +27,18 @@ import Section from './Section.tsx'
 // These are the model's prices: the Desk's gap between buying and selling and the fee come on top.
 // Ask again when the model changes.
 
+// The same three ways a note can end, in the same order on both sides, so each is found at a
+// glance: its name, what came back and the gain or loss. The story sits behind a click (the
+// pattern of the app's order step, dashboard/Order.tsx).
+const CASES = [
+  { id: 'crash', name: 'Crash', when: 'TSLA ends 50% down', Icon: TrendDown },
+  { id: 'none', name: 'No crash', when: 'The note runs its six months', Icon: CalendarCheck },
+  { id: 'early', name: 'Ends early', when: 'At the 10th weekly check, TSLA is at its first-day price or above', Icon: FlagCheckered },
+] as const
+
 // Signed, the way money moves for the buyer: what you pay is a minus, what comes back a plus, and
 // each case ends in a gain or a loss (what came back minus what you paid). For Protect that is the
-// cover alone: the stock's own loss is named in the crash row and in the line under the table.
+// cover alone: the stock's own loss is told in the crash story and in the line under the cases.
 // Protect "pays" (a price for insurance, usually gone); Earn "puts in" (it comes back unless
 // the stock crashes), the app's own word for it. Not "stake": it sounds like a bet or like
 // crypto staking, and for Protect it would promise the money back.
@@ -41,12 +50,12 @@ const SIDES = [
     payLabel: 'You pay once, up front',
     pay: '−85.50 USDG',
     pays: 'Cover pays you',
-    outcomes: [
-      { when: 'TSLA crashes and ends 50% down, so your TSLA is worth 500 USDG less', back: '+500.00 USDG', result: 'gain +414.50', gain: true },
-      { when: 'No crash, and the note runs to its end', back: '0.00 USDG', result: 'loss −85.50', gain: false },
-      { when: 'TSLA is at or above its first-day price at the 10th weekly check: the note ends early, your cover stops, and you get back 2.50 for each of the 17 weeks left', back: '+42.50 USDG', result: 'loss −43.00', gain: false },
-    ],
-    net: 'In the crash your TSLA loses 500 and cover gains you 414.50: you end 85.50 USDG down instead of 500. Without a crash you are out the 85.50, like any insurance.',
+    outcomes: {
+      crash: { back: '+500.00 USDG', result: 'gain +414.50', gain: true, more: 'TSLA was below the crash line at a weekly check and ends 50% below its first-day price. Your 1,000 USDG of TSLA is worth 500 less, and cover pays you exactly that when the note ends. After the 85.50 you paid, you end 85.50 down instead of 500.' },
+      none: { back: '0.00 USDG', result: 'loss −85.50', gain: false, more: 'TSLA never closes below the crash line at a weekly check. Cover pays nothing and you are out the 85.50, like any insurance. A fall that stays above the crash line is not covered.' },
+      early: { back: '+42.50 USDG', result: 'loss −43.00', gain: false, more: 'The note ends that day and your cover stops. You get back 2.50 for each of the 17 weeks left. This can happen at any weekly check, even the first: the earlier it ends, the more comes back.' },
+    },
+    net: 'A crash costs you 85.50 USDG instead of 500.',
   },
   {
     name: 'Earn',
@@ -55,12 +64,12 @@ const SIDES = [
     payLabel: 'You put in once, up front',
     pay: '−982.00 USDG',
     pays: 'You get back',
-    outcomes: [
-      { when: 'No crash, and the note runs to its end: the whole pot', back: '+1,067.50 USDG', result: 'gain +85.50', gain: true },
-      { when: 'The note ends early at the 10th weekly check: 1,000 plus 10 weeks of income', back: '+1,025.00 USDG', result: 'gain +43.00', gain: true },
-      { when: 'TSLA crashes and ends 50% down: what is left of the pot after cover', back: '+567.50 USDG', result: 'loss −414.50', gain: false },
-    ],
-    net: 'The 85.50 gain is 67.50 of income, and 18.00 because you put in less than the 1,000 you get back. That is the pay for taking the crash risk.',
+    outcomes: {
+      crash: { back: '+567.50 USDG', result: 'loss −414.50', gain: false, more: 'TSLA was below the crash line at a weekly check and ends 50% below its first-day price. The fall, 500, goes to Protect. You get the rest of the pot: 500 for the half of its value TSLA kept, plus 67.50 of income.' },
+      none: { back: '+1,067.50 USDG', result: 'gain +85.50', gain: true, more: 'You get the whole pot: 1,000 plus 27 weeks of income at 2.50. The 85.50 gain is 67.50 of income, and 18.00 because you put in less than the 1,000 you get back.' },
+      early: { back: '+1,025.00 USDG', result: 'gain +43.00', gain: true, more: 'The note ends that day and you get 1,000 plus 10 weeks of income. The rest of the pot goes back to Protect. This can happen at any weekly check, even the first.' },
+    },
+    net: 'You are paid for taking the crash risk: up to 85.50 USDG.',
   },
 ]
 
@@ -81,7 +90,7 @@ export default function HowItWorks() {
         being covered plus 67.50 for 27 weeks of income at 2.50 a week. What the two sides then put in adds up to exactly
         that amount, and the weekly checks decide who gets how much of it back. USDG is a digital dollar.
       </p>
-      <div className="mt-6 grid gap-6 md:grid-cols-2">
+      <div className="mt-6 grid items-start gap-6 md:grid-cols-2">
         {SIDES.map(({ name, Icon, who, payLabel, pay, pays, outcomes, net }) => (
           <article key={name} aria-labelledby={`side-${name}`} className="panel flex flex-col rounded-lg p-5 sm:p-6">
             <div className="flex items-center gap-3">
@@ -95,21 +104,39 @@ export default function HowItWorks() {
               <span className="type-body text-ink-muted">{payLabel}</span>
               <span className="shrink-0 type-data text-ink">{pay}</span>
             </p>
-            <div className="mt-auto pt-4">
-              <div className="rounded-md bg-surface-well p-4">
-                <p className="type-label text-ink">{pays}</p>
-                <dl className="mt-2 divide-y divide-line">
-                  {outcomes.map(({ when, back, result, gain }) => (
-                    <div key={when} className="flex items-baseline justify-between gap-4 py-3">
-                      <dt className="type-body text-ink-muted">{when}</dt>
-                      <dd className="shrink-0 text-right">
-                        <span className="block type-data text-ink">{back}</span>
-                        <span className={`block type-label tabular-nums ${gain ? 'text-go' : 'text-abort'}`}>{result}</span>
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-                <p className="border-t border-line pt-3 type-label text-ink">{net}</p>
+            <div className="pt-4">
+              <div className="rounded-md bg-surface-well px-4 pt-4">
+                <p className="flex justify-between gap-4 pr-7 type-label text-ink-muted">
+                  <span>How it can end</span>
+                  <span>{pays}</span>
+                </p>
+                <ul className="mt-1 divide-y divide-line">
+                  {CASES.map(({ id, name: title, when, Icon: CaseIcon }) => {
+                    const { back, result, gain, more } = outcomes[id]
+                    return (
+                      <li key={id}>
+                        <details name={`cases-${name}`} className="group">
+                          <summary className="flex cursor-pointer list-none items-center gap-3 py-3 [&::-webkit-details-marker]:hidden">
+                            <CaseIcon size={24} aria-hidden="true" className="shrink-0 text-ink-muted" />
+                            <span className="flex min-w-0 flex-1 items-start justify-between gap-4">
+                              <span className="flex min-w-0 flex-col">
+                                <span className="type-data text-ink">{title}</span>
+                                <span className="type-caption text-ink-muted">{when}</span>
+                              </span>
+                              <span className="shrink-0 text-right">
+                                <span className="block type-data text-ink">{back}</span>
+                                <span className={`block type-label tabular-nums ${gain ? 'text-go' : 'text-abort'}`}>{result}</span>
+                              </span>
+                            </span>
+                            <CaretDown size={16} weight="bold" aria-hidden="true" className="shrink-0 text-ink-muted transition-transform duration-240 group-open:rotate-180" />
+                          </summary>
+                          <p className="pr-7 pb-3 pl-9 type-body text-ink-muted">{more}</p>
+                        </details>
+                      </li>
+                    )
+                  })}
+                </ul>
+                <p className="border-t border-line py-3 type-label text-ink">{net}</p>
               </div>
             </div>
           </article>

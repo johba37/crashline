@@ -12,7 +12,12 @@ import { useRef, useState, type Ref } from 'react'
 // contracts/src/interfaces/INoteSeries.sol (NOTE and WRITER are plain ERC-20s, one pair per note;
 // redeem pays whoever holds them; redeemPair swaps both for the locked USDG at any time) and
 // IDeskCover.sol (the Desk buys both back). What isn't built: docs/architecture.md rule [5] (no
-// price feed for lenders yet) and the README roadmap, M3. AIG's $182 billion: docs/pitch.md.
+// price feed for lenders yet) and the README roadmap, M3. Lending, as johba found on 2026-10-01:
+// a lender needs a price at all times and the model gives none on weekends, so neither token can
+// be collateral without a feed that quotes then; and a stock with its cover gives a lender nothing
+// at a 60% crash line, because pools already lend only about 60% of a stock's value (a line at 80%
+// would help, and would make cover far too expensive). So no claim that cover raises what you can
+// borrow. AIG's $182 billion: docs/pitch.md.
 
 type Lane = 'protect' | 'earn'
 type StepId = 'start' | 'pay' | 'desk' | 'get' | 'token' | 'use' | 'block' | 'hold' | 'payout'
@@ -173,7 +178,7 @@ const USES = [
     Icon: RoadHorizon,
     tone: 'text-info',
     items: [
-      { name: 'Borrow against it', who: 'The Earn token, or a stock with cover', text: 'A lender could accept the Earn token as collateral, the thing you pledge to get a loan. A stock held together with its cover could count for more than the stock alone, because the cover pays in a crash.' },
+      { name: 'Borrow against it', who: 'The Earn token', text: 'A lender could accept the Earn token as collateral, the thing you pledge to get a loan.' },
       { name: 'Bundle into a basket', who: 'The Earn token', text: 'An app could pack notes on different stocks and with different end dates into one token, to smooth out income and risk. Funds already do this with notes sold by banks.' },
       { name: 'Build on top', who: 'Both tokens', text: 'A shared fund could protect the stocks it holds, or a savings app could wrap the Earn token into a simpler product.' },
     ],
@@ -229,8 +234,8 @@ function Detail({
                 </div>
               ))}
               <p className="mt-4 type-caption text-ink-muted">
-                Lenders need a price feed made for them, which isn’t built yet. And a note can end early: then its cover
-                ends too.
+                A lender needs a price at every moment, weekends included. The model gives none on weekends, so this
+                takes a price feed of its own, which isn’t built yet.
               </p>
             </>
           )}
