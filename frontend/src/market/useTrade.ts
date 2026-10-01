@@ -7,16 +7,15 @@ import {
   waitForTransactionReceipt,
   writeContract,
 } from 'wagmi/actions'
-import { robinhoodTestnet } from 'wagmi/chains'
-import { config } from '../wagmi'
+import { chain, config } from '../wagmi'
 import { deskAbi } from './abi'
-import { deployment } from './deployments'
+import type { Deployment } from './deployments'
 import { decodeRefusal } from './errors'
 import type { SeriesView, TradeKind, TradeState } from './types'
 
 const BPS = 10_000n
 // Writes name the chain, so a wallet on another network fails instead of sending there.
-const chainId = robinhoodTestnet.id
+const chainId = chain.id
 
 const QUOTE = {
   buy: 'quoteBuy',
@@ -35,7 +34,7 @@ export type TradeParams = {
 }
 
 /** One Desk trade at a time: quote, approve if the allowance is short, trade. */
-export function useTrade(): {
+export function useTrade(deployment: Deployment | null): {
   state: TradeState
   run(p: TradeParams): Promise<void>
   reset(): void
@@ -111,7 +110,7 @@ export function useTrade(): {
     } catch (error) {
       set({ step: 'failed', hash, refusal: decodeRefusal(error) })
     }
-  }, [])
+  }, [deployment])
 
   const reset = useCallback(() => {
     current.current++

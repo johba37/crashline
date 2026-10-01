@@ -8,8 +8,9 @@ import {
   multicall3Abi,
   zeroAddress,
 } from 'viem'
-import { useReadContracts } from 'wagmi'
+import { useBlock, useReadContracts } from 'wagmi'
 import { robinhoodTestnet } from 'wagmi/chains'
+import { chain } from '../wagmi'
 import {
   aggregatorAbi,
   deskAbi,
@@ -18,7 +19,7 @@ import {
   seriesTokenAbi,
   surrogatePricerAbi,
 } from './abi'
-import { deployment } from './deployments'
+import type { Deployment } from './deployments'
 import { decodeRefusal } from './errors'
 import type { MarketData, ModelView, PricerInputs, Refusable, SeriesView } from './types'
 
@@ -46,12 +47,12 @@ type Base = Pick<
 >
 
 /** The Desk's listed series with quotes, feeds and models, read from the chain every 15 s. */
-export function useChainMarket(enabled: boolean): {
+export function useChainMarket(deployment: Deployment | null): {
   data: MarketData | undefined
   isLoading: boolean
   error: Error | null
 } {
-  const on = enabled && deployment !== null
+  const on = deployment !== null
   const desk = deployment?.desk ?? zeroAddress
 
   // Stage 1: the Desk.
@@ -114,6 +115,9 @@ export function useChainMarket(enabled: boolean): {
   })
   const quoteData = quoteQuery.data
   const readAt = quoteQuery.dataUpdatedAt
+  // The chain's own clock: the dev node's moves only with transactions and can be jumped forward.
+  const block = useBlock({ query: { enabled: on, refetchInterval: REFETCH_MS } })
+  const blockTime = block.data?.timestamp
 
   const data = useMemo((): MarketData | undefined => {
     if (!deskOk || !active || !quoteData) return undefined
@@ -143,10 +147,11 @@ export function useChainMarket(enabled: boolean): {
         maxCoverFeeBps: maxCoverFeeBps.result!,
         backstopShareBps: backstopShareBps.result!,
       },
-      // the block the quotes were read at (Multicall3 in the same batch), else the local clock then
-      now: timestamp !== undefined ? Number(timestamp) : Math.floor(readAt / 1000),
+      // the block the quotes were read at (Multicall3 in the same batch), else the latest block,
+      // else the local clock at the read
+      now: Number(timestamp ?? blockTime ?? Math.floor(readAt / 1000)),
     }
-  }, [active, desk, deskOk, deskReads, pricers, quoteData, readAt])
+  }, [active, blockTime, desk, deskOk, deskReads, pricers, quoteData, readAt])
 
   return {
     data: on ? data : undefined,
@@ -155,8 +160,9 @@ export function useChainMarket(enabled: boolean): {
   }
 }
 
+// Only where Multicall3 exists; on the dev node this read fails and the latest block's time is used.
 const blockTimestamp: ContractFunctionParameters = {
-  address: robinhoodTestnet.contracts.multicall3.address,
+  address: chain.id === robinhoodTestnet.id ? robinhoodTestnet.contracts.multicall3.address : zeroAddress,
   abi: multicall3Abi,
   functionName: 'getCurrentBlockTimestamp',
 }

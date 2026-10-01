@@ -112,14 +112,15 @@ export function trigger(s: SeriesView) {
 }
 
 /**
- * Worked example for the order summary, from the payout rules in INoteSeries: the stock hits
- * the crash line at a weekly check and ends exactly there. Cover pays the fall below the
- * starting price; NOTE gets the stock's share back plus every week's income.
+ * Worked example for the order summary, from the payout rules in INoteSeries: the crash line was
+ * hit at a weekly check and the stock ends at `end`. Cover pays the fall below the starting
+ * price; NOTE gets the stock's share back plus every week's income.
  */
-export function crashExample(s: SeriesView, amount: bigint) {
-  const ki = BigInt(s.terms.kiBarrierBps)
-  const income = BigInt(s.terms.couponBpsPerPeriod * (s.terms.observationCount + 1))
-  return { price: trigger(s).price, cover: (amount * (10_000n - ki)) / 10_000n, note: (amount * (ki + income)) / 10_000n }
+export function crashPayout(s: SeriesView, amount: bigint, end: bigint) {
+  const initial = s.state.initialFixing
+  const share = end < initial ? (amount * end) / initial : amount
+  const income = (amount * BigInt(s.terms.couponBpsPerPeriod * (s.terms.observationCount + 1))) / 10_000n
+  return { cover: amount - share, note: share + income }
 }
 
 /** What a NOTE pays at the end when nothing goes wrong: the amount plus every week's income. */

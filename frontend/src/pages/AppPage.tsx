@@ -16,6 +16,7 @@ import { date, pct, per100, trigger, usd } from '../market/format.ts'
 import type { SeriesView } from '../market/types.ts'
 import { useMarket } from '../market/useMarket.ts'
 import { useTrade } from '../market/useTrade.ts'
+import { API_URL } from '../wagmi.ts'
 
 const NAMES: Record<string, string> = { TSLA: 'Tesla' }
 
@@ -31,8 +32,8 @@ const cheapest = (notes: SeriesView[], pick: (s: SeriesView) => SeriesView['cove
  * closed details below, and every new word has an info icon.
  */
 export default function AppPage() {
-  const { data: market, isLoading, error } = useMarket()
-  const chainTrade = useTrade()
+  const { data: market, isLoading, error, deployment, unreachable } = useMarket()
+  const chainTrade = useTrade(deployment)
   const trade: Trade | undefined = market?.source === 'chain' ? chainTrade : undefined // example prices can't trade
   const [params, setParams] = useSearchParams()
   const set = (changes: Record<string, string>) => {
@@ -75,7 +76,11 @@ export default function AppPage() {
         </div>
 
         {market?.source === 'fixtures' && (
-          <Notice status={{ tone: 'info', icon: Info, label: 'Example prices', message: 'The contracts aren’t on the test network yet, so these notes and prices are examples and buying is switched off.' }} />
+          <Notice
+            status={unreachable
+              ? { tone: 'hold', icon: Info, label: 'Can’t reach the backend', message: `Nothing answers at ${API_URL} (${unreachable.message}). If it runs behind an SSH tunnel, start the tunnel: this page then switches over by itself. Until then you see example prices, and buying is switched off.` }
+              : { tone: 'info', icon: Info, label: 'Example prices', message: 'The contracts aren’t on the test network yet, so these notes and prices are examples and buying is switched off.' }}
+          />
         )}
         {error && <Notice status={{ tone: 'abort', icon: Info, label: 'Can’t read the market', message: error.message }} />}
         {isLoading && <p className="type-body text-ink-muted">Reading the market…</p>}

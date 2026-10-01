@@ -2,11 +2,11 @@ import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useState, type ReactNode } from 'react'
 import { zeroAddress, type Address } from 'viem'
 import { useAccount } from 'wagmi'
-import { robinhoodTestnet } from 'wagmi/chains'
 import {
-  addsToDesk, bestCase, coverRoom, crashExample, date, level, noteOnOffer, parseAmount, pct, tradeAmounts, usd, usdg,
+  addsToDesk, bestCase, coverRoom, crashPayout, date, level, noteOnOffer, parseAmount, pct, tradeAmounts, usd, usdg,
 } from '../../market/format.ts'
 import type { MarketData, SeriesView, TradeKind, TradeState } from '../../market/types.ts'
+import { chain } from '../../wagmi.ts'
 import InfoTip from '../Tooltip.tsx'
 import AmountField from './AmountField.tsx'
 import { GLOSSARY } from './glossary.ts'
@@ -74,9 +74,14 @@ export default function Order({ s, goal, market, trade }: { s: SeriesView; goal:
   const stop = blocker(s, kind, amount, market)
   const busy = !!trade && ['quoting', 'approving', 'trading'].includes(trade.state.step)
   const [label, busyLabel] = ACTION[kind]
-  const example = amount ? crashExample(s, amount) : null
   const start = usd(s.state.initialFixing)
   const trigger = usd(level(s.state.initialFixing, s.terms.kiBarrierBps))
+  // The worked example: the stock ends at its crash line, or, once that line is crossed, where it is today.
+  const hit = s.state.knockedIn
+  const today = hit && s.spot !== null && s.spot < s.state.initialFixing
+  const endPrice = today && s.spot !== null ? s.spot : level(s.state.initialFixing, s.terms.kiBarrierBps)
+  const endsAt = today ? `today’s ${usd(endPrice)}` : usd(endPrice)
+  const example = amount ? crashPayout(s, amount, endPrice) : null
   const token = goal === 'protect' ? 'cover' : 'NOTE'
 
   const submit = () => {
@@ -118,7 +123,29 @@ export default function Order({ s, goal, market, trade }: { s: SeriesView; goal:
 
         {amount && example && !selling && (
           <ul className="flex flex-col gap-3 border-t border-line pt-4">
-            {goal === 'protect' ? (
+            {hit && goal === 'protect' ? (
+              <>
+                <Outcome when={`If ${s.symbol} ends below ${start}`}>
+                  Its crash line is already crossed, so you get the fall: for example {usdg(example.cover)} USDG if it ends at{' '}
+                  {endsAt}, up to {usdg(amount)} USDG.
+                </Outcome>
+                <Outcome when={`If ${s.symbol} ends at ${start} or higher`}>You get nothing back at the end.</Outcome>
+                <Outcome when={<>If it <Term t="endsEarly" /></>}>
+                  {s.symbol} is back at {start} at a weekly check: you get {pct(s.terms.couponBpsPerPeriod)} for each week left.
+                </Outcome>
+              </>
+            ) : hit ? (
+              <>
+                <Outcome when={`If ${s.symbol} is back at ${start}`}>
+                  You get your {usdg(amount)} plus the weekly income: {usdg(bestCase(s, amount))} USDG if that’s on{' '}
+                  {date(s.state.maturity)}, a little less if the note <Term t="endsEarly" />.
+                </Outcome>
+                <Outcome when={`If ${s.symbol} ends below ${start}`}>
+                  Its crash line is already crossed, so you get back its share plus the income: for example{' '}
+                  {usdg(example.note)} USDG if it ends at {endsAt}.
+                </Outcome>
+              </>
+            ) : goal === 'protect' ? (
               <>
                 <Outcome when={`If ${s.symbol} crashes`}>
                   It’s below {trigger} at a weekly check and ends below {start}. You get the fall: for example{' '}
@@ -152,9 +179,14 @@ export default function Order({ s, goal, market, trade }: { s: SeriesView; goal:
       {trade?.state.step === 'failed' && trade.state.refusal && <Notice status={refusalStatus(trade.state.refusal)} />}
       {trade?.state.step === 'done' && trade.state.hash && (
         <Notice status={confirmed}>
-          <a href={`${robinhoodTestnet.blockExplorers.default.url}/tx/${trade.state.hash}`} target="_blank" rel="noreferrer" className="type-label text-ink underline">
-            See it on the block explorer
-          </a>
+          {chain.blockExplorers ? (
+            <a href={`${chain.blockExplorers.default.url}/tx/${trade.state.hash}`} target="_blank" rel="noreferrer" className="type-label text-ink underline">
+              See it on the block explorer
+            </a>
+          ) : (
+            // The dev node has no explorer: show the transaction's hash instead.
+            <span className="type-code break-all text-ink-muted">{trade.state.hash}</span>
+          )}
         </Notice>
       )}
 
