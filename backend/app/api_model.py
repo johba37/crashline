@@ -9,10 +9,14 @@ of the points (`current: true`), so that point reproduces /series/{addr}.mid.
 
 Verify: the teacher (ml/teacher.py, Monte Carlo) at the inputs of a Desk
 trade (or given inputs), next to the student and the price the trade paid.
-Runs in a subprocess (app/teacher_worker.py) with TEACHER_PYTHON; with
-TEACHER_DEVICE=cuda the torch backend with 2^18 paths, else numpy on the CPU
-with 2^16 paths. One run at a time (429 Busy otherwise), cached by
-(inputs, seed, paths, backend).
+The teacher config is the one the model was distilled from (TEACHER_OF_MODEL:
+model/k3 -> teacher v3, model/k2 -> the pinned v2, model/k1-r1 -> GBM).
+With a vol band the Desk priced the trade at one end of the band
+(Desk._sidePrice): the check uses the quote at that end and the teacher at
+that vol. Runs in a subprocess (app/teacher_worker.py) with TEACHER_PYTHON;
+with TEACHER_DEVICE=cuda the torch backend with 2^18 paths, else numpy on the
+CPU with 2^16 paths. One run at a time (429 Busy otherwise), cached by
+(inputs, teacher, seed, paths, backend).
 """
 
 from __future__ import annotations
@@ -39,6 +43,18 @@ TEACHER_SEED = int(os.environ.get("TEACHER_SEED", 20260930))
 WORKER = ROOT / "backend/app/teacher_worker.py"
 TRADE_EVENTS = {"NoteBought": "buy", "NoteSold": "sell", "CoverBought": "buyCover", "CoverSold": "sellCover"}
 FIELD_OF = {"spot": 0, "vol": 2, "weeks": 8}
+# model dir -> the teacher it was distilled from (app/teacher_worker.py); anything else: v2
+TEACHER_OF_MODEL = {"model/k3": "v3", "model/k2": "v2", "model/k1-r1": "gbm"}
+TEACHERS = ("v2", "v3", "gbm")
+# the student's certified error vs its teacher, rounded up (the check's allowance on top of 3 stdErr):
+# k2 max 18.7 bps outside the bands (docs/k2-round2.md, the 15 bps WP4 used), k3 max 38.0 on T3
+# (docs/k3-vol-input.md)
+MODEL_ERROR_BPS = {"model/k3": 40}
+DEFAULT_MODEL_ERROR_BPS = 15
+
+
+def teacher_of(model_dir: str | None) -> str:
+    return TEACHER_OF_MODEL.get(model_dir or "", "v2")
 
 
 def _named(values: list[int]) -> dict:
@@ -121,9 +137,9 @@ class Teacher:
         paths = int(os.environ.get("TEACHER_PATHS", 2**18 if device == "cuda" else 2**16))
         return device, paths
 
-    def run(self, values: list[int]) -> tuple[dict, bool, float]:
+    def run(self, values: list[int], teacher: str = "v2") -> tuple[dict, bool, float]:
         device, paths = self.setup()
-        key = (tuple(values), TEACHER_SEED, paths, device)
+        key = (tuple(values), teacher, TEACHER_SEED, paths, device)
         if key in self.cache:
             self.cache.move_to_end(key)
             return self.cache[key], True, 0.0
@@ -133,7 +149,7 @@ class Teacher:
             t0 = time.monotonic()
             f = dict(zip(("spot", "dist", "vol", "ki", "ac", "coupon", "ttm", "tNext", "obs"), values[:9]))
             f["knockedIn"] = values[9] & 1
-            req = {"features": f, "paths": paths, "seed": TEACHER_SEED, "device": device}
+            req = {"features": f, "paths": paths, "seed": TEACHER_SEED, "device": device, "teacher": teacher}
             p = subprocess.run([TEACHER_PYTHON, str(WORKER)], input=json.dumps(req), capture_output=True, text=True,
                                timeout=600, env=dict(os.environ, PYTHONDONTWRITEBYTECODE="1"))  # no ml/__pycache__
             if p.returncode != 0:
@@ -171,16 +187,34 @@ def _trade_from_tx(c: Ctx, tx_hash: str, series: str | None) -> dict:
     raise ApiError(404, "NoTradeInTx", {"txHash": tx_hash, "series": series})
 
 
-def _mid_of_trade(kind: str, price: int, spread: dict, max_bps: int) -> tuple[int, int]:
-    """(the NOTE quote the trade's price implies, the flat spread applied), IDeskCover's
-    formulas with a zero vol band: ask = mid + askBps, bid = mid - bidBps, cover = maxBps - NOTE."""
-    if kind == "buy":
-        return price - spread["askBps"], spread["askBps"]
-    if kind == "sell":
-        return price + spread["bidBps"], spread["bidBps"]
-    if kind == "buyCover":
-        return max_bps - price + spread["bidBps"], spread["bidBps"]
-    return max_bps - price - spread["askBps"], spread["askBps"]
+def _band_quotes(c: Ctx, series: str, lst: dict, spread: dict, block: int) -> list[dict]:
+    """The quoter's NOTE quote and inputs at each vol the Desk asks the model (Desk._sidePrice):
+    the listing's vol minus and plus the band, or the vol itself while the band is 0."""
+    band = spread["volBandBps"]
+    vols = [lst["volBpsAnnual"] - band, lst["volBpsAnnual"] + band] if band else [lst["volBpsAnnual"]]
+    out = []
+    for v in vols:
+        try:
+            note = c.quoter.call("notePriceBps", series, lst["pricer"], v, block=block)[0]
+            inputs = c.quoter.call("inputs", series, v, block=block)
+        except Revert as e:
+            raise ApiError(409, e.name, e.args_json()) from None
+        out.append({"volBps": v, "noteBps": note, "values": [inputs[k] for k in FIELD_NAMES]})
+    return out
+
+
+def _price_of_trade(kind: str, quotes: list[dict], spread: dict, max_bps: int) -> tuple[dict, int, int]:
+    """(the band end the Desk used, the flat spread applied, the price IDeskCover's formulas give).
+    lo / hi are the lower and the higher NOTE quote, capped at maxBps:
+      NOTE ask = min(hi + askBps, maxBps)   buy;   cover bid = maxBps - NOTE ask   sellCover
+      NOTE bid = max(lo - bidBps, 0)        sell;  cover ask = maxBps - NOTE bid   buyCover"""
+    lo = min(quotes, key=lambda q: (q["noteBps"], q["volBps"]))
+    hi = max(quotes, key=lambda q: (q["noteBps"], -q["volBps"]))
+    if kind in ("buy", "sellCover"):
+        note = min(min(hi["noteBps"], max_bps) + spread["askBps"], max_bps)
+        return hi, spread["askBps"], note if kind == "buy" else max_bps - note
+    note = max(min(lo["noteBps"], max_bps) - spread["bidBps"], 0)
+    return lo, spread["bidBps"], note if kind == "sell" else max_bps - note
 
 
 @router.post("/verify-quote")
@@ -196,18 +230,19 @@ def verify_quote(body: dict = Body(...)):
         r = c.series_row(tr["series"])
         b = tr["block"]
         lst = c.desk.call("listing", tr["series"], block=b)
-        try:
-            now = c.quoter.call("inputs", tr["series"], lst["volBpsAnnual"], block=b)
-        except Revert as e:
-            raise ApiError(409, e.name, e.args_json()) from None
-        values = [now[k] for k in FIELD_NAMES]
         spread = c.desk.call("spread", tr["series"], block=b)
         max_bps = 10_000 + r["coupon"] * (r["count"] + 1)
-        mid, spread_bps = _mid_of_trade(tr["kind"], tr["priceBps"], spread, max_bps)
+        quotes = _band_quotes(c, tr["series"], lst, spread, b)
+        used, spread_bps, expected = _price_of_trade(tr["kind"], quotes, spread, max_bps)
+        values = used["values"]  # the model's inputs at the band end the Desk priced at
         accrued = _accrued(r, c.chain.block(b)["time"])
         weights = tr["weightsHash"]
         on_chain = {"priceBps": tr["priceBps"], "weightsHash": weights, "kind": tr["kind"], "series": tr["series"],
-                    "txHash": tr["txHash"], "block": b, "spreadBps": spread_bps, "midBps": mid}
+                    "txHash": tr["txHash"], "block": b, "spreadBps": spread_bps, "midBps": used["noteBps"],
+                    "volBpsAnnual": lst["volBpsAnnual"], "volBandBps": spread["volBandBps"],
+                    "quoteVolBps": used["volBps"],
+                    "bandQuotes": [{"volBps": q["volBps"], "noteBps": q["noteBps"]} for q in quotes],
+                    "expectedPriceBps": expected, "priceMatches": expected == tr["priceBps"]}
     elif isinstance(body.get("inputs"), dict):
         try:
             values = _values(body["inputs"])
@@ -218,8 +253,11 @@ def verify_quote(body: dict = Body(...)):
     else:
         raise ApiError(400, "BadRequest", {"expected": "{series, txHash} or {inputs}"})
 
-    export = model_exports().get(weights, (None, None))[1]
-    student = {"priceBps": None, "quoteBps": None, "weightsHash": weights}
+    model_dir, export = model_exports().get(weights, (None, None))
+    teacher_name = body.get("teacher") or teacher_of(model_dir)
+    if teacher_name not in TEACHERS:
+        raise ApiError(400, "BadTeacher", {"teacher": teacher_name, "expected": list(TEACHERS)})
+    student = {"priceBps": None, "quoteBps": None, "weightsHash": weights, "model": model_dir}
     if export is None:
         student["error"] = {"error": "UnknownModel", "args": {"weightsHash": weights}}
     else:
@@ -230,16 +268,18 @@ def verify_quote(body: dict = Body(...)):
             student["priceBps"] = forward(export, values)
             student["quoteBps"] = student["priceBps"] + accrued
     try:
-        teacher, cached, secs = TEACHER.run(values)
+        teacher, cached, secs = TEACHER.run(values, teacher_name)
     except subprocess.TimeoutExpired:
         raise ApiError(504, "TeacherTimeout", {}) from None
     teacher = dict(teacher, quoteBps=teacher["priceBps"] + accrued)
     check = None
     if on_chain:
-        tol = 3 * teacher["stdErrBps"] + 15
+        model_err = MODEL_ERROR_BPS.get(model_dir or "", DEFAULT_MODEL_ERROR_BPS)
+        tol = 3 * teacher["stdErrBps"] + model_err
         diff = on_chain["midBps"] - teacher["quoteBps"]
         check = {"onChainMidBps": on_chain["midBps"], "teacherQuoteBps": teacher["quoteBps"], "diffBps": diff,
-                 "toleranceBps": tol, "within": abs(diff) <= tol}
+                 "toleranceBps": tol, "modelErrorBps": model_err, "within": abs(diff) <= tol,
+                 "priceMatches": on_chain["priceMatches"]}
     return c.out({"inputs": _named(values), "accruedBps": accrued, "onChain": on_chain, "student": student,
                   "teacher": teacher, "check": check, "cached": cached, "teacherSecs": secs,
                   "secs": time.monotonic() - t0})

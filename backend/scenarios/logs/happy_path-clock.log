@@ -1,0 +1,209 @@
+happy path, mode CLOCK, started 2026-10-01 06:27:23 UTC
+
+== a. fresh chain on sp-happy (http://127.0.0.1:8847), image sp-nitro-node:v3.11.4-7d5ac27-clock  [06:27:23]
+   removed sp-happy and its volume sp-happy-data
+   created sp-happy (sp-nitro-node:v3.11.4-7d5ac27-clock) on http://127.0.0.1:8847, data in volume sp-happy-data
+   DEV ONLY clock: offset file /tmp/dev-test/clock-offset, move time with backend/devnode/clock.sh
+   chain 412346 at block 1, sequencing ok
+   1. Stylus pricer (deployer 0xa4b998f1eb0f06849cbbe18a39626532ee2c9f34)
+   pricer 0x63d666e9e02bd0f6c0d7eea108cca46ddf8fcdf1
+   usdg             0x3dfe764b81f1d8ff72ed32aa61a29204c2661713
+   desk             0x185ec5f9782942429ed3f5a717ac9a8717f79f37
+   4-5. default scenario, listed at vol 5500 +- 200, spread 20/30
+   done in 12 s
+   backend on :8850, model model/k3 0x745cd5f814984c94…, teacher device cuda
+   /demo/faucet: LP 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 +50,000.000000 USDG -> 150,000.000000
+   baseline: USDG supply 450,000.000000, all of it in 7 tracked accounts
+   LP deposits 50,000.000000 USDG: 50,000.000000 shares; vault totalAssets 150,000.000000, share price 1.000000000000 (house LP: the dev account's 100,000.000000)
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 1 series (min slack 0 base units), Desk >= reserve
+
+== b. two weekly series, same product and strike: A stays above the knock-in, B knocked in  [06:27:44]
+   series A 0x20440e4fcb36dcf8495940b55582948f2b8d5124 on HAPPY-A 0x0702aa6ec5fbc66a4ccddaaa9b29cb667f6528e3: strike 2026-07-19, initial 250.00, 10 done, knockedIn False, spot 8800 bps; listed vol 4200 +- 300, spread 25/35
+   series B 0xc4ec189873014b52749b6ccb011a961130e8b747 on HAPPY-B 0x9e607dbb3e6d7458b7570d1b2f6ceb96e597acc2: strike 2026-07-19, initial 250.00, 10 done, knockedIn True, spot 8000 bps; listed vol 4200 +- 300, spread 25/35
+   A /series: mid NOTE 10242 / cover 433 bps; NOTE bid/ask 10117/10378, cover bid/ask 297/558 (maxBps 10675)
+   B /series: mid NOTE 8619 / cover 2056 bps; NOTE bid/ask 8572/8681, cover bid/ask 1994/2103 (maxBps 10675)
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 3 series (min slack 0 base units), Desk >= reserve
+
+== c. mid-life trades at 16 observations to go (the sell comes later)  [06:28:00]
+   A /series: mid NOTE 10242 / cover 433 bps; NOTE bid/ask 10117/10378, cover bid/ask 297/558 (maxBps 10675)
+   buy 10,000.000000 by buyer: 10378 bps, 10,388.000000 USDG (paid, fee 10 bps, integrator +5.000000), Desk -292.000000
+     band quotes 10343@3900, 10142@4500 -> priced at vol 3900: NOTE quote 10343 + 35; formula 10378 == 10378
+     student 10343 (clean 10079 + accrued 264) vs teacher v3 (merton-tsla-share-2016-2026, torch, 262144 paths) 10338.2 +- 1.89: diff +4.8 bps, tolerance 45.7 -> OK; observationsRemaining 16
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 3 series (min slack 0 base units), Desk >= reserve
+   B /series: mid NOTE 8619 / cover 2056 bps; NOTE bid/ask 8572/8681, cover bid/ask 1994/2103 (maxBps 10675)
+   buy 10,000.000000 by buyer: 8681 bps, 8,691.000000 USDG (paid, fee 10 bps, integrator +5.000000), Desk -1,989.000000
+     band quotes 8646@3900, 8597@4500 -> priced at vol 3900: NOTE quote 8646 + 35; formula 8681 == 8681
+     student 8646 (clean 8382 + accrued 264) vs teacher v3 (merton-tsla-share-2016-2026, torch, 262144 paths) 8648.5 +- 0.77: diff -2.5 bps, tolerance 42.3 -> OK; observationsRemaining 16
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 3 series (min slack 0 base units), Desk >= reserve
+   A /series: mid NOTE 10242 / cover 433 bps; NOTE bid/ask 10117/10378, cover bid/ask 297/558 (maxBps 10675)
+   risk room on HAPPY-A: 37,119.000000 USDG (quotes don't check it)
+   buyCover 12,000.000000 by hedger: 558 bps, 682.992000 USDG (paid, fee 200 bps, integrator +6.696000), Desk -1,458.704000
+     band quotes 10343@3900, 10142@4500 -> priced at vol 4500: NOTE quote 10142 - 25; formula 558 == 558
+     student 10142 (clean 9878 + accrued 264) vs teacher v3 (merton-tsla-share-2016-2026, torch, 262144 paths) 10150.4 +- 2.38: diff -8.4 bps, tolerance 47.2 -> OK; observationsRemaining 16
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 3 series (min slack 0 base units), Desk >= reserve
+   B /series: mid NOTE 8619 / cover 2056 bps; NOTE bid/ask 8572/8681, cover bid/ask 1994/2103 (maxBps 10675)
+   risk room on HAPPY-B: 35,535.174000 USDG (quotes don't check it)
+   buyCover 12,000.000000 by hedger: 2103 bps, 2,574.072000 USDG (paid, fee 200 bps, integrator +25.236000), Desk 413.836000
+     band quotes 8646@3900, 8597@4500 -> priced at vol 4500: NOTE quote 8597 - 25; formula 2103 == 2103
+     student 8597 (clean 8333 + accrued 264) vs teacher v3 (merton-tsla-share-2016-2026, torch, 262144 paths) 8598.7 +- 1.01: diff -1.7 bps, tolerance 43.0 -> OK; observationsRemaining 16
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 3 series (min slack 0 base units), Desk >= reserve
+   /accounts buyer A: NOTE 10,000.000000, cost basis 10,388.000000, mark 10,242.000000, realized 0.000000
+   /accounts buyer B: NOTE 10,000.000000, cost basis 8,691.000000, mark 8,619.000000, realized 0.000000
+
+== d. the dev clock through every observation to maturity, /demo/fixing for each  [06:28:18]
+   offset:           0 -> 259172 s
+   latest timestamp: 1790836098 (2026-10-01 06:28:18 UTC) -> 1791095270 (2026-10-04 06:27:50 UTC), +259172 s
+   observation 11: chain time 1791095270 (2026-10-04 06:27 UTC)
+   A: fixing 8600 bps at 1791095264 -> obs done 11, knockedIn False, phase Live
+   B: fixing 7900 bps at 1791095264 -> obs done 11, knockedIn True, phase Live
+   offset:           259172 -> 863968 s
+   latest timestamp: 1791095274 (2026-10-04 06:27:54 UTC) -> 1791700071 (2026-10-11 06:27:51 UTC), +604797 s
+   observation 12: chain time 1791700071 (2026-10-11 06:27 UTC)
+   LP queues 12,500.000000 shares (25%): /vault queuedShares 12,500.000000, navError FixingPending
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 3 series (min slack 0 base units), Desk >= reserve
+   A: fixing 8200 bps at 1791700064 -> obs done 12, knockedIn False, phase Live
+   B: fixing 7500 bps at 1791700064 -> obs done 12, knockedIn True, phase Live
+   processQueue + claim: LP gets 12,527.877666 USDG for its queued shares
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 3 series (min slack 0 base units), Desk >= reserve
+   offset:           863968 -> 1468761 s
+   latest timestamp: 1791700077 (2026-10-11 06:27:57 UTC) -> 1792304870 (2026-10-18 06:27:50 UTC), +604793 s
+   observation 13: chain time 1792304870 (2026-10-18 06:27 UTC)
+   A: fixing 7900 bps at 1792304864 -> obs done 13, knockedIn False, phase Live
+   B: fixing 7200 bps at 1792304864 -> obs done 13, knockedIn True, phase Live
+   offset:           1468761 -> 2073557 s
+   latest timestamp: 1792304874 (2026-10-18 06:27:54 UTC) -> 1792909670 (2026-10-25 06:27:50 UTC), +604796 s
+   observation 14: chain time 1792909670 (2026-10-25 06:27 UTC)
+   A: fixing 8400 bps at 1792909664 -> obs done 14, knockedIn False, phase Live
+   B: fixing 7600 bps at 1792909664 -> obs done 14, knockedIn True, phase Live
+   mid-life sell, 12 observations to go
+   A /series: mid NOTE 10305 / cover 370 bps; NOTE bid/ask 10190/10426, cover bid/ask 249/485 (maxBps 10675)
+   sell 4,000.000000 by buyer: 10190 bps, 4,072.000000 USDG (received, fee 10 bps, integrator +2.000000), Desk -4,074.000000
+     band quotes 10391@3900, 10215@4500 -> priced at vol 4500: NOTE quote 10215 - 25; formula 10190 == 10190
+     student 10215 (clean 9865 + accrued 350) vs teacher v3 (merton-tsla-share-2016-2026, torch, 262144 paths) 10223.1 +- 2.38: diff -8.1 bps, tolerance 47.2 -> OK; observationsRemaining 12
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 3 series (min slack 0 base units), Desk >= reserve
+   B /series: mid NOTE 8281 / cover 2394 bps; NOTE bid/ask 8241/8336, cover bid/ask 2339/2434 (maxBps 10675)
+   sell 4,000.000000 by buyer: 8241 bps, 3,292.400000 USDG (received, fee 10 bps, integrator +2.000000), Desk -3,294.400000
+     band quotes 8301@3900, 8266@4500 -> priced at vol 4500: NOTE quote 8266 - 25; formula 8241 == 8241
+     student 8266 (clean 7916 + accrued 350) vs teacher v3 (merton-tsla-share-2016-2026, torch, 262144 paths) 8269.2 +- 0.56: diff -3.2 bps, tolerance 41.7 -> OK; observationsRemaining 12
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 3 series (min slack 0 base units), Desk >= reserve
+   offset:           2073557 -> 2678344 s
+   latest timestamp: 1792909683 (2026-10-25 06:28:03 UTC) -> 1793514471 (2026-11-01 06:27:51 UTC), +604788 s
+   observation 15: chain time 1793514471 (2026-11-01 06:27 UTC)
+   A: fixing 8800 bps at 1793514464 -> obs done 15, knockedIn False, phase Live
+   B: fixing 8100 bps at 1793514464 -> obs done 15, knockedIn True, phase Live
+   offset:           2678344 -> 3283139 s
+   latest timestamp: 1793514475 (2026-11-01 06:27:55 UTC) -> 1794119270 (2026-11-08 06:27:50 UTC), +604795 s
+   observation 16: chain time 1794119270 (2026-11-08 06:27 UTC)
+   A: fixing 9300 bps at 1794119264 -> obs done 16, knockedIn False, phase Live
+   B: fixing 7800 bps at 1794119264 -> obs done 16, knockedIn True, phase Live
+   offset:           3283139 -> 3887935 s
+   latest timestamp: 1794119274 (2026-11-08 06:27:54 UTC) -> 1794724070 (2026-11-15 06:27:50 UTC), +604796 s
+   observation 17: chain time 1794724070 (2026-11-15 06:27 UTC)
+   A: fixing 8900 bps at 1794724064 -> obs done 17, knockedIn False, phase Live
+   B: fixing 7300 bps at 1794724064 -> obs done 17, knockedIn True, phase Live
+   offset:           3887935 -> 4492731 s
+   latest timestamp: 1794724074 (2026-11-15 06:27:54 UTC) -> 1795328870 (2026-11-22 06:27:50 UTC), +604796 s
+   observation 18: chain time 1795328870 (2026-11-22 06:27 UTC)
+   A: fixing 8500 bps at 1795328864 -> obs done 18, knockedIn False, phase Live
+   B: fixing 6900 bps at 1795328864 -> obs done 18, knockedIn True, phase Live
+   offset:           4492731 -> 5097527 s
+   latest timestamp: 1795328874 (2026-11-22 06:27:54 UTC) -> 1795933670 (2026-11-29 06:27:50 UTC), +604796 s
+   observation 19: chain time 1795933671 (2026-11-29 06:27 UTC)
+   A: fixing 8000 bps at 1795933664 -> obs done 19, knockedIn False, phase Live
+   B: fixing 7200 bps at 1795933664 -> obs done 19, knockedIn True, phase Live
+   offset:           5097527 -> 5702323 s
+   latest timestamp: 1795933674 (2026-11-29 06:27:54 UTC) -> 1796538471 (2026-12-06 06:27:51 UTC), +604797 s
+   observation 20: chain time 1796538471 (2026-12-06 06:27 UTC)
+   A: fixing 7600 bps at 1796538464 -> obs done 20, knockedIn False, phase Live
+   B: fixing 7500 bps at 1796538464 -> obs done 20, knockedIn True, phase Live
+   offset:           5702323 -> 6307119 s
+   latest timestamp: 1796538474 (2026-12-06 06:27:54 UTC) -> 1797143271 (2026-12-13 06:27:51 UTC), +604797 s
+   observation 21: chain time 1797143271 (2026-12-13 06:27 UTC)
+   A: fixing 8100 bps at 1797143264 -> obs done 21, knockedIn False, phase Live
+   B: fixing 7700 bps at 1797143264 -> obs done 21, knockedIn True, phase Live
+   offset:           6307119 -> 6911915 s
+   latest timestamp: 1797143274 (2026-12-13 06:27:54 UTC) -> 1797748071 (2026-12-20 06:27:51 UTC), +604797 s
+   observation 22: chain time 1797748071 (2026-12-20 06:27 UTC)
+   A: fixing 8700 bps at 1797748064 -> obs done 22, knockedIn False, phase Live
+   B: fixing 7400 bps at 1797748064 -> obs done 22, knockedIn True, phase Live
+   offset:           6911915 -> 7516710 s
+   latest timestamp: 1797748075 (2026-12-20 06:27:55 UTC) -> 1798352870 (2026-12-27 06:27:50 UTC), +604795 s
+   observation 23: chain time 1798352870 (2026-12-27 06:27 UTC)
+   A: fixing 9200 bps at 1798352864 -> obs done 23, knockedIn False, phase Live
+   B: fixing 7900 bps at 1798352864 -> obs done 23, knockedIn True, phase Live
+   offset:           7516710 -> 8121506 s
+   latest timestamp: 1798352874 (2026-12-27 06:27:54 UTC) -> 1798957670 (2027-01-03 06:27:50 UTC), +604796 s
+   observation 24: chain time 1798957670 (2027-01-03 06:27 UTC)
+   A: fixing 9000 bps at 1798957664 -> obs done 24, knockedIn False, phase Live
+   B: fixing 8100 bps at 1798957664 -> obs done 24, knockedIn True, phase Live
+   offset:           8121506 -> 8726302 s
+   latest timestamp: 1798957674 (2027-01-03 06:27:54 UTC) -> 1799562470 (2027-01-10 06:27:50 UTC), +604796 s
+   observation 25: chain time 1799562470 (2027-01-10 06:27 UTC)
+   A: fixing 8800 bps at 1799562464 -> obs done 25, knockedIn False, phase Live
+   B: fixing 7600 bps at 1799562464 -> obs done 25, knockedIn True, phase Live
+   offset:           8726302 -> 9331098 s
+   latest timestamp: 1799562474 (2027-01-10 06:27:54 UTC) -> 1800167270 (2027-01-17 06:27:50 UTC), +604796 s
+   observation 26: chain time 1800167270 (2027-01-17 06:27 UTC)
+   A: fixing 9100 bps at 1800167264 -> obs done 26, knockedIn False, phase Live
+   B: fixing 7700 bps at 1800167264 -> obs done 26, knockedIn True, phase Live
+   offset:           9331098 -> 9935894 s
+   latest timestamp: 1800167274 (2027-01-17 06:27:54 UTC) -> 1800772070 (2027-01-24 06:27:50 UTC), +604796 s
+   observation maturity: chain time 1800772070 (2027-01-24 06:27 UTC)
+   A: fixing 9200 bps at 1800772064 -> obs done 26, knockedIn False, phase Settled, payoutPerNote 1.067500
+   B: fixing 7800 bps at 1800772064 -> obs done 26, knockedIn True, phase Settled, payoutPerNote 0.847500
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 3 series (min slack 0 base units), Desk >= reserve
+
+== e. settlement: NOTE and WRITER holders redeem, the Desk collects, the LP leaves  [06:29:40]
+   A: Settled True, autocalled False, knockedIn False, payoutPerNote 1.067500 (independent payoff 1.067500), WRITER 0.000000
+   B: Settled True, autocalled False, knockedIn True, payoutPerNote 0.847500 (independent payoff 0.847500), WRITER 0.220000
+   A: buyer redeems NOTE 6,000.000000 + WRITER 0.000000 for 6,405.000000 USDG
+   A: hedger redeems NOTE 0.000000 + WRITER 12,000.000000 for 0.000000 USDG
+   A: Desk collects NOTE 6,000.000000 + WRITER 0.000000 for 6,405.000000 USDG
+   A: escrow left 0 base units
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 3 series (min slack 0 base units), Desk >= reserve
+   B: buyer redeems NOTE 6,000.000000 + WRITER 0.000000 for 5,085.000000 USDG
+   B: hedger redeems NOTE 0.000000 + WRITER 12,000.000000 for 2,640.000000 USDG
+   B: Desk collects NOTE 6,000.000000 + WRITER 0.000000 for 5,085.000000 USDG
+   B: escrow left 0 base units
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 3 series (min slack 0 base units), Desk >= reserve
+   LP redeems its other 37,500.000000 shares: LP P&L 237.292484 USDG on 50,000.000000; house LP 100,000.000000 -> 100,558.439515; vault 100,558.439516, share price 1.005584395159
+   check: USDG conserved (sum of deltas 0, supply 450,000.000000), escrow >= claims for 3 series (min slack 0 base units), Desk >= reserve
+
+== f. A vs B  [06:29:42]
+                                                A (no knock-in)         B (knocked in)
+trade 1: buy 10,000                                   10378 bps               8681 bps
+  before: NOTE bid/ask                              10117/10378              8572/8681
+  before: cover bid/ask                                 297/558              1994/2103
+  observations to go / vol used                       16 / 3900              16 / 3900
+  model vs teacher v3 (bps)                    10343 vs 10338.2         8646 vs 8648.5
+  diff / tolerance                                  +4.8 / 45.7            -2.5 / 42.3
+  USDG                                            10,388.000000           8,691.000000
+trade 2: buyCover 12,000                                558 bps               2103 bps
+  before: NOTE bid/ask                              10117/10378              8572/8681
+  before: cover bid/ask                                 297/558              1994/2103
+  observations to go / vol used                       16 / 4500              16 / 4500
+  model vs teacher v3 (bps)                    10142 vs 10150.4         8597 vs 8598.7
+  diff / tolerance                                  -8.4 / 47.2            -1.7 / 43.0
+  USDG                                               682.992000           2,574.072000
+trade 3: sell 4,000                                   10190 bps               8241 bps
+  before: NOTE bid/ask                              10190/10426              8241/8336
+  before: cover bid/ask                                 249/485              2339/2434
+  observations to go / vol used                       12 / 4500              12 / 4500
+  model vs teacher v3 (bps)                    10215 vs 10223.1         8266 vs 8269.2
+  diff / tolerance                                  -8.1 / 47.2            -3.2 / 41.7
+  USDG                                             4,072.000000           3,292.400000
+payoutPerNote (NOTE)                                   1.067500               0.847500
+payoutPerWriter (WRITER)                               0.000000               0.220000
+buyer: NOTE redeemed for                           6,405.000000           5,085.000000
+hedger: WRITER redeemed for                            0.000000           2,640.000000
+Desk: collected                                    6,405.000000           5,085.000000
+buyer P&L (all trades + redeem)                       89.000000            -313.600000
+hedger P&L (premium + redeem)                       -682.992000              65.928000
+Desk P&L (trades + collect)                          580.296000             215.436000
+LP: deposited 50,000.000000, P&L 237.292484; house LP 100,000.000000 -> 100,558.439515 (558.439515)
+integrator fees received: 45.932000
+Desk P&L A + B 795.732000 = LPs' gain 795.731999 (LP + house), difference 1 base units (share rounding)
+buyer + hedger + Desk + integrator + escrow dust (0) over A and B: 0 base units
+
+HAPPY PATH PASS (clock): 14 invariant checks, 6 trades verified against teacher v3, 139 s
+log: /opt/ai/sp-worktrees/k3-happy/backend/scenarios/logs/happy_path-clock.log

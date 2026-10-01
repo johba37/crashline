@@ -2,8 +2,9 @@
 
 Acceptance: curve?vs=spot at the series' current inputs reproduces
 /series/{addr}.mid bit-exactly at the current spot point; /verify-quote on the
-e2e buy tx returns a teacher price within 3 stdErr + 15 bps of the on-chain
-priceBps minus the spread.
+e2e buy tx returns a teacher price (the model's own teacher: v3 for model/k3,
+v2 for model/k2) within 3 stdErr + the model's error allowance (k3 40, k2 15 bps)
+of the on-chain quote at the band end the Desk priced at.
 """
 
 from __future__ import annotations
@@ -18,8 +19,8 @@ from pathlib import Path
 import pytest
 
 from conftest import Service
-from helpers import USDG, buy, default_series, unique
-from app.api_model import TEACHER_PYTHON
+from helpers import USDG, buy, default_series, sell, unique
+from app.api_model import MODEL_ERROR_BPS, TEACHER_PYTHON
 from app.chain import address_of
 from app.student import FIELD_NAMES
 from devnode import deploy as dp
@@ -61,8 +62,11 @@ def test_curve_vol_and_weeks(service, chain, cfg):
     service.synced(chain)
     o, vol, weeks = same_block(service, f"/series/{s0}", f"/series/{s0}/curve?vs=vol",
                                f"/series/{s0}/curve?vs=weeks&n=26")
-    assert [p["x"] for p in vol["points"]] == [5500]  # K2 is vol-pinned
-    assert vol["points"][0]["current"] and vol["points"][0]["noteBps"] == o["mid"]["noteBps"]
+    lo, hi = chain.at("pricer", cfg["addresses"]["surrogatePricer"]).call("certifiedRange", 2)
+    xs = [p["x"] for p in vol["points"]]
+    assert xs[0] == lo and xs[-1] == hi and 5500 in xs  # K2 is vol-pinned: [5500]; K3: 2000..9000
+    cur = next(p for p in vol["points"] if p["current"])
+    assert cur["x"] == 5500 and cur["noteBps"] == o["mid"]["noteBps"]
     xs = [p["x"] for p in weeks["points"]]
     assert xs == list(range(1, 27))
     cur = next(p for p in weeks["points"] if p["current"])
@@ -98,6 +102,11 @@ def test_curve_marks_the_excluded_bands(service, chain, cfg):
     assert r.status_code == 409 and r.json()["error"] == "FeedStale"
 
 
+def _teacher_config_name(cfg) -> str:
+    f = "teacher_config_v3.json" if cfg["modelDir"] == "model/k3" else "teacher_config.json"
+    return json.loads((Path(__file__).parents[2] / "ml" / f).read_text())["name"]
+
+
 def test_verify_quote_on_the_e2e_buy(service, chain, cfg, keys):
     s0 = default_series(chain, cfg)
     b = buy(chain, cfg, keys["buyer"], s0, 10_000 * USDG, fee_bps=20, fee_to=address_of(keys["dev"]))
@@ -107,17 +116,45 @@ def test_verify_quote_on_the_e2e_buy(service, chain, cfg, keys):
     v = r.json()
     oc, t, st = v["onChain"], v["teacher"], v["student"]
     assert oc["kind"] == "buy" and oc["priceBps"] == b["quote"][1] and oc["spreadBps"] == 30
+    assert oc["priceMatches"] and oc["expectedPriceBps"] == oc["priceBps"]
     assert t["paths"] == 2**16 and t["backend"] == "numpy" and "note" in t and t["seed"] == v["teacher"]["seed"]
-    assert t["config"] == json.loads((Path(__file__).parents[2] / "ml/teacher_config.json").read_text())["name"]
-    # the acceptance: teacher within 3 stdErr + 15 bps of the on-chain price minus the spread
-    assert abs((oc["priceBps"] - oc["spreadBps"]) - t["quoteBps"]) <= 3 * t["stdErrBps"] + 15
+    assert t["config"] == _teacher_config_name(cfg)
+    # the acceptance: teacher within 3 stdErr + the model's allowance of the price minus the spread
+    allowance = MODEL_ERROR_BPS.get(cfg["modelDir"], 15)
+    assert v["check"]["toleranceBps"] == 3 * t["stdErrBps"] + allowance
+    assert abs((oc["priceBps"] - oc["spreadBps"]) - t["quoteBps"]) <= 3 * t["stdErrBps"] + allowance
     assert v["check"]["within"] is True
-    # the student is the contract: its quote is the on-chain mid exactly
+    # the student is the contract: its quote is the on-chain quote at the band end the buy used (the higher)
     assert st["quoteBps"] == oc["midBps"] == oc["priceBps"] - 30
+    assert oc["midBps"] == max(q["noteBps"] for q in oc["bandQuotes"])
+    assert v["inputs"]["volBpsAnnual"] == oc["quoteVolBps"]
     assert st["weightsHash"] == oc["weightsHash"]
     # cached on the second call
     v2 = service.client.post("/verify-quote", json={"series": s0, "txHash": b["tx"]}).json()
     assert v2["cached"] is True and v2["teacher"] == v["teacher"]
+
+
+def test_verify_quote_band_ends(service, chain, cfg, keys):
+    """With a vol band a buy is priced at the higher of the two quotes and a sell at the
+    lower; the teacher runs at the vol of that end."""
+    s0 = default_series(chain, cfg)
+    band = chain.at("desk", cfg["addresses"]["desk"]).call("spread", s0)["volBandBps"]
+    if band == 0:
+        pytest.skip("the default listing has no vol band (model/k2)")
+    b = buy(chain, cfg, keys["buyer"], s0, 500 * USDG)
+    sl = sell(chain, cfg, keys["buyer"], s0, 200 * USDG)
+    service.synced(chain)
+    vb = service.client.post("/verify-quote", json={"series": s0, "txHash": b["tx"]}).json()
+    vs = service.client.post("/verify-quote", json={"series": s0, "txHash": sl["tx"]}).json()
+    for v, pick, kind in ((vb, max, "buy"), (vs, min, "sell")):
+        oc = v["onChain"]
+        assert oc["kind"] == kind and oc["volBandBps"] == band and oc["priceMatches"]
+        assert sorted(q["volBps"] for q in oc["bandQuotes"]) == [5500 - band, 5500 + band]
+        used = pick(oc["bandQuotes"], key=lambda q: q["noteBps"])
+        assert oc["midBps"] == used["noteBps"] and oc["quoteVolBps"] == used["volBps"]
+        assert v["inputs"]["volBpsAnnual"] == used["volBps"] and v["student"]["quoteBps"] == oc["midBps"]
+        assert v["check"]["within"] is True
+    assert vs["onChain"]["priceBps"] == vs["onChain"]["midBps"] - 20
 
 
 def test_verify_quote_inputs_busy_and_errors(service):
@@ -141,6 +178,8 @@ def test_verify_quote_inputs_busy_and_errors(service):
     assert r.status_code == 404 and r.json()["error"] == "UnknownTx"
     r = service.client.post("/verify-quote", json={})
     assert r.status_code == 400
+    r = service.client.post("/verify-quote", json={"inputs": base, "teacher": "v9"})
+    assert r.status_code == 400 and r.json()["error"] == "BadTeacher"
 
 
 @pytest.mark.skipif(not (shutil.which("nvidia-smi") and os.path.exists(TEACHER_PYTHON)), reason="no CUDA venv/GPU")

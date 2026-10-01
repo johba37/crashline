@@ -85,10 +85,27 @@ def quotable_of(res: Any, state: dict) -> dict:
     return {"ok": False, "reason": reason, "args": res.args_json(), "until": until}
 
 
+def leg_quotes(qb: Any, qs: Any, qbc: Any, qsc: Any) -> dict:
+    """The Desk's two prices of each leg at 1 unit, no fee (quoteBuy / quoteSell /
+    quoteBuyCover / quoteSellCover): NOTE ask / bid, cover ask / bid in bps of notional,
+    the vol band and the flat spread included. A quote that reverts is null and its
+    error is in `errors` (CapExceeded on the NOTE ask and the cover bid: the Desk's WRITER
+    cap is full, so it can't sell NOTE / buy cover back beyond its inventory)."""
+    out: dict = {"note": {}, "cover": {}, "errors": {}}
+    for leg, side, res in (("note", "askBps", qb), ("note", "bidBps", qs), ("cover", "askBps", qbc),
+                           ("cover", "bidBps", qsc)):
+        if isinstance(res, Revert):
+            out[leg][side] = None
+            out["errors"][f"{leg}.{side}"] = {"error": res.name, "args": res.args_json()}
+        else:
+            out[leg][side] = res[1]
+    return out
+
+
 def series_objects(ctx: Ctx, rows: list[dict], full: bool = False) -> list[dict]:
     """The /series objects of `rows` at ctx.block; `full` adds fixings and the last 50 trades."""
     chain, desk = ctx.chain, ctx.desk
-    per = 8
+    per = 11
     calls = []
     for r in rows:
         sr = chain.at("series", r["address"])
@@ -96,11 +113,12 @@ def series_objects(ctx: Ctx, rows: list[dict], full: bool = False) -> list[dict]
                   (desk, "listing", (r["address"],)), (desk, "spread", (r["address"],)),
                   (chain.at("token", r["note"]), "balanceOf", (desk.address,)),
                   (chain.at("token", r["writer"]), "balanceOf", (desk.address,)),
-                  (desk, "quoteBuy", (r["address"], UNIT, 0))]
+                  (desk, "quoteBuy", (r["address"], UNIT, 0)), (desk, "quoteSell", (r["address"], UNIT, 0)),
+                  (desk, "quoteBuyCover", (r["address"], UNIT, 0)), (desk, "quoteSellCover", (r["address"], UNIT, 0))]
     res = ctx.calls(calls)
     out, mids = [], []
     for i, r in enumerate(rows):
-        st, pend, maxp, lst, spr, n_held, w_held, qb = res[i * per:(i + 1) * per]
+        st, pend, maxp, lst, spr, n_held, w_held, qb, qs, qbc, qsc = res[i * per:(i + 1) * per]
         for v in (st, pend, maxp, lst, spr, n_held, w_held):
             if isinstance(v, Revert):
                 raise ApiError(502, "ChainReadFailed", {"series": r["address"], "error": v.name})
@@ -124,8 +142,10 @@ def series_objects(ctx: Ctx, rows: list[dict], full: bool = False) -> list[dict]
             "desk": {"noteHeld": s(n_held), "writerHeld": s(w_held)},
             "quotable": quotable,
             "mid": None,
+            "quotes": None,
         }
         if quotable["ok"] and listed:
+            o["quotes"] = leg_quotes(qb, qs, qbc, qsc)
             mids.append((o, lst))
         out.append(o)
     if mids:

@@ -187,8 +187,12 @@ at the same network size; p99 went from 7.9 to 14.1.
 `model/k3`, 7,465 params, 10-64-48-40-40-1, 16-bit. `PRICER_MODEL_DIR=../../model/k3 cargo test`:
 100 golden vectors exact, 35 reject vectors (every range, derived field and all five exclusions).
 `cargo stylus check` against Robinhood Chain testnet: **23,901 bytes** (limit 24,576), activation
-passes (data fee 0.000086 ETH). `model/k2` stays the default build: the contracts' quoter vectors
-and e2e run use it.
+passes (data fee 0.000086 ETH). Since 2026-10-01 `model/k3` is the default build (`build.rs`,
+`backend/devnode/deploy.py`, `contracts/script/e2e-devnode.sh`), after `cargo test` passed for
+k3, k2, k1-r1 and synthetic; `model/k2` stays selectable with `PRICER_MODEL_DIR` /
+`--model-dir`. The e2e run with k3 at vol 5500 ± a 200 bps band passes
+(`contracts/logs/e2e-devnode-k3.log`), and the quoter vectors cover k3 at vols 2000, 3500,
+5500 and 9000 (`contracts/test/vectors/quoter_vectors_k3.json`).
 
 ## What this gives the Desk
 
@@ -243,8 +247,10 @@ days in the last two weeks at 30–50%.
 - The seed spread is wide (same data: 39.4 vs 53.1 on V); four of seven runs were above 50 on
   V + V_edge (the worse of the two). g, f's data with another seed, reached 38.8, so f's 32.3 is
   the good end of that spread.
-- Gas for two k3 calls per Desk quote: not measured. Quoter vectors for k3
-  (`tools/quoter_vectors.py --model model/k3`) not generated; that touches the contracts lane.
+- Gas for two k3 calls per Desk quote, not measured in isolation: a whole Desk buy with the vol
+  band (two k3 calls) is 775,042 L2 execution gas on the dev node, vs 647,750 with k2's one call
+  (`contracts/logs/e2e-devnode-k3.log`). Quoter vectors for k3: generated (2026-10-01,
+  `tools/quoter_vectors.py --model model/k3 --vols 2000,3500,5500,9000`).
 - Teacher v3 inherits v2's simplifications: Q = P jumps, symmetric jumps, flat vol, calendar clock.
 
 ## Reproduce

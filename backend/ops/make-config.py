@@ -8,7 +8,9 @@ contracts/script/Deploy.s.sol writes), e.g. the testnet variant:
 The demo routes are off unless --demo is given (they need the curator's key
 in DEMO_KEY and mock feeds). The deployment block is found by bisecting
 eth_getCode(seriesFactory) when the RPC keeps old state; otherwise pass
---deployment-block.
+--deployment-block. The model dir is the one whose weightsHash the file's
+`pricerWeightsHash` (or else the deployed pricer's `weightsHash()`) names, so a
+k3 deployment gets model/k3 and its teacher v3; --model-dir overrides it.
 """
 
 from __future__ import annotations
@@ -48,6 +50,7 @@ def main() -> None:
     ap.add_argument("--demo", action="store_true", help="enable the demo routes")
     ap.add_argument("--port", type=int, default=cfgmod.backend_port())
     ap.add_argument("--out", default=str(cfgmod.CONFIG_PATH))
+    ap.add_argument("--model-dir", help="model/k3, model/k2, ... (default: the one matching the pricer's weightsHash)")
     a = ap.parse_args()
 
     d = json.loads(Path(a.deployments).read_text())
@@ -60,7 +63,10 @@ def main() -> None:
     except Exception as e:
         raise SystemExit(f"can't find the deployment block ({e}); pass --deployment-block") from None
     b = chain.block(block)
-    model_dir = next((m for m, e in _exports().items() if e == d.get("pricerWeightsHash")), "model/k2")
+    weights = d.get("pricerWeightsHash") or chain.at("pricer", d["surrogatePricer"]).call("weightsHash")
+    model_dir = a.model_dir or next((m for m, e in _exports().items() if e == weights), None)
+    if model_dir is None:
+        raise SystemExit(f"no model/* has weightsHash {weights}; pass --model-dir")
     cfg = {
         "network": "devnode" if d["chainId"] == cfgmod.DEVNODE_CHAIN_ID else f"chain-{d['chainId']}",
         "chainId": d["chainId"],

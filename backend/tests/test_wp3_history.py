@@ -28,20 +28,29 @@ from app.student import domain_error, forward, forward_batch
 from devnode import deploy as dp
 
 EXPORT = json.loads((ROOT / "model/k2/student_export.json").read_text())
+EXPORT_K3 = json.loads((ROOT / "model/k3/student_export.json").read_text())
 
 
-def test_forward_batch_is_bit_exact():
+def _export(cfg) -> dict:
+    """The deployed model's export (model/k3 by default)."""
+    return json.loads((ROOT / cfg["modelDir"] / "student_export.json").read_text())
+
+
+@pytest.mark.parametrize("export,vols", [(EXPORT, (5500,)), (EXPORT_K3, (2000, 3500, 5500, 9000))],
+                         ids=["k2", "k3"])
+def test_forward_batch_is_bit_exact(export, vols):
     random.seed(7)
     rows = []
     while len(rows) < 400:
         spot = random.randint(5000, 12000)
         obs, tn, ki = random.randint(1, 26), random.randint(0, 604800), random.randint(0, 1)
-        r = [spot, spot - 6000, 5500, 6000, 10000, 25, tn + obs * 604800, tn, obs, ki]
-        if domain_error(EXPORT, r) is None:
+        vol = random.choice(vols)
+        r = [spot, spot - 6000, vol, 6000, 10000, 25, tn + obs * 604800, tn, obs, ki]
+        if domain_error(export, r) is None:
             rows.append(r)
     rows += [[5000, -1000, 5500, 6000, 10000, 25, 604800, 0, 1, 1], [12000, 6000, 5500, 6000, 10000, 25,
                                                                      16329600, 604800, 26, 0]]
-    assert [int(x) for x in forward_batch(EXPORT, rows)] == [forward(EXPORT, r) for r in rows]
+    assert [int(x) for x in forward_batch(export, rows)] == [forward(export, r) for r in rows]
 
 
 def test_default_history(service, chain, cfg):
@@ -145,7 +154,7 @@ def test_replay_matches_the_quoter(service, chain, cfg):
         t = o["terms"]
         terms = Terms(t["strikeTime"], t["observationInterval"], t["observationCount"], t["kiBarrierBps"],
                       t["acBarrierBps"], t["couponBpsPerPeriod"])
-        (p,) = quote_points([b["time"]], terms, rows, rounds, EXPORT, 5500, stale)
+        (p,) = quote_points([b["time"]], terms, rows, rounds, _export(cfg), 5500, stale)
         try:
             want = q.call("notePriceBps", st["series"], cfg["addresses"]["surrogatePricer"], 5500,
                           block=b["number"])[0]
