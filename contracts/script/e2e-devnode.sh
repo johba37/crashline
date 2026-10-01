@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # End-to-end demo lifecycle on a local Nitro dev node, priced by the Stylus model.
 #
-#   contracts/script/e2e-devnode.sh                 # model/k2 (the default)
+#   contracts/script/e2e-devnode.sh                 # model/k3 (the default), vol 5500 +- a 200 bps band
+#   PRICER_MODEL_DIR=model/k2 contracts/script/e2e-devnode.sh   # K2: vol pinned at 5500, no band
 #   PRICER_MODEL_DIR=model/k1-r1 REQUIRE_MIDLIFE=0 contracts/script/e2e-devnode.sh
 #
 # Starts offchainlabs/nitro-node --dev (docker), deploys the Stylus pricer
@@ -17,7 +18,7 @@
 # observation is E2E_LEAD_SECS after staging, and the script waits for it.
 # Exits 0 only if every step succeeds and every check holds.
 #
-# Env: PRICER_MODEL_DIR (default <repo>/model/k2), E2E_PORT (8647),
+# Env: PRICER_MODEL_DIR (default <repo>/model/k3), E2E_PORT (8647),
 #      E2E_LEAD_SECS (240), REQUIRE_MIDLIFE (1: the sell must happen with
 #      observationsRemaining < 26), KEEP_NODE (0: stop the container on exit),
 #      CARGO_TARGET_DIR (default <repo>/stylus/pricer-model/target),
@@ -32,7 +33,7 @@ CAST="${CAST:-$(command -v cast || echo "$HOME/.foundry/bin/cast")}"
 export PATH="$HOME/.cargo/bin:$PATH"
 export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$ROOT/stylus/pricer-model/target}"
 
-MODEL_DIR="$(cd "$ROOT" && realpath -m "${PRICER_MODEL_DIR:-model/k2}")"
+MODEL_DIR="$(cd "$ROOT" && realpath -m "${PRICER_MODEL_DIR:-model/k3}")"
 PORT="${E2E_PORT:-8647}"
 RPC="http://127.0.0.1:$PORT"
 LEAD="${E2E_LEAD_SECS:-240}"
@@ -48,7 +49,9 @@ BUYER_KEY=0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a
 HEDGER_KEY=0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6
 
 WEEK=604800
-VOL=5500
+VOL="${E2E_VOL:-5500}" # listing vol, bps
+# vol band, bps: E2E_VOL_BAND, default 200 where the model's vol is a live input (k3), 0 where it is pinned (k2)
+VOL_BAND="${E2E_VOL_BAND:-auto}"
 INITIAL=25000000000 # $250.00, 8 decimals
 SPOT_BPS=8500       # current spot, bps of initial: outside every observation-day band
 AC_FIX_BPS=10200    # the next observation fixes above the autocall barrier
@@ -196,9 +199,13 @@ LP_SHARES=$(call "$DESK" "balanceOf(address)(uint256)" "$LP" | num)
 echo "LP shares $LP_SHARES (12 decimals), Desk totalAssets $(usd "$(call "$DESK" "totalAssets()(uint256)" | num)")"
 
 # --- 6. listing ------------------------------------------------------------------------------
-step "6. Curator lists the series with the Stylus pricer, vol $VOL; spread $BID_BPS/$ASK_BPS bps, risk budget $RISK_BUDGET_BPS bps"
+read -r VOL_MIN VOL_MAX < <(call "$PRICER" "certifiedRange(uint8)(int64,int64)" 2 | num | xargs)
+if [ "$VOL_BAND" = auto ]; then
+  if [ "$VOL_MIN" = "$VOL_MAX" ]; then VOL_BAND=0; else VOL_BAND=200; fi # a pinned vol takes no band
+fi
+step "6. Curator lists the series with the Stylus pricer, vol $VOL +- $VOL_BAND (certified $VOL_MIN..$VOL_MAX); spread $BID_BPS/$ASK_BPS bps, risk budget $RISK_BUDGET_BPS bps"
 send "$DEV_KEY" "$DESK" "listSeries(address,address,uint16,uint128)" "$SERIES" "$PRICER" "$VOL" 50000000000 >/dev/null
-send "$DEV_KEY" "$DESK" "setSpread(address,uint16,uint16,uint16)" "$SERIES" "$BID_BPS" "$ASK_BPS" 0 >/dev/null # k2's vol is pinned: no vol band
+send "$DEV_KEY" "$DESK" "setSpread(address,uint16,uint16,uint16)" "$SERIES" "$BID_BPS" "$ASK_BPS" "$VOL_BAND" >/dev/null
 send "$DEV_KEY" "$DESK" "setRiskBudget(address,uint16)" "$FEED" "$RISK_BUDGET_BPS" >/dev/null
 echo "listing: $(call "$DESK" "listing(address)((bool,address,uint16,uint128,uint128))" "$SERIES")"
 desk_pos() { # the Desk's position and what it has at risk
@@ -210,22 +217,44 @@ desk_pos() { # the Desk's position and what it has at risk
 IN_T="(uint16,int32,uint16,uint16,uint16,uint16,uint32,uint32,uint8,uint8)" # PricerInputs
 TRADE_T="(address,uint256,uint16,uint256,uint16,address,bytes32)"
 check_trade() { # check_trade <tx> <topic0> <side>: the trade price is the quoter's at that block, moved by the spread
-  local tx=$1 topic=$2 side=$3 block data inputs clean quoted want
+  # with a vol band the Desk asks the model at VOL - VOL_BAND and VOL + VOL_BAND and takes the
+  # higher quote for a NOTE ask (buy, sellCover) and the lower one for a NOTE bid (sell, buyCover)
+  local tx=$1 topic=$2 side=$3 block data inputs clean quoted want q_lo q_hi v_lo v_hi vol note
   block=$("$CAST" receipt --rpc-url "$RPC" "$tx" blockNumber)
   data=$(event_data "$tx" "$DESK" "$topic")
   [ -n "$data" ] || fail "no trade event in $tx"
   mapfile -t T < <("$CAST" decode-abi "f()$TRADE_T" "$data" | num)
-  inputs=$(call --block "$block" "$QUOTER" "inputs(address,uint16)($IN_T)" "$SERIES" "$VOL" | sed 's/ \[[^]]*\]//g')
+  v_lo=$((VOL - VOL_BAND))
+  v_hi=$((VOL + VOL_BAND))
+  q_lo=$(call --block "$block" "$QUOTER" "notePriceBps(address,address,uint16)(uint16,bytes32)" "$SERIES" "$PRICER" "$v_lo" | sed -n 1p | num)
+  q_hi=$(call --block "$block" "$QUOTER" "notePriceBps(address,address,uint16)(uint16,bytes32)" "$SERIES" "$PRICER" "$v_hi" | sed -n 1p | num)
+  if [ "$q_hi" -lt "$q_lo" ]; then # the note is usually worth less at the higher vol
+    read -r q_lo q_hi v_lo v_hi <<<"$q_hi $q_lo $v_hi $v_lo"
+  fi
+  case $side in
+    buyNote | sellCover) vol=$v_hi quoted=$q_hi ;;
+    sellNote | buyCover) vol=$v_lo quoted=$q_lo ;;
+  esac
+  inputs=$(call --block "$block" "$QUOTER" "inputs(address,uint16)($IN_T)" "$SERIES" "$vol" | sed 's/ \[[^]]*\]//g')
   clean=$(call --block "$block" "$PRICER" "priceBps($IN_T)(uint16)" "$inputs" | num)
-  quoted=$(call --block "$block" "$QUOTER" "notePriceBps(address,address,uint16)(uint16,bytes32)" "$SERIES" "$PRICER" "$VOL" | sed -n 1p | num)
   REM=$(tr -d '()' <<<"$inputs" | awk -F', ' '{print $9}')
   echo "  model saw $inputs"
+  [ "$quoted" -gt "$MAX_BPS" ] && quoted=$MAX_BPS
   case $side in
-    buyNote) want=$((quoted + ASK_BPS)) ;;
-    sellNote) want=$((quoted - BID_BPS)) ;;
-    buyCover) want=$((MAX_BPS - (quoted - BID_BPS))) ;;
-    sellCover) want=$((MAX_BPS - (quoted + ASK_BPS))) ;;
+    buyNote | sellCover)
+      note=$((quoted + ASK_BPS))
+      [ "$note" -gt "$MAX_BPS" ] && note=$MAX_BPS
+      ;;
+    sellNote | buyCover)
+      note=$((quoted - BID_BPS))
+      [ "$note" -lt 0 ] && note=0
+      ;;
   esac
+  case $side in
+    buyNote | sellNote) want=$note ;;
+    buyCover | sellCover) want=$((MAX_BPS - note)) ;;
+  esac
+  echo "  NOTE quotes at vol $((VOL - VOL_BAND)) / $((VOL + VOL_BAND)): lo $q_lo (vol $v_lo), hi $q_hi (vol $v_hi); $side prices at vol $vol"
   echo "  model clean price $clean bps + accrued coupon $((quoted - clean)) bps = NOTE quote $quoted bps; $side traded at ${T[2]} bps"
   echo "  amount $(usd "${T[1]}"), USDG $(usd "${T[3]}"), fee ${T[4]} bps to ${T[5]}, weightsHash ${T[6]}"
   local rj g l1
@@ -233,7 +262,7 @@ check_trade() { # check_trade <tx> <topic0> <side>: the trade price is the quote
   g=$("$CAST" to-dec "$(jq -r .gasUsed <<<"$rj")")
   l1=$("$CAST" to-dec "$(jq -r '.gasUsedForL1 // "0x0"' <<<"$rj")")
   echo "  gas used $g, of which L1 data $l1, L2 execution $((g - l1)) (quote incl. the Stylus model, mint or unwind, transfers)"
-  [ "${T[2]}" = "$want" ] || fail "$side price ${T[2]} != $want (model quote $quoted, spread $BID_BPS/$ASK_BPS)"
+  [ "${T[2]}" = "$want" ] || fail "$side price ${T[2]} != $want (model quote $quoted at vol $vol, spread $BID_BPS/$ASK_BPS)"
   [ "${T[6]}" = "$WEIGHTS" ] || fail "event weightsHash"
 }
 step "7. Buyer buys $(usd $BUY_NOTE) NOTE (fee $FEE_BPS bps to the integrator)"
