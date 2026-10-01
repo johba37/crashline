@@ -1,7 +1,7 @@
 // Example market for building, testing and demoing the dashboard. It holds every kind of note the
 // flow has to handle: three stocks, several lengths, several levels, a note past its crash line, a
-// note the model gives no price for, and a stock the Desk is nearly full on. Shaped exactly like
-// the chain reader's output. The numbers are illustrative, not model output; the UI says so.
+// note the model gives no price for, a sold-out note, and a stock the Desk is nearly full on. Shaped
+// exactly like the chain reader's output. The numbers are illustrative, not model output; the UI says so.
 import type { Address, Hex } from 'viem'
 import { WEEK } from './format.ts'
 import type { MarketData, Position, PricePoint, PricerInputs, Refusable, SeriesView } from './types.ts'
@@ -16,12 +16,15 @@ const MODEL = addr(0x6b33)
 const MODEL_HASH = '0x745cd5f814984c9433d1055e47248d2cfd6a5ecfe0ae5d5e24fbc8b21303523f' as Hex // model/k3
 
 const SPREAD = { bidBps: 30, askBps: 30, volBandBps: 0 }
+const CAP = 500_000_000_000n // the most WRITER the Desk may hold in a note
 
-type Stock = { symbol: string; feed: Address; spot: bigint; risk: SeriesView['risk'] }
-const TSLA: Stock = { symbol: 'TSLA', feed: addr(0xfeed01), spot: 25_130_000_000n, risk: { atRisk: 212_400_000_000n, limit: 250_000_000_000n } }
-// 400 USDG of room left: an order above it shows "the Desk can take on 400 USDG more".
-const NVDA: Stock = { symbol: 'NVDA', feed: addr(0xfeed02), spot: 13_480_000_000n, risk: { atRisk: 149_600_000_000n, limit: 150_000_000_000n } }
-const AAPL: Stock = { symbol: 'AAPL', feed: addr(0xfeed03), spot: 22_750_000_000n, risk: { atRisk: 20_000_000_000n, limit: 150_000_000_000n } }
+// `sold` is the WRITER the Desk holds in each of the stock's notes: cover is sold from it first.
+type Stock = { symbol: string; feed: Address; spot: bigint; sold: bigint; risk: SeriesView['risk'] }
+const TSLA: Stock = { symbol: 'TSLA', feed: addr(0xfeed01), spot: 25_130_000_000n, sold: 180_000_000_000n, risk: { atRisk: 212_400_000_000n, limit: 250_000_000_000n, budgetBps: 2500 } }
+// 400 USDG of its budget left and no WRITER to sell: cover above what still fits (434 USDG on
+// the fresh note) shows "at most 434 USDG of NVDA can be protected".
+const NVDA: Stock = { symbol: 'NVDA', feed: addr(0xfeed02), spot: 13_480_000_000n, sold: 0n, risk: { atRisk: 149_600_000_000n, limit: 150_000_000_000n, budgetBps: 1500 } }
+const AAPL: Stock = { symbol: 'AAPL', feed: addr(0xfeed03), spot: 22_750_000_000n, sold: 180_000_000_000n, risk: { atRisk: 20_000_000_000n, limit: 150_000_000_000n, budgetBps: 1500 } }
 
 const ok = <T>(value: T): Refusable<T> => ({ ok: true, value })
 const refused = <T>(error: string, ...args: unknown[]): Refusable<T> => ({ ok: false, refusal: { error, args } })
@@ -37,9 +40,10 @@ type Sample = {
   knockedIn?: boolean
   inventory?: bigint
   ended?: boolean // ended early at check `done`: the stock was back at its starting price
+  soldOut?: boolean // the Desk holds none of its NOTE and as much WRITER as it may
 }
 
-function series({ n, stock, initial, count = 26, done, sinceObs, coverMid, knockedIn = false, inventory = 0n, ended = false }: Sample): SeriesView {
+function series({ n, stock, initial, count = 26, done, sinceObs, coverMid, knockedIn = false, inventory = 0n, ended = false, soldOut = false }: Sample): SeriesView {
   const terms = { feed: stock.feed, observationInterval: WEEK, observationCount: count, kiBarrierBps: 6000, acBarrierBps: 10_000, couponBpsPerPeriod: 25 }
   const maxBps = 10_000 + terms.couponBpsPerPeriod * (count + 1) // 1 + 0.25% a week, per NOTE + WRITER
   const strikeTime = now - done * WEEK - sinceObs
@@ -60,6 +64,8 @@ function series({ n, stock, initial, count = 26, done, sinceObs, coverMid, knock
   // Near the knock-in barrier on observation day the model refuses (Uncertified region 1).
   const quote = <T>(value: (mid: number) => T): Refusable<T> =>
     ended ? refused('NotLive') : coverMid === null ? refused('Uncertified', 1) : ok(value(maxBps - coverMid))
+  // Sold out, the Desk can take on no more WRITER: it sells no NOTE and buys no cover back (asked for 1, room for 0).
+  const full = <T>(q: Refusable<T>): Refusable<T> => (soldOut ? refused('CapExceeded', 1_000_000n, 0n) : q)
   return {
     address: addr(0x5e0000 + n),
     symbol: stock.symbol,
@@ -75,7 +81,7 @@ function series({ n, stock, initial, count = 26, done, sinceObs, coverMid, knock
       // Ending early at check i pays a NOTE its amount plus the income so far: 1 + 0.25% x i.
       payoutPerNote: ended ? BigInt(10_000 + terms.couponBpsPerPeriod * done) * 100n : 0n,
     },
-    listing: { active: true, pricer: MODEL, volBpsAnnual: 5500, capNotional: 500_000_000_000n, soldNotional: 180_000_000_000n },
+    listing: { active: true, pricer: MODEL, volBpsAnnual: 5500, capNotional: CAP, soldNotional: soldOut ? CAP : stock.sold },
     spread: SPREAD,
     maxPayoutPerNote: BigInt(maxBps) * 100n,
     note: addr(0xa000 + n),
@@ -84,10 +90,10 @@ function series({ n, stock, initial, count = 26, done, sinceObs, coverMid, knock
     spot: stock.spot,
     spotUpdatedAt: now - 420,
     mid: quote((mid) => ({ priceBps: mid, weightsHash: MODEL_HASH })),
-    noteAsk: quote((mid) => Math.min(mid + SPREAD.askBps, maxBps)),
+    noteAsk: full(quote((mid) => Math.min(mid + SPREAD.askBps, maxBps))),
     noteBid: quote((mid) => mid - SPREAD.bidBps),
     coverAsk: quote((mid) => maxBps - (mid - SPREAD.bidBps)),
-    coverBid: quote((mid) => maxBps - Math.min(mid + SPREAD.askBps, maxBps)),
+    coverBid: full(quote((mid) => maxBps - Math.min(mid + SPREAD.askBps, maxBps))),
     inputs: ok(inputs),
     noteInventory: inventory,
     risk: stock.risk,
@@ -115,6 +121,9 @@ export const fixtureMarket: MarketData = {
     series({ n: 9, stock: NVDA, initial: 13_820_000_000n, done: 2, sinceObs: 3 * DAY, coverMid: 790, inventory: 5_000_000_000n }),
     // AAPL: one note, so one length and one level.
     series({ n: 10, stock: AAPL, initial: 22_910_000_000n, count: 12, done: 1, sinceObs: 2 * DAY, coverMid: 260 }),
+    // TSLA once more, a fifth length: a sold-out note. Earn has nothing to buy and can only sell it
+    // back. Last in the list, so the positions below find their notes where they were.
+    series({ n: 11, stock: TSLA, initial: 27_300_000_000n, done: 18, sinceObs: 2 * DAY, coverMid: 210, soldOut: true }),
   ],
   models: {
     [MODEL]: {
@@ -126,7 +135,8 @@ export const fixtureMarket: MarketData = {
       ],
     },
   },
-  queuedShares: 0n,
+  queue: { waiting: 0n, setAside: 0n },
+  idle: 400_000_000_000n,
   fees: { maxFeeBps: 200, maxCoverFeeBps: 1000, backstopShareBps: 5000 },
   now,
 }
@@ -150,7 +160,7 @@ function path(s: SeriesView, end: number, last: bigint): PricePoint[] {
 const note = (n: number) => fixtureMarket.series[n - 1]
 const USDG_UNIT = 1_000_000n
 // A TSLA note that ended early three weeks ago: its cover gets back 0.25% for each week that was left.
-const endedEarly = series({ n: 11, stock: TSLA, initial: 24_310_000_000n, done: 3, sinceObs: 3 * WEEK, coverMid: null, ended: true })
+const endedEarly = series({ n: 12, stock: TSLA, initial: 24_310_000_000n, done: 3, sinceObs: 3 * WEEK, coverMid: null, ended: true })
 
 /**
  * What a wallet could hold, one of each kind: cover that is waiting, cover that is switched on,

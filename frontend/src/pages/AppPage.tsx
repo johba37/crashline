@@ -1,6 +1,6 @@
 import { Coins, Info, ShieldCheck } from '@phosphor-icons/react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
-import { useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import AmountField from '../components/dashboard/AmountField.tsx'
 import ChoiceCards from '../components/dashboard/ChoiceCards.tsx'
@@ -10,7 +10,7 @@ import LevelPicker, { type Goal } from '../components/dashboard/LevelPicker.tsx'
 import MarketList from '../components/dashboard/MarketList.tsx'
 import ModelCard from '../components/dashboard/ModelCard.tsx'
 import Notice from '../components/dashboard/Notice.tsx'
-import Order, { type Trade } from '../components/dashboard/Order.tsx'
+import Order, { TxLink, type Trade } from '../components/dashboard/Order.tsx'
 import Positions from '../components/dashboard/Positions.tsx'
 import { Calendar, PriceDetails } from '../components/dashboard/SeriesDetail.tsx'
 import Step from '../components/dashboard/Step.tsx'
@@ -19,18 +19,24 @@ import Term from '../components/dashboard/Term.tsx'
 import TickerBadge from '../components/dashboard/TickerBadge.tsx'
 import { refusalStatus, seriesStatus } from '../components/dashboard/status.ts'
 import InfoTip from '../components/Tooltip.tsx'
-import { UNIT, bestCase, coverRoom, date, fromFeed, parseAmount, pct, span, toUnits, tradeAmounts, trigger, usd, usdg } from '../market/format.ts'
+import { UNIT, bestCase, date, fromFeed, parseAmount, pct, roomFor, soldOut, span, toUnits, tradeAmounts, trigger, usd, usdg, wholeUsdg } from '../market/format.ts'
 import { FEE_BPS, PLACEHOLDERS } from '../market/settings.ts'
 import type { SeriesView } from '../market/types.ts'
 import { useMarket } from '../market/useMarket.ts'
 import { usePositions } from '../market/usePositions.ts'
 import { usePracticeTrade } from '../market/usePracticeTrade.ts'
-import { useTrade } from '../market/useTrade.ts'
+import { type LateTrade, useTrade } from '../market/useTrade.ts'
 import { API_URL } from '../wagmi.ts'
 import Logo from '../components/Logo.tsx'
 import Wordmark from '../components/Wordmark.tsx'
 
 const NAMES: Record<string, string> = { TSLA: 'Tesla', NVDA: 'Nvidia', AAPL: 'Apple' }
+
+/** What a trade did, in the order form's words: "bought cover for 1,000.00 USDG of TSLA". */
+const did = ({ kind, amount, series }: LateTrade) => {
+  const of = `${usdg(amount)} USDG of ${series.symbol}`
+  return { buy: `bought ${of} NOTE`, sell: `sold ${of} NOTE back`, buyCover: `bought cover for ${of}`, sellCover: `sold cover for ${of} back` }[kind]
+}
 
 /**
  * The dashboard as a guided flow, top to bottom. Nothing is filled in or chosen for the reader: each
@@ -51,6 +57,16 @@ export default function AppPage() {
   const trade: Trade = test ? practiceTrade : chainTrade
   // Two views of the page: the guided flow to buy, and what the wallet already holds.
   const view = params.get('view') === 'positions' ? 'positions' : 'buy'
+  // The trade's status belongs to the order the reader has put together: another stock, goal or
+  // note, the other view or test mode starts clean and leaves a run that is still going behind.
+  // Keyed on what she chose, not on what the market offers, so a read that drops the note for a
+  // moment doesn't take her order with it. A layout effect, so no order paints with another's status.
+  const { reset } = trade
+  const order = [test, view, params.get('stock'), params.get('goal'), params.get('series')].join('|')
+  useLayoutEffect(() => {
+    reset()
+    return reset
+  }, [reset, order])
   const { positions, supported } = usePositions(test)
   const set = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams(params)
@@ -82,6 +98,7 @@ export default function AppPage() {
   const tabs = <div className="flex items-center gap-1">{tab('buy', 'Buy')}{tab('positions', 'My positions')}</div>
   // The amount starts empty. Once there is one, the last valid entry stays in force while the
   // field is being edited, so the steps below don't close and reopen with every keystroke.
+  // Until the field holds an amount again it shows its error, and the order in step 6 waits.
   const [amountText, setAmountText] = useState('')
   const [entered, setAmount] = useState<bigint | null>(null)
   const [amountTouched, setAmountTouched] = useState(false)
@@ -96,8 +113,9 @@ export default function AppPage() {
   const goalParam = params.get('goal')
   const goal: Goal | undefined = stock && (goalParam === 'protect' || goalParam === 'earn') ? goalParam : undefined
   // The levels: notes on this stock with a price for the chosen side, from the deepest crash line up.
+  // A sold-out note has no such price but stays a choice: whoever holds it sells it back in step 6.
   const stops = notes
-    .filter((s) => (goal === 'earn' ? s.noteAsk : s.coverAsk).ok && s.spot !== null)
+    .filter((s) => ((goal === 'earn' ? s.noteAsk : s.coverAsk).ok || soldOut(s, goal === 'earn')) && s.spot !== null)
     .sort((a, b) => (trigger(a).move ?? 0) - (trigger(b).move ?? 0))
   // The note is chosen in two steps, how long (?time=) and then the level (?series=), and neither has a default.
   const picked = notes.find((s) => s.address === params.get('series'))
@@ -132,11 +150,13 @@ export default function AppPage() {
     const inSpan = stops.filter((s) => left(s) === label)
     return inSpan.find((s) => money(s) === m) ?? inSpan[0]
   }
-  // The usual pattern, said only while the choices on screen follow it.
-  const spanMoney = spans.map((label) => best(label) ?? 0n)
+  // The usual pattern, said only while the choices on screen follow it. A sold-out length has no figure to compare.
+  const spanMoney = spans.map(best).filter((m) => m !== null)
   const longerIsMore = spanMoney.every((m, i) => i === 0 || m >= spanMoney[i - 1])
-  // Cover on one stock is limited (the Desk's risk budget), which prices don't check: say so where the amount is entered.
-  const room = notes[0] ? coverRoom(notes[0]) : null
+  // Cover on one stock is limited (the Desk's risk budget and its free USDG), which prices don't check: say so where the amount is entered.
+  // No note is picked yet, so the amount is held against the note with the most room (none: no limit to name).
+  const rooms = market ? notes.filter((s) => s.coverAsk.ok).map((s) => roomFor(s, 'buyCover', market)) : []
+  const room = rooms.reduce<bigint | null>((most, r) => (most === null || r === null ? null : r > most ? r : most), rooms[0] ?? null)
   const overRoom = goal === 'protect' && room !== null && amount > room
   const ready = !!goal && entered !== null // steps 1 to 3 are answered
 
@@ -167,6 +187,14 @@ export default function AppPage() {
               : 'Worried that a stock you hold could crash? Insure it here: you pay once, and you get paid if it crashes. Or take the other side and earn a weekly income. You see what you pay and what you can get back before you buy anything.'}
           </p>
         </div>
+
+        {/* The one trade the page can't show on its order: that order is no longer on screen. */}
+        {chainTrade.late && (
+          <Notice status={{ tone: 'hold', icon: Info, label: 'An earlier order went through', message: `You changed it here before it was finished, but it was confirmed in your wallet. So you ${did(chainTrade.late)}.` }}>
+            <TxLink hash={chainTrade.late.hash} />
+            <button type="button" onClick={chainTrade.dismissLate} className="self-start type-label text-ink underline">Got it</button>
+          </Notice>
+        )}
 
         {view === 'positions' && (
           <Positions positions={positions} supported={supported} now={market?.now ?? 0} trade={trade} onBuy={() => set({ view: null })} />
@@ -249,10 +277,10 @@ export default function AppPage() {
                     trade.reset()
                   }}
                   onBlur={() => setAmountTouched(true)}
-                  error={amountTouched && parseAmount(amountText) === null
+                  error={(amountTouched || entered !== null) && parseAmount(amountText) === null
                     ? 'Enter an amount above 0.'
                     : overRoom && room !== null
-                      ? `Right now, at most ${usdg(room, 0)} USDG of ${stock} can be protected. Enter a smaller amount.`
+                      ? `Right now, at most ${wholeUsdg(room)} USDG of ${stock} can be protected. Enter a smaller amount.`
                       : undefined}
                   helper={goal === 'protect'
                     ? `${spot && entered !== null ? `That’s about ${(toUnits(amount) / fromFeed(spot)).toLocaleString(undefined, { maximumFractionDigits: 2 })} ${stock} shares at today’s ${usd(spot)}. ` : spot ? `One ${stock} share is ${usd(spot)} today. ` : ''}The cover pays out in USDG. Your shares stay where they are.`
@@ -285,15 +313,18 @@ export default function AppPage() {
                       return {
                         value: label,
                         title: label,
-                        aside: m === null ? undefined : `${goal === 'earn' ? 'Earn up to' : several(label) ? 'From' : 'Costs'} ${usdg(m)} USDG`,
+                        aside: m === null ? 'Sold out' : `${goal === 'earn' ? 'Earn up to' : several(label) ? 'From' : 'Costs'} ${usdg(m)} USDG`,
                         body: `Until ${date(s.state.maturity)}${s.state.knockedIn ? (goal === 'protect' ? ', already switched on' : ', already in a crash') : ''}`,
                       }
                     })}
                   />
                   <p className="type-label text-ink-muted">
-                    {goal === 'protect'
-                      ? `The cost is what you pay now, once, to protect ${usdg(amount, 0)} USDG of ${stock}. ${longerIsMore ? 'Longer cover costs more, because there’s more time for a crash.' : `It also depends on how far ${stock} has to fall, which is the next step.`}`
-                      : `That’s the most your ${usdg(amount, 0)} USDG can earn by the end date. ${longerIsMore ? 'A longer note pays more weeks of income.' : `It also depends on how far ${stock} can fall, which is the next step.`}`}{' '}
+                    {spanMoney.length === 0
+                      ? `Every ${stock} note is sold out right now.`
+                      : goal === 'protect'
+                        ? `The cost is what you pay now, once, to protect ${usdg(amount, 0)} USDG of ${stock}. ${longerIsMore ? 'Longer cover costs more, because there’s more time for a crash.' : `It also depends on how far ${stock} has to fall, which is the next step.`}`
+                        : `That’s the most your ${usdg(amount, 0)} USDG can earn by the end date. ${longerIsMore ? 'A longer note pays more weeks of income.' : `It also depends on how far ${stock} can fall, which is the next step.`}`}{' '}
+                    {spanMoney.length < spans.length && `Sold out means there’s none left to buy. Pick it only if you hold some and want to sell it back. `}
                     {goal === 'protect' && spans.some(several) && `“From” is the cheapest choice in the next step. `}
                     {spans.length === 1 && `Only one end date is open for ${stock} right now. `}
                     It can <Term t="endsEarly">end early</Term> if {stock} goes up: the last step shows when.
@@ -304,7 +335,7 @@ export default function AppPage() {
 
             <Step
               n={5}
-              title={!goal ? 'How far can it fall?' : chosen?.state.knockedIn ? `${stock} has already fallen far enough` : goal === 'protect' ? `How far does ${stock} have to fall?` : `How far can ${stock} fall before your money is at risk?`}
+              title={!goal ? 'How far can it fall?' : chosen?.state.knockedIn ? `${stock} has already fallen far enough` : chosen && (trigger(chosen).move ?? 0) > 0 ? `${stock} is below this crash line today` : goal === 'protect' ? `How far does ${stock} have to fall?` : `How far can ${stock} fall before your money is at risk?`}
               state={!ready || !chosenSpan ? 'upcoming' : chosen ? 'done' : 'current'}
             >
               {goal && ready && chosenSpan && (
@@ -314,11 +345,11 @@ export default function AppPage() {
 
             <Step
               n={6}
-              title="Check and buy"
+              title={chosen && soldOut(chosen, goal === 'earn') ? 'Check and sell' : 'Check and buy'}
               state={goal && ready && chosen ? 'current' : 'upcoming'}
               hint="Last, you see what you pay and what you can get back."
             >
-              {goal && ready && chosen && <Order key={`${chosen.address}-${goal}`} s={chosen} goal={goal} amount={amount} market={market} trade={trade} />}
+              {goal && ready && chosen && <Order key={`${chosen.address}-${goal}`} s={chosen} goal={goal} amount={amount} amountOk={parseAmount(amountText) !== null} market={market} trade={trade} />}
             </Step>
 
             {detail && (

@@ -1,13 +1,13 @@
 import { useRef, type KeyboardEvent } from 'react'
 import type { Address } from 'viem'
-import { date, observationsLeft, trigger, usd, usdg } from '../../market/format.ts'
+import { date, observationsLeft, pct, trigger, usd, usdg } from '../../market/format.ts'
 import type { SeriesView } from '../../market/types.ts'
 import Term from './Term.tsx'
 
 export type Goal = 'protect' | 'earn'
 
-/** -0.26 -> "26%": the size of a fall. */
-const fall = (move: number) => `${Math.abs(Math.round(move * 100))}%`
+/** -0.263 -> "26.3%": the size of a fall. */
+const fall = (move: number) => pct(Math.abs(move) * 10_000, 1)
 
 // The diagram, in px. It's a picture of the rules, not a price scale: rows sit in fixed slots ROW
 // apart and only their order follows the prices (every row prints its price), so the diagram
@@ -153,7 +153,10 @@ export default function LevelPicker({
             const p = points[r.index]
             const on = r.index === index
             const crossed = p.s.state.knockedIn
-            const worth = p.money === null ? 'no price' : goal === 'protect' ? `costs ${usdg(p.money)} USDG` : `up to +${usdg(p.money)} USDG`
+            // Today's price is already under this line, but no weekly check has counted that yet.
+            const above = p.move > 0
+            // The only choices without a price for this side are sold-out notes.
+            const worth = p.money === null ? 'sold out' : goal === 'protect' ? `costs ${usdg(p.money)} USDG` : `up to +${usdg(p.money)} USDG`
             return (
               <button
                 key={p.s.address}
@@ -161,7 +164,7 @@ export default function LevelPicker({
                 type="button"
                 role="radio"
                 aria-checked={on}
-                aria-label={`${crossed ? 'Crash line already crossed' : `A ${fall(p.move)} fall from today`}, at ${usd(p.price)}, ${worth}`}
+                aria-label={`${crossed ? 'Crash line already crossed' : above ? 'Crash line above today’s price' : `A ${fall(p.move)} fall from today`}, at ${usd(p.price)}, ${worth}`}
                 tabIndex={on || (index < 0 && r.index === points.length - 1) ? 0 : -1}
                 onClick={() => onSelect(p.s.address)}
                 className="group absolute inset-x-0 outline-none"
@@ -173,7 +176,7 @@ export default function LevelPicker({
                   <span className={`grid size-5 place-items-center rounded-full transition-colors duration-160 group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-focus ${on ? 'bg-accent' : 'bg-surface-well shadow-[inset_0_0_0_1px_var(--color-line-strong)]'}`}>
                     <span className={`size-1.5 rounded-full ${on ? 'bg-on-accent' : 'bg-ink-muted'}`} />
                   </span>
-                  <span className={`type-label ${on ? 'text-ink' : 'text-ink-muted'}`}>{crossed ? 'Already crossed' : `−${fall(p.move)} fall`}</span>
+                  <span className={`type-label ${on ? 'text-ink' : 'text-ink-muted'}`}>{crossed ? 'Already crossed' : above ? 'Above today' : `−${fall(p.move)} fall`}</span>
                   <span className="type-label text-ink-muted">{worth}</span>
                 </span>
               </button>
@@ -210,6 +213,13 @@ export default function LevelPicker({
           {goal === 'protect'
             ? `So this cover is already switched on: it pays if ${s.symbol} is still below ${usd(s.state.initialFixing)} on ${date(s.state.maturity)}. That’s why it costs more.`
             : `So your money follows ${s.symbol} down unless it’s back at ${usd(s.state.initialFixing)} by ${date(s.state.maturity)}.`}
+        </p>
+      ) : spot && current.move > 0 ? (
+        // Already under the line between two checks: nothing has counted yet, the next check decides.
+        <p className="type-body text-ink">
+          {s.symbol} is at {usd(spot)} today, already below this note’s <Term t="crashLine" /> ({usd(current.price)}). That only counts at a{' '}
+          <Term t="weeklyCheck" />: if {s.symbol} still closes below the line at the next check, on {date(s.state.nextObservation)},{' '}
+          {goal === 'protect' ? 'your cover switches on.' : 'your money is at risk.'}
         </p>
       ) : (
         <p className="type-body text-ink">

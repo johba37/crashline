@@ -1,7 +1,7 @@
 import { WarningCircle } from '@phosphor-icons/react'
 import { useId, type ReactNode } from 'react'
 
-/** Enter a USDG amount. Validated by the caller on blur and submit, not per keystroke. */
+/** Enter a USDG amount. The caller validates it and says when the error shows. */
 export default function AmountField({
   label, info, unit, value, placeholder = '0.00', onChange, onBlur, helper, error,
 }: {

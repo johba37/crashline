@@ -83,7 +83,8 @@ export type SeriesView = {
   coverBid: Refusable<number> // quoteSellCover
   inputs: Refusable<PricerInputs>
   noteInventory: bigint // NOTE.balanceOf(desk)
-  risk: { atRisk: bigint; limit: bigint } // desk.risk(terms.feed), USDG base units
+  /** desk.risk(terms.feed) in USDG base units, and desk.riskBudgetBps(terms.feed): the limit as a share of the vault. */
+  risk: { atRisk: bigint; limit: bigint; budgetBps: number }
 }
 
 /** A certified model (Stylus pricer): its version and where it answers. */
@@ -100,7 +101,12 @@ export type MarketData = {
   usdg: Address
   series: SeriesView[] // active listings only
   models: Record<Address, ModelView>
-  queuedShares: bigint // desk.queuedShares(): > 0 stops trades that add to the Desk's position
+  /** The redemption queue. A trade that adds to the Desk's position pays it first: processQueue(QUEUE_BATCH). */
+  queue: {
+    waiting: bigint // of desk.queuedShares(), the shares still queued after that: > 0 stops such a trade
+    setAside: bigint // USDG that leaves the vault for it, which lowers every risk limit
+  }
+  idle: bigint // USDG the Desk can use: its balance less desk.reservedAssets(), which is set aside for claims
   fees: { maxFeeBps: number; maxCoverFeeBps: number; backstopShareBps: number }
   now: number // unix seconds the data was read at
 }
@@ -123,7 +129,8 @@ export type Position = {
 /** The four Desk trades. */
 export type TradeKind = 'buy' | 'sell' | 'buyCover' | 'sellCover'
 
-export type TradeStep = 'idle' | 'quoting' | 'approving' | 'trading' | 'done' | 'failed'
+// 'waiting': behind a request of an earlier order that is still open in the wallet
+export type TradeStep = 'idle' | 'waiting' | 'quoting' | 'approving' | 'trading' | 'done' | 'failed'
 
 export type TradeState = {
   step: TradeStep
