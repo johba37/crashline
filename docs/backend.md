@@ -814,7 +814,8 @@ last block the chain still has and re-indexes (`/health` counts
 `DEMO_TOKEN` (default `sp-devnode-demo` on the dev node), `DEMO_KEY` (default
 Nitro's dev key on the dev node), `TEACHER_DEVICE=cuda` (the GPU teacher),
 `TEACHER_PYTHON`, `TEACHER_SEED`, `TEACHER_PATHS`, `BACKEND_PORT`,
-`DEVNODE_PORT` (then re-run `deploy.py` so `config.json` has the RPC port).
+`DEVNODE_PORT` (then re-run `deploy.py` so `config.json` has the RPC port),
+`ARCHIVE_RPC_URL` (the testnet, below).
 The SQLite db is `backend/data/<chainId>.sqlite`; deleting it while the
 service is stopped just makes it rescan.
 
@@ -845,11 +846,22 @@ stays in its docker volume; to go back, restore a dev-node `config.json` and
 run `install.sh` again.
 
 RPC, measured 2026-10-02: `rpc.testnet.chain.robinhood.com` takes batches of
-20 calls (60 are refused, 429) and keeps state for the last 15 to 55 minutes,
-so after a longer stop the history has a hole. dRPC's free endpoint keeps all
-state but refuses batches of more than 3, which the service needs. An RPC
-with a key goes in `--rpc`, with `--public-rpc` the URL `/config` hands to
-browsers; `/health` and the 503s never show the `--rpc` path.
+20 calls (60 are refused, 429) and log ranges of 100,000 blocks, but keeps
+state for the last 15 to 55 minutes only: a call at an older block fails with
+`historical state … is not available`. Alchemy's free plan keeps all state
+and takes batches of 200, but limits `eth_getLogs` to 10 blocks, which the
+indexer can't work with; dRPC's free endpoint refuses batches of more than 3.
+
+So the service takes two RPCs. `--rpc` is the one it indexes and reads from.
+**`ARCHIVE_RPC_URL`** in `backend/.env` (it may carry a key; restart the
+service after setting it) is asked only for what `--rpc` refuses for pruned
+state (`app/chain.py`: per call inside a batch, in requests of 20 calls,
+at most 10 calls a second, a 429 waits and tries again). With it the history
+backfill and the catch-up after a stop work on the public RPC; without it
+the history holds only what was sampled live. At start the service checks
+that the archive is the same chain and logs its host, or that it is not
+used and why. An RPC with a key as `--rpc` needs `--public-rpc`, the URL
+`/config` hands to browsers; `/health` and the 503s never show an RPC's path.
 
 The service holds no key on the testnet. The curator stages feeds and series,
 lists them, pushes a price at least every 26 h and records each observation's
@@ -929,6 +941,7 @@ runs are `backend/scenarios/logs/happy_path-{clock,hybrid}.log`.
 ```sh
 cd backend && .venv/bin/python -m pytest tests -q                # against the dev node; skipped if it is down
 SP_CLEAN=1 .venv/bin/python -m pytest tests/test_wp0_devnode.py   # also recreate the chain and deploy from scratch
+.venv/bin/python -m pytest tests/test_archive.py -q              # the archive fallback; needs no node (marker `offline`)
 ```
 
 The route tests start their own service (`run.sh` on 8651 with a temporary
