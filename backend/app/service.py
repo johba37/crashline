@@ -68,7 +68,8 @@ class Service:
         if s is None or s.head is None:
             raise ApiError(503, "NotReady", {"status": s.status if s else "starting", "error": self.indexer.error})
         if s.status == "DeploymentMissing":
-            raise ApiError(503, "DeploymentMissing", {"rpcUrl": s.cfg["rpcUrl"],
+            # the public URL: rpcUrl may carry an API key
+            raise ApiError(503, "DeploymentMissing", {"rpcUrl": s.cfg.get("publicRpcUrl", s.cfg["rpcUrl"]),
                                                       "deploymentBlock": s.cfg["deploymentBlock"]})
         return s
 

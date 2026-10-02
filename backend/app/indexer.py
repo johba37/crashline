@@ -38,6 +38,7 @@ import threading
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
+from urllib.parse import urlsplit
 
 from . import config as cfgmod
 from .chain import REGISTRY, Chain, RpcError
@@ -74,6 +75,12 @@ class Snapshot:
 def fingerprint(cfg: dict) -> str:
     return json.dumps({k: cfg.get(k) for k in ("chainId", "genesisHash", "deploymentBlock", "deploymentBlockHash")}
                       | {"desk": cfg["addresses"]["desk"]}, sort_keys=True)
+
+
+def redact(text: str, cfg: dict) -> str:
+    """`text` without the RPC URL's path: /health reports the last error, and the path may be an API key."""
+    path = urlsplit(cfg.get("rpcUrl", "")).path
+    return text.replace(path, "/...") if len(path) > 1 else text
 
 
 def db_path_for(cfg: dict) -> Path:
@@ -176,7 +183,7 @@ class Indexer:
                 busy = self.poll_once()
                 self.error = None
             except Exception as e:  # keep going: the node may be restarting
-                self.error = f"{type(e).__name__}: {e}"
+                self.error = redact(f"{type(e).__name__}: {e}", self.cfg)
                 log.warning("poll failed: %s", self.error)
                 self._set_status("error")
             if not busy:
