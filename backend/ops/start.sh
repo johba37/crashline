@@ -2,17 +2,21 @@
 # Brings up the dev node and the service and waits until /config answers.
 # With the systemd user units installed (install.sh) it starts them; otherwise it runs
 # node.sh and run.sh under nohup with a pid file in backend/run/.
+# With a config.json for another chain (the testnet) it starts the service alone.
 set -euo pipefail
 BACKEND="$(cd "$(dirname "$0")/.." && pwd)"
 if [ -f "$BACKEND/.env" ]; then set -a; . "$BACKEND/.env"; set +a; fi
+. "$BACKEND/ops/network.sh"
 PORT="${BACKEND_PORT:-8650}"
 RUN="$BACKEND/run"
 mkdir -p "$RUN"
 if systemctl --user cat sp-backend.service >/dev/null 2>&1; then
-  systemctl --user start sp-devnode.service
-  # the node unit stays "active" after its start script; if the container died since, run it again
-  if [ "$(docker container inspect -f '{{.State.Running}}' "${DEVNODE_NAME:-sp-devnode}" 2>/dev/null)" != true ]; then
-    systemctl --user restart sp-devnode.service
+  if devnode_config; then
+    systemctl --user start sp-devnode.service
+    # the node unit stays "active" after its start script; if the container died since, run it again
+    if [ "$(docker container inspect -f '{{.State.Running}}' "${DEVNODE_NAME:-sp-devnode}" 2>/dev/null)" != true ]; then
+      systemctl --user restart sp-devnode.service
+    fi
   fi
   systemctl --user start sp-backend.service
 else

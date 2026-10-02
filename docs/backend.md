@@ -824,17 +824,38 @@ service is stopped just makes it rescan.
 backend/.venv/bin/python backend/ops/make-config.py deployments/46630.json \
     --rpc https://rpc.testnet.chain.robinhood.com --deployment-block 127553444 \
     --out backend/config.json   # demo off; the block is given because this RPC has no old state
-backend/run.sh
+backend/ops/install.sh          # with this config: sp-backend alone, the dev node's units stopped and removed
+backend/ops/start.sh
 ```
 
 `make-config.py` takes the addresses from the file `Deploy.s.sol` writes
-(`mockFeed` becomes the feed `RHTSLA`), finds the deployment block by
+(its `feeds` map of name to address if it has one, else `mockFeed` as the
+feed `RHTSLA`), finds the deployment block by
 bisecting `eth_getCode(seriesFactory)` (or takes `--deployment-block`), and
 records the genesis and deployment block hashes. The history backfill needs
 `eth_call` at past blocks; on an RPC without archive state the backfill of
 past slots logs errors and the history holds only what was sampled live.
 Nothing else changes: the same routes, `/config` reports the testnet
 addresses, `demo: false`, and `/demo/*` answers 403.
+
+With `config.json` for another chain than the dev node's, `install.sh`,
+`start.sh` and `stop.sh` leave the dev node alone, and `node.sh` does nothing
+(it would otherwise redeploy and rewrite `config.json`). The dev node's chain
+stays in its docker volume; to go back, restore a dev-node `config.json` and
+run `install.sh` again.
+
+RPC, measured 2026-10-02: `rpc.testnet.chain.robinhood.com` takes batches of
+20 calls (60 are refused, 429) and keeps state for the last 15 to 55 minutes,
+so after a longer stop the history has a hole. dRPC's free endpoint keeps all
+state but refuses batches of more than 3, which the service needs. An RPC
+with a key goes in `--rpc`, with `--public-rpc` the URL `/config` hands to
+browsers; `/health` and the 503s never show the `--rpc` path.
+
+The service holds no key on the testnet. The curator stages feeds and series,
+lists them, pushes a price at least every 26 h and records each observation's
+fixing with `contracts/script/curator.sh` on their own machine (its head has
+the commands). A feed the curator deploys gets its name from a `feeds` entry
+in `deployments/46630.json` and a new `make-config.py` run.
 
 ### Choices where the spec is silent (WP6)
 

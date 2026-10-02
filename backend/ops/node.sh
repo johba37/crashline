@@ -6,6 +6,9 @@ set -euo pipefail
 BACKEND="$(cd "$(dirname "$0")/.." && pwd)"
 export PATH="$HOME/.foundry/bin:$HOME/.cargo/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 if [ -f "$BACKEND/.env" ]; then set -a; . "$BACKEND/.env"; set +a; fi
+. "$BACKEND/ops/network.sh"
+# never deploy over a testnet config: deploy.py would rewrite config.json for the dev node
+devnode_config || { echo "config.json is for another chain: no dev node to start"; exit 0; }
 
 for i in $(seq 1 150); do docker info >/dev/null 2>&1 && break; [ "$i" = 150 ] && { echo "docker not available" >&2; exit 1; }; sleep 2; done
 
