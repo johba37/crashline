@@ -7,8 +7,9 @@ import {ERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.so
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {DeskFixture} from "./DeskFixture.t.sol";
 import {MockPricer} from "./mocks/MockPricer.sol";
-import {MockUSDG} from "../src/MockUSDG.sol";
+import {MockUSDG} from "../src/mocks/MockUSDG.sol";
 import {Desk} from "../src/Desk.sol";
+import {IDeskCover} from "../src/interfaces/IDeskCover.sol";
 import {NoteQuoter} from "../src/NoteQuoter.sol";
 import {NoteSeries} from "../src/NoteSeries.sol";
 import {SeriesFactory} from "../src/SeriesFactory.sol";
@@ -23,7 +24,7 @@ contract DeskTest is DeskFixture {
 
     function test_constructor_wrong_asset() public {
         MockUSDG other = new MockUSDG();
-        vm.expectRevert(Desk.WrongAsset.selector);
+        vm.expectRevert(IDesk.WrongAsset.selector);
         new Desk(IERC20(address(other)), factory, quoter, address(this), 1 hours);
     }
 
@@ -450,7 +451,7 @@ contract DeskTest is DeskFixture {
         assertEq(desk.heldSeries().length, 64);
         desk.listSeries(more[63], pricer, VOL, CAP);
         vm.prank(alice);
-        vm.expectRevert(Desk.HeldSeriesLimit.selector);
+        vm.expectRevert(IDeskCover.HeldSeriesLimit.selector);
         desk.buy(more[63], 1e6, type(uint256).max, 0, address(0), alice);
     }
 

@@ -138,8 +138,8 @@ echo "  certified observationsRemaining $OBS_MIN..$OBS_MAX, featureSpecVersion $
 
 # --- 2. Solidity contracts ----------------------------------------------------------------
 step "2. MockUSDG, MockChainlinkFeed, SeriesFactory, NoteQuoter, Desk"
-USDG=$(create src/MockUSDG.sol:MockUSDG)
-FEED=$(create src/MockChainlinkFeed.sol:MockChainlinkFeed "RHTSLA / USD (staged)")
+USDG=$(create src/mocks/MockUSDG.sol:MockUSDG)
+FEED=$(create src/mocks/MockChainlinkFeed.sol:MockChainlinkFeed "RHTSLA / USD (staged)")
 FACTORY=$(create src/SeriesFactory.sol:SeriesFactory "$USDG")
 QUOTER=$(create src/NoteQuoter.sol:NoteQuoter 93600)
 # curator = dev account; 60 s pre-observation band so the demo can trade minutes before an observation

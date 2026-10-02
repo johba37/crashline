@@ -923,6 +923,19 @@
   },
   {
     "type": "event",
+    "name": "MinSecsToObservationSet",
+    "inputs": [
+      {
+        "name": "secs",
+        "type": "uint32",
+        "indexed": false,
+        "internalType": "uint32"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "NoteBought",
     "inputs": [
       {
@@ -1241,5 +1254,10 @@
         "internalType": "uint40"
       }
     ]
+  },
+  {
+    "type": "error",
+    "name": "WrongAsset",
+    "inputs": []
   }
 ]

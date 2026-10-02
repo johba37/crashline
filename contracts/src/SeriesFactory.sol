@@ -32,8 +32,6 @@ contract SeriesFactory is ISeriesFactory {
     mapping(address => bool) public isSeries;
     address[] internal _allSeries;
 
-    error BadCollateral();
-
     constructor(address collateral_) {
         if (IERC20Metadata(collateral_).decimals() != COLLATERAL_DECIMALS) revert BadCollateral();
         collateral = collateral_;

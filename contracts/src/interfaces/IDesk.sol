@@ -9,11 +9,11 @@ import {ISeriesFactory} from "./ISeriesFactory.sol";
 /// L3: the market for NOTE, and the pricer's only in-path use. An ERC-4626
 /// vault on USDG: LPs deposit USDG; the Desk sells NOTE around the model's
 /// quote and buys it back for early exit. The WRITER leg, the two prices and
-/// the risk budget are in IDeskCover, which extends this interface without
-/// changing its ABI. All policy lives here: the curated grid, which model
-/// prices which series, vol, caps, bands, fee cap. A model covers one product (note terms), not a
-/// stock or a series: every series with those terms can share it, and a stock
-/// enters only through the vol the listing sets.
+/// the risk budget are in IDeskCover, which extends this interface. All policy
+/// lives here: the curated grid, which model prices which series, vol, caps,
+/// bands, fee cap. A model covers one product (note terms), not a stock or a
+/// series: every series with those terms can share it, and a stock enters only
+/// through the vol the listing sets.
 ///
 /// Units: noteAmount in NOTE base units (6 decimals, 1 NOTE = 1 USDG notional);
 /// priceBps (the price applied: the model's quote moved by the listing's
@@ -30,10 +30,10 @@ interface IDesk is IERC4626 {
         bool active;
         ISurrogatePricer pricer; // certified model for this series' product
         uint16 volBpsAnnual; // implied vol used for every quote of this series
-        // (a vol-pinned model refuses any other vol: see pricer.certifiedRange(2))
+        // (a vol-pinned model refuses any other vol: see pricer.certifiedRange(FIELD_VOL))
         uint128 capNotional; // max WRITER the Desk may hold in this series (6 decimals):
         // the NOTE it may sell beyond its inventory, by minting pairs
-        uint128 soldNotional; // WRITER the Desk holds now
+        uint128 soldNotional; // WRITER the Desk holds now; computed by listing(), not stored
     }
 
     /// Emitted on listing and on every update (new model, vol or cap).
@@ -65,6 +65,8 @@ interface IDesk is IERC4626 {
         bytes32 weightsHash
     );
     event Collected(address indexed series, uint256 collateralOut);
+    /// Emitted at construction and on every change of the observation band.
+    event MinSecsToObservationSet(uint32 secs);
 
     error NotListed(address series);
     error NotFactorySeries(address series);
@@ -73,6 +75,8 @@ interface IDesk is IERC4626 {
     error FeeTooHigh(uint16 feeBps);
     error Slippage(uint256 actual, uint256 limit);
     error TooCloseToObservation(uint40 obsTime); // ε-band before each observation
+    /// The factory's collateral is not the Desk's asset (constructor).
+    error WrongAsset();
     // plus INoteQuoter errors and ISurrogatePricer.OutOfRange, bubbled up
 
     function factory() external view returns (ISeriesFactory);

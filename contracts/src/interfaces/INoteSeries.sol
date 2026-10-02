@@ -51,8 +51,9 @@ struct SeriesState {
 ///   maxPayout = 1 + c * (N + 1);  WRITER gets maxPayout - NOTE payout
 /// Maturity is one period after the last barrier observation on purpose: the
 /// final price moves for one more period after the knock-in state is fixed,
-/// which removes the ~40% knock-in jump a same-day final check would create
-/// (the reason the knock-in barrier passes K1).
+/// which removes the ~40% knock-in jump a same-day final check would create.
+/// Without that jump the price is smooth near the knock-in barrier, so the
+/// model can learn it there.
 /// Fallback: a fixing still unrecorded MAX_ROLL + FALLBACK_GRACE after its
 /// time reuses the previous fixing (the strike fixing for i = 1).
 interface INoteSeries {
@@ -71,6 +72,8 @@ interface INoteSeries {
     error AlreadySettled();
     error NotSettled();
     error ZeroAmount();
+    error OnlyFactory(); // initialize called by anyone but the deploying factory
+    error AlreadyInitialized(); // initialize called twice
 
     // --- identity -------------------------------------------------------------
     function factory() external view returns (address);

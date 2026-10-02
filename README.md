@@ -14,11 +14,13 @@ the USDG that sits idle in the Desk and in the series; and
 option prices (the market's crash premium), one model per group of stocks.
 
 ```
-contracts/src/interfaces/  frozen v1 interfaces (factory, series, tokens, quoter, Desk, recorder, pricer)
+contracts/README.md        entry point for reading the contracts: layers, where to start, commands
+contracts/src/interfaces/  v1 interfaces (factory, series, tokens, quoter, Desk, recorder, pricer)
                            + IDeskCover: the Desk's WRITER leg, two prices, risk budget
                            + IDeskQueue: LP redemption queue
 contracts/src/             SeriesFactory, NoteSeries, SeriesToken, AutocallPayout, NoteQuoter,
-                           Desk (ERC-4626 on USDG), FixingsRecorder, MockChainlinkFeed, MockUSDG
+                           Desk (ERC-4626 on USDG), FixingsRecorder
+contracts/src/mocks/       MockChainlinkFeed, MockUSDG (test and dev-node stand-ins)
 contracts/script/          Deploy.s.sol (Robinhood testnet), e2e-devnode.sh, export-abi.sh
 abi/                       interface ABIs for the frontend (contracts/script/export-abi.sh)
 stylus/pricer-model/       Rust/Stylus model contract: priceBps(PricerInputs), weightsHash()

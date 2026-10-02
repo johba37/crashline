@@ -385,6 +385,11 @@
   },
   {
     "type": "error",
+    "name": "BadCollateral",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "BadCoupon",
     "inputs": []
   },

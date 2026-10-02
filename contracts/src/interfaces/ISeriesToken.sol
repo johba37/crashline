@@ -7,6 +7,8 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 /// fees), decimals = the collateral's (USDG: 6). Only its series can mint or burn.
 interface ISeriesToken is IERC20Metadata {
     error OnlySeries();
+    error OnlyFactory(); // initialize called by anyone but the deploying factory
+    error AlreadyInitialized(); // initialize called twice
 
     function series() external view returns (address);
     function isNote() external view returns (bool); // false = WRITER
