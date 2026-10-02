@@ -47,7 +47,7 @@ type Base = Pick<
   | 'pendingObservation'
 >
 
-/** The Desk's listed series with quotes, feeds and models, read from the chain every 15 s. */
+/** The Desk's listed series (the delisted ones apart) with quotes, feeds and models, read from the chain every 15 s. */
 export function useChainMarket(deployment: Deployment | null): {
   data: MarketData | undefined
   isLoading: boolean
@@ -96,7 +96,7 @@ export function useChainMarket(deployment: Deployment | null): {
   // No answer (yet), or a revert because a held series has no price: the queue can't be paid.
   const filled = queued && queueFill.isSuccess ? queueFill.data.result : undefined
 
-  // Stage 2: every listed series (delisted ones too, filtered below).
+  // Stage 2: every listed series, delisted ones too (a wallet may still hold them).
   const seriesContracts = useMemo(
     () => (listed ?? []).flatMap((s) => seriesReads(desk, s)),
     [desk, listed],
@@ -107,27 +107,27 @@ export function useChainMarket(deployment: Deployment | null): {
     query: { enabled: on && seriesContracts.length > 0, refetchInterval: REFETCH_MS },
   })
   const seriesData = seriesQuery.data
-  const active = useMemo(() => {
+  const bases = useMemo(() => {
     if (!listed) return undefined
     if (listed.length === 0) return []
     return seriesData ? parseSeries(listed, seriesData) : undefined
   }, [listed, seriesData])
 
-  // Stage 3: quotes, feed and inventory per active series, and the models that price them.
+  // Stage 3: quotes, feed and inventory per series, and the models that price them.
   const pricers = useMemo(
-    () => [...new Set((active ?? []).map((v) => v.listing.pricer))],
-    [active],
+    () => [...new Set((bases ?? []).map((v) => v.listing.pricer))],
+    [bases],
   )
   const quoteContracts = useMemo(
     () =>
-      active && quoter
+      bases && quoter
         ? [
             blockTimestamp,
-            ...active.flatMap((v) => quoteReads(desk, quoter, v)),
+            ...bases.flatMap((v) => quoteReads(desk, quoter, v)),
             ...pricers.flatMap(modelReads),
           ]
         : [],
-    [active, desk, pricers, quoter],
+    [bases, desk, pricers, quoter],
   )
   const quoteQuery = useReadContracts({
     contracts: quoteContracts,
@@ -141,11 +141,11 @@ export function useChainMarket(deployment: Deployment | null): {
   const blockTime = block.data?.timestamp
 
   const data = useMemo((): MarketData | undefined => {
-    if (!deskOk || !active || !quoteData) return undefined
+    if (!deskOk || !bases || !quoteData) return undefined
     const [, , usdg, queuedShares, maxFeeBps, maxCoverFeeBps, backstopShareBps, , reserved, balance] = deskReads
     const timestamp = value<bigint>(quoteData[0])
     let at = 1
-    const series = active.map((v) => {
+    const views = bases.map((v) => {
       const view = parseQuotes(v, quoteData.slice(at, at + QUOTE_READS))
       at += QUOTE_READS
       return view
@@ -160,7 +160,8 @@ export function useChainMarket(deployment: Deployment | null): {
       source: 'chain',
       desk,
       usdg: usdg.result!,
-      series,
+      series: views.filter((v) => v.listing.active),
+      delisted: views.filter((v) => !v.listing.active),
       models,
       queue: {
         waiting: filled ? queuedShares.result! - filled[0] : queuedShares.result!,
@@ -176,7 +177,7 @@ export function useChainMarket(deployment: Deployment | null): {
       // else the local clock at the read
       now: Number(timestamp ?? blockTime ?? Math.floor(readAt / 1000)),
     }
-  }, [active, blockTime, desk, deskOk, deskReads, filled, pricers, quoteData, readAt])
+  }, [bases, blockTime, desk, deskOk, deskReads, filled, pricers, quoteData, readAt])
 
   return {
     data: on ? data : undefined,
@@ -207,13 +208,12 @@ function seriesReads(desk: Address, s: Address): ContractFunctionParameters[] {
   ]
 }
 
-/** Active listings only. A series whose plain reads fail is left out (never expected). */
+/** Every listing, active or not. A series whose plain reads fail is left out (never expected). */
 function parseSeries(listed: readonly Address[], reads: readonly Read[]): Base[] {
   return listed.flatMap((address, i) => {
     const r = reads.slice(i * SERIES_READS, (i + 1) * SERIES_READS)
     if (r.length < SERIES_READS || r.some((x) => x.status === 'failure')) return []
     const listing = value<Out<typeof deskAbi, 'listing'>>(r[0])!
-    if (!listing.active) return []
     const [pending, obsTime] = value<Out<typeof noteSeriesAbi, 'pendingObservation'>>(r[7])!
     return [
       {

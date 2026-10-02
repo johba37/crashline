@@ -1,13 +1,13 @@
 import { CaretDown, Info } from '@phosphor-icons/react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Address, Hex } from 'viem'
 import { useAccount } from 'wagmi'
 import {
   addsToDesk, bestCase, crashPayout, date, level, moveTo, noteOnOffer, observationsLeft, pct, roomFor, signedPct, soldOut, tradeAmounts, usd, usdg, wholeUsdg,
 } from '../../market/format.ts'
 import { FEE_BPS, FEE_RECEIVER, SLIPPAGE_BPS } from '../../market/settings.ts'
-import type { MarketData, SeriesView, TradeKind, TradeState } from '../../market/types.ts'
+import type { CollectKind, MarketData, SeriesView, TradeKind, TradeState } from '../../market/types.ts'
 import { chain } from '../../wagmi.ts'
 import type { Goal } from './LevelPicker.tsx'
 import Notice from './Notice.tsx'
@@ -16,9 +16,12 @@ import Term from './Term.tsx'
 
 export type Trade = {
   state: TradeState
-  run: (p: { series: SeriesView; kind: TradeKind; amount: bigint; slippageBps: number; feeBps: number; feeReceiver: Address }) => Promise<void>
+  run: (p: { series: SeriesView; kind: TradeKind | CollectKind; amount: bigint; slippageBps: number; feeBps: number; feeReceiver: Address }) => Promise<void>
   reset: () => void
 }
+
+/** An order that went through: what it was, and its transaction (none on a test run). */
+export type Placed = { kind: TradeKind; hash?: Hex }
 
 const KIND: Record<Goal, [TradeKind, TradeKind]> = { protect: ['buyCover', 'sellCover'], earn: ['buy', 'sell'] }
 const ACTION: Record<TradeKind, [string, string]> = {
@@ -89,19 +92,37 @@ function Outcome({ when, get, gain, children }: { when: string; get: string; gai
   )
 }
 
-/** The last step: what it costs now and what comes back in each case, in real money, then the button. */
-export default function Order({ s, goal, amount, amountOk, market, trade }: { s: SeriesView; goal: Goal; amount: bigint; amountOk: boolean; market: MarketData; trade: Trade }) {
+/**
+ * The last step: what it costs now and what comes back in each case, in real money, then the button.
+ * An order that went through is not sent twice: it is reported with `onPlaced` and handed back as
+ * `placed` for as long as the steps above stay as they are, and until then the button rests. What
+ * was bought has its own button to `onView` it in My positions, which is also where a holding is
+ * sold from: the form itself sells only a sold-out note, where there is nothing to buy.
+ */
+export default function Order({ s, goal, amount, amountOk, market, trade, placed, onPlaced, onView }: {
+  s: SeriesView; goal: Goal; amount: bigint; amountOk: boolean; market: MarketData; trade: Trade
+  placed: Placed | null; onPlaced: (placed: Placed | null) => void; onView: () => void
+}) {
   const { isConnected } = useAccount()
   // A sold-out note can only be sold back, so its order opens on selling. Only where it opens:
   // the market is read again every 15 s, and the form mustn't change sides under the reader.
   const out = soldOut(s, goal === 'earn')
-  const [selling, setSelling] = useState(out)
+  const [selling, setSelling] = useState(placed ? placed.kind === KIND[goal][1] : out)
 
   const kind = KIND[goal][selling ? 1 : 0]
   const quote = { buy: s.noteAsk, sell: s.noteBid, buyCover: s.coverAsk, sellCover: s.coverBid }[kind]
   const amounts = quote.ok ? tradeAmounts(kind, amount, quote.value, FEE_BPS) : null
   const stop = blocker(s, kind, amount, amountOk, market)
   const busy = ['waiting', 'quoting', 'approving', 'trading'].includes(trade.state.step)
+  // Only an order sent from this form is its own: the trade's status is shared with My positions.
+  const sent = useRef(false)
+  useEffect(() => {
+    if (!sent.current || trade.state.step !== 'done') return
+    sent.current = false
+    onPlaced({ kind, hash: trade.state.hash })
+  }, [kind, onPlaced, trade.state])
+  const done = placed !== null || trade.state.step === 'done'
+  const hash = placed ? placed.hash : trade.state.hash
   const [label, busyLabel] = ACTION[kind]
   const sym = s.symbol
   const start = usd(s.state.initialFixing)
@@ -219,6 +240,7 @@ export default function Order({ s, goal, amount, amountOk, market, trade }: { s:
 
   const submit = () => {
     if (stop) return
+    sent.current = true
     void trade.run({ series: s, kind, amount, slippageBps: SLIPPAGE_BPS, feeBps: FEE_BPS, feeReceiver: FEE_RECEIVER })
   }
 
@@ -265,10 +287,18 @@ export default function Order({ s, goal, amount, amountOk, market, trade }: { s:
         <Notice status={{ tone: 'hold', icon: Info, label: 'An earlier request is still open in your wallet', message: 'It belongs to the order you changed. Reject it in your wallet, and this order goes on by itself.' }} />
       )}
       {trade.state.step === 'failed' && trade.state.refusal && <Notice status={refusalStatus(trade.state.refusal)} />}
-      {trade.state.step === 'done' && (
-        <Notice status={trade.state.hash ? confirmed : { ...confirmed, label: 'Test run done', message: 'Test mode is on, so nothing was bought and your wallet wasn’t asked for anything.' }}>
-          {trade.state.hash && <TxLink hash={trade.state.hash} />}
+      {done && (
+        <Notice status={hash
+          ? { ...confirmed, message: `${selling ? 'The USDG is' : 'It’s'} in your wallet. Change a step above to ${selling ? 'sell' : 'buy'} again.` }
+          : { ...confirmed, label: 'Practice run done', message: 'This is the prototype, so nothing was bought and your wallet wasn’t asked for anything. Change a step above to run it again.' }}>
+          {hash && <TxLink hash={hash} />}
         </Notice>
+      )}
+      {/* What was just bought, one click away. Not the orange of the order's own button: that one buys. */}
+      {done && hash && !selling && (
+        <button type="button" onClick={onView} className="h-12 rounded-full bg-ink px-6 type-button text-surface transition-[background-color] duration-160 ease-out hover:bg-ink/85 active:bg-ink/75">
+          View position
+        </button>
       )}
 
       {!isConnected ? (
@@ -283,7 +313,7 @@ export default function Order({ s, goal, amount, amountOk, market, trade }: { s:
         <button
           type="button"
           onClick={submit}
-          disabled={!!stop || busy}
+          disabled={!!stop || busy || done}
           aria-busy={busy || undefined}
           className="h-12 rounded-full bg-accent px-6 type-button text-on-accent transition-[background-color,box-shadow] duration-160 ease-out hover:bg-accent-hover hover:shadow-ignition active:bg-accent-pressed disabled:cursor-not-allowed disabled:bg-surface-overlay disabled:text-ink-faint disabled:shadow-none"
         >
@@ -293,9 +323,14 @@ export default function Order({ s, goal, amount, amountOk, market, trade }: { s:
 
       <div className="flex flex-wrap items-center justify-between gap-2 type-caption text-ink-muted">
         <span className="inline-flex items-center gap-1"><Term t="slippage">Slippage limit</Term>: 0.5%</span>
-        {!(out && selling) && (
-          <button type="button" onClick={() => { setSelling(!selling); trade.reset() }} className="rounded-full px-2 py-1 underline transition-colors duration-160 hover:text-ink">
-            {selling ? `Buy ${token} instead` : `Already hold ${token}? Sell it`}
+        {/* A form that opened on selling stays on it while the market is re-read: once the note can be bought again, this leads back. */}
+        {selling ? !out && (
+          <button type="button" onClick={() => { setSelling(false); trade.reset(); onPlaced(null) }} className="rounded-full px-2 py-1 underline transition-colors duration-160 hover:text-ink">
+            Buy {token} instead
+          </button>
+        ) : (
+          <button type="button" onClick={onView} className="rounded-full px-2 py-1 underline transition-colors duration-160 hover:text-ink">
+            Already hold {token}? Sell it in My positions
           </button>
         )}
       </div>
