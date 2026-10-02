@@ -847,7 +847,8 @@ stays in its docker volume; to go back, restore a dev-node `config.json` and
 run `install.sh` again.
 
 RPC, measured 2026-10-02: `rpc.testnet.chain.robinhood.com` takes batches of
-20 calls (60 are refused, 429) and log ranges of 100,000 blocks, but keeps
+55 calls (66 are refused, 429; the service sends its `eth_call`s 50 to a
+request, `CALL_BATCH` in `app/chain.py`) and log ranges of 100,000 blocks, but keeps
 state for the last 15 to 55 minutes only: a call at an older block fails with
 `historical state … is not available`. Alchemy's free plan keeps all state
 and takes batches of 200, but limits `eth_getLogs` to 10 blocks, which the
@@ -869,6 +870,23 @@ lists them, pushes a price at least every 26 h and records each observation's
 fixing with `contracts/script/curator.sh` on their own machine (its head has
 the commands). A feed the curator deploys gets its name from a `feeds` entry
 in `deployments/46630.json` and a new `make-config.py` run.
+
+`curator.sh keep` is the recurring part as one run, meant for cron every hour:
+each feed of an active listing gets the price of its real Chainlink feed on
+Robinhood Chain mainnet (there are none on the testnet), each observation
+that has passed gets its fixing, and each series that has ended gets a
+successor with the same terms, struck at the time the old one ended and
+listed as the old one was. A mock feed takes prices from its owner only and
+the Desk lists for its owner only, so the run needs the wallet that owns
+both; with any other wallet it still records fixings and creates the
+successor, says what it couldn't do and exits 1.
+
+Since 2026-10-02 that wallet is a keeper key on this host
+(`0x100a2cEAAFd6489a3Af9d9f9Ca537d792aE84cA7`, an encrypted keystore and its
+password file in `/opt/ai/secrets`, outside the repo): it owns the Desk and
+the four feeds of the listed series, and the user's crontab runs `keep` with
+it at minute 2 of every hour, logging to `/opt/ai/cache/curator-keep.log`.
+The service itself still holds no key.
 
 ### Choices where the spec is silent (WP6)
 
