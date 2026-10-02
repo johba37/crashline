@@ -21,7 +21,8 @@ contracts/src/interfaces/  v1 interfaces (factory, series, tokens, quoter, Desk,
 contracts/src/             SeriesFactory, NoteSeries, SeriesToken, AutocallPayout, NoteQuoter,
                            Desk (ERC-4626 on USDG), FixingsRecorder
 contracts/src/mocks/       MockChainlinkFeed, MockUSDG (test and dev-node stand-ins)
-contracts/script/          Deploy.s.sol (Robinhood testnet), e2e-devnode.sh, export-abi.sh
+contracts/script/          Deploy.s.sol (Robinhood testnet), curator.sh (the curator's steps there),
+                           e2e-devnode.sh, export-abi.sh
 abi/                       interface ABIs for the frontend (contracts/script/export-abi.sh)
 stylus/pricer-model/       Rust/Stylus model contract: priceBps(PricerInputs), weightsHash()
 tools/pricer_quant.py      integer reference (bit-exact twin), float→int quantizer, hash

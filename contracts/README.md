@@ -32,6 +32,7 @@ forge build                # compiles src/ without compiler or lint findings
 forge test                 # unit, fuzz and invariant tests
 script/export-abi.sh       # writes ../abi/*.json for the frontend
 script/e2e-devnode.sh      # full lifecycle on a local Nitro dev node (needs docker and cargo-stylus)
+script/curator.sh          # the curator's steps on the testnet, signed by their own wallet (needs cast, jq)
 ```
 
 What was checked and what was not: [../docs/contracts-review.md](../docs/contracts-review.md)
