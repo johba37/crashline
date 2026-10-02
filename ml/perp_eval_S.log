@@ -1,0 +1,59 @@
+model model/p1: weightsHash 0x650a942371b5608601728735d72df2e3b1687116f86f8ef15aad99cdac3ef807, 7145 parameters, featureSpecVersion 2
+set S: 45000 points; labels by the current teacher: True; points equal the construction: True; teacher grid n_k 256 (extrapolated): True
+outside the exclusions 44895, refused 105 (exactly the excluded points: True); pq.forward == vectorized integer forward on every priced point: True
+
+== formula + integer student vs teacher, bps of live notional ==
+region (outside exclusions unless stated)        n      max      p99    mean
+outside exclusions (GATE)                    44895     18.5      2.3    0.50
+inside exclusions (refused on-chain)           105     14.7     12.0    1.62
+clean, spot 5000-7000                        24444     18.5      2.9    0.58
+clean, elsewhere                              9237      1.9      1.3    0.40
+knocked in, spot 9500-10500                    954      2.7      1.9    0.55
+knocked in, elsewhere                        10260      2.1      1.1    0.38
+tau <= 1 day                                  9621     18.5      3.5    0.58
+tau 1-3 days                                 22011      7.4      2.3    0.51
+tau > 3 days                                 13263      3.2      1.4    0.41
+n = 0 (release before the fixing)             2376      6.8      2.7    0.59
+n = 1                                         2466     18.5      3.2    0.61
+n >= 2                                       40053     12.5      2.2    0.49
+vol <= 2500                                   3332     18.5      3.8    0.54
+vol 2501-4999                                20948     16.2      2.6    0.52
+vol 5000-7499                                12458      5.6      1.9    0.48
+vol >= 7500                                   8157      3.7      1.8    0.46
+spot < 5000                                   6162      1.2      1.0    0.35
+spot > 10500                                  5259      2.1      1.3    0.41
+  worst {'spot': 6017, 'vol': 2337, 'tau': 34261, 'n': 1, 'knockedIn': 0, 'err': 18.52197265625}
+  worst {'spot': 6017, 'vol': 2537, 'tau': 34261, 'n': 1, 'knockedIn': 0, 'err': 16.19140625}
+  worst {'spot': 6017, 'vol': 2137, 'tau': 34261, 'n': 1, 'knockedIn': 0, 'err': 16.173828125}
+  worst {'spot': 5998, 'vol': 2378, 'tau': 44515, 'n': 2, 'knockedIn': 0, 'err': 12.54052734375}
+  worst {'spot': 5897, 'vol': 2166, 'tau': 22361, 'n': 15, 'knockedIn': 0, 'err': -10.87939453125}
+  worst {'spot': 5989, 'vol': 2166, 'tau': 29994, 'n': 17, 'knockedIn': 0, 'err': -10.72509765625}
+  worst {'spot': 5989, 'vol': 2366, 'tau': 29994, 'n': 17, 'knockedIn': 0, 'err': -10.408203125}
+  worst {'spot': 5900, 'vol': 2101, 'tau': 24328, 'n': 5, 'knockedIn': 0, 'err': -10.04248046875}
+
+== formula alone vs teacher, the same points ==
+region (outside exclusions unless stated)        n      max      p99    mean
+outside exclusions (GATE)                    44895    181.2     70.4   15.16
+inside exclusions (refused on-chain)           105    121.6    117.8   29.68
+clean, spot 5000-7000                        24444    181.2     88.3   18.72
+clean, elsewhere                              9237     81.1     61.9   13.01
+knocked in, spot 9500-10500                    954    110.3     80.5   21.57
+knocked in, elsewhere                        10260     64.7     50.6    8.01
+tau <= 1 day                                  9621    178.6     99.6   19.95
+tau 1-3 days                                 22011    181.2     61.9   15.44
+tau > 3 days                                 13263    143.6     58.5   11.22
+n = 0 (release before the fixing)             2376    181.2    116.3   24.64
+n = 1                                         2466    120.9     72.1   12.24
+n >= 2                                       40053    178.6     64.8   14.78
+vol <= 2500                                   3332    178.6     84.9   11.22
+vol 2501-4999                                20948    181.2     81.1   13.89
+vol 5000-7499                                12458    112.0     63.0   15.74
+vol >= 7500                                   8157    110.3     66.7   19.14
+spot < 5000                                   6162     15.3      8.5    1.44
+spot > 10500                                  5259     67.3     61.0   17.14
+
+== S: vol-band spread P(vol - 200) - P(vol + 200), bps ==
+triplets 14965 (all three certified); teacher spread mean 121.4, p99 279.6, max 296.3, negative in 0
+formula + student  error on the spread: max 11.6, p99 2.5, mean 0.56; spread < 0 in 0
+formula alone      error on the spread: max 51.6, p99 11.2, mean 1.49; spread < 0 in 22
+formula + student  error on the mid: max 18.5, p99 2.3, mean 0.50

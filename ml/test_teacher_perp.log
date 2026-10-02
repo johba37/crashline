@@ -1,0 +1,79 @@
+teacher config: merton-earnings-tsla-2016-2026  r 0.04  rDiscount 0.0  lambda 75.7712/yr  sigmaJ 0.0482836  sigmaE 0.0831871  volRef 0.590315  cycle 13 fixings
+(a) weekly return law
+  PASS  vol 20%: |E[e^Z] / e^(r dt) - 1| 2.2e-16; variance of a 13-week cycle / (vol^2 * 13 dt) = 1.0000000
+  PASS  vol 55%: |E[e^Z] / e^(r dt) - 1| 4.4e-16; variance of a 13-week cycle / (vol^2 * 13 dt) = 1.0000000
+  PASS  vol 90%: |E[e^Z] / e^(r dt) - 1| 2.2e-16; variance of a 13-week cycle / (vol^2 * 13 dt) = 1.0000000
+(b) fixing rule: teacher (float) vs spec (integers), 400 random paths of 150 fixings
+  PASS  released principal, both legs, and the live notional: states equal at every fixing: True; max |float - integer| 2.6e-15
+(c) weekly operator: FFT form vs explicit matrices (n_k = 64)
+  PASS  max |difference|: 4.4e-16
+(d) fixed point, grid convergence, and the extrapolated teacher (4 * fine - coarse) / 3
+  PASS  vol 20%, 400 states: residual 1.8e-13; plain grids: max |n_k 128 - 256| 1.772 bps, |256 - 512| 0.457 bps (ratio 3.88, second order = 4); extrapolated: |(128, 256) - (256, 512)| 0.0187 bps
+  PASS  vol 55%, 400 states: residual 2.1e-14; plain grids: max |n_k 128 - 256| 0.316 bps, |256 - 512| 0.082 bps (ratio 3.88, second order = 4); extrapolated: |(128, 256) - (256, 512)| 0.0037 bps
+  PASS  vol 90%, 400 states: residual 2.1e-14; plain grids: max |n_k 128 - 256| 0.099 bps, |256 - 512| 0.026 bps (ratio 3.77, second order = 4); extrapolated: |(128, 256) - (256, 512)| 0.0023 bps
+(e) GBM limit (rho = r = 4%, dt = 1/52, vol 55%) vs ml/perp_note_check.mc, 2^18 paths, coupon 0
+      x 1.00 flag 0: quadrature  7700.31  MC  7699.53 (1.50)  diff +0.78 bps  z +0.52
+      x 0.95 flag 0: quadrature  7651.23  MC  7650.03 (1.53)  diff +1.19 bps  z +0.78
+      x 0.90 flag 0: quadrature  7566.51  MC  7567.53 (1.57)  diff -1.02 bps  z -0.65
+      x 0.80 flag 0: quadrature  7252.95  MC  7252.54 (1.51)  diff +0.41 bps  z +0.27
+      x 0.70 flag 0: quadrature  6664.46  MC  6664.44 (1.01)  diff +0.01 bps  z +0.01
+      x 0.65 flag 0: quadrature  6217.28  MC  6217.69 (0.75)  diff -0.41 bps  z -0.54
+      x 0.61 flag 0: quadrature  5783.93  MC  5784.53 (0.69)  diff -0.59 bps  z -0.86
+      x 0.95 flag 1: quadrature  7436.29  MC  7437.05 (1.48)  diff -0.75 bps  z -0.51
+      x 0.80 flag 1: quadrature  6772.74  MC  6773.54 (0.99)  diff -0.80 bps  z -0.81
+      x 0.60 flag 1: quadrature  5484.58  MC  5483.97 (0.46)  diff +0.61 bps  z +1.32
+      x 0.50 flag 1: quadrature  4702.57  MC  4702.79 (0.59)  diff -0.22 bps  z -0.37
+      x 0.40 flag 1: quadrature  3848.25  MC  3847.94 (0.75)  diff +0.31 bps  z +0.41
+  PASS  12 states: max |z| 1.32
+(f) model P1 world: quadrature vs brute-force MC, 2^18 paths
+      vol 20% x 1.00 flag 0 tau  7.0 d tE  40.0 d: quadrature  9863.23  MC  9864.22 (0.56)  diff -0.99 bps  z -1.78
+      vol 20% x 0.90 flag 0 tau  7.0 d tE   3.0 d: quadrature  9805.88  MC  9806.43 (0.76)  diff -0.55 bps  z -0.73
+      vol 20% x 0.62 flag 0 tau  1.0 d tE  70.0 d: quadrature  7359.50  MC  7359.16 (1.18)  diff +0.35 bps  z +0.29
+      vol 20% x 0.60 flag 0 tau  7.0 d tE  20.0 d: quadrature  6605.00  MC  6603.49 (1.23)  diff +1.51 bps  z +1.23
+      vol 20% x 0.55 flag 0 tau  3.5 d tE   4.0 d: quadrature  5716.46  MC  5716.34 (0.26)  diff +0.12 bps  z +0.45
+      vol 20% x 1.08 flag 0 tau  2.0 d tE  60.0 d: quadrature  9866.38  MC  9866.75 (0.54)  diff -0.37 bps  z -0.69
+      vol 20% x 0.50 flag 1 tau  7.0 d tE  11.0 d: quadrature  5203.42  MC  5203.22 (0.26)  diff +0.20 bps  z +0.78
+      vol 20% x 1.05 flag 1 tau  2.3 d tE  55.0 d: quadrature  9865.51  MC  9865.70 (0.55)  diff -0.20 bps  z -0.36
+      vol 20% x 0.30 flag 1 tau  5.0 d tE  97.0 d: quadrature  3125.28  MC  3125.02 (0.18)  diff +0.26 bps  z +1.48
+      vol 20% x 0.90 flag 0 tau  0.0 d tE   0.0 d: quadrature  9809.22  MC  9808.79 (0.74)  diff +0.43 bps  z +0.58
+      vol 20% x 0.90 flag 1 tau  0.0 d tE  36.0 d: quadrature  9047.45  MC  9047.07 (0.95)  diff +0.38 bps  z +0.40
+      vol 20% x 0.70 flag 0 tau  0.0 d tE  91.0 d: quadrature  8954.41  MC  8951.01 (1.48)  diff +3.40 bps  z +2.31
+      vol 55% x 1.00 flag 0 tau  7.0 d tE  40.0 d: quadrature  7961.37  MC  7959.13 (1.57)  diff +2.24 bps  z +1.43
+      vol 55% x 0.90 flag 0 tau  7.0 d tE   3.0 d: quadrature  7804.96  MC  7804.87 (1.65)  diff +0.09 bps  z +0.05
+      vol 55% x 0.80 flag 0 tau  3.5 d tE   2.0 d: quadrature  7498.01  MC  7496.45 (1.58)  diff +1.55 bps  z +0.98
+      vol 55% x 0.80 flag 0 tau  3.5 d tE   5.0 d: quadrature  7501.28  MC  7499.64 (1.58)  diff +1.64 bps  z +1.04
+      vol 55% x 0.62 flag 0 tau  1.0 d tE  70.0 d: quadrature  6171.64  MC  6172.02 (0.72)  diff -0.38 bps  z -0.53
+      vol 55% x 0.60 flag 0 tau  7.0 d tE  20.0 d: quadrature  5865.59  MC  5865.65 (0.72)  diff -0.06 bps  z -0.09
+      vol 55% x 0.55 flag 0 tau  3.5 d tE   4.0 d: quadrature  5307.65  MC  5308.78 (0.58)  diff -1.13 bps  z -1.95
+      vol 55% x 1.08 flag 0 tau  2.0 d tE  60.0 d: quadrature  8007.44  MC  8002.86 (1.54)  diff +4.59 bps  z +2.98
+      vol 55% x 0.50 flag 1 tau  7.0 d tE  11.0 d: quadrature  4878.28  MC  4877.63 (0.63)  diff +0.65 bps  z +1.04
+      vol 55% x 0.95 flag 1 tau  3.0 d tE   2.9 d: quadrature  7685.92  MC  7684.30 (1.54)  diff +1.62 bps  z +1.05
+      vol 55% x 0.95 flag 1 tau  3.0 d tE   3.1 d: quadrature  7691.42  MC  7689.24 (1.54)  diff +2.18 bps  z +1.41
+      vol 55% x 1.05 flag 1 tau  2.3 d tE  55.0 d: quadrature  7984.77  MC  7987.95 (1.55)  diff -3.18 bps  z -2.05
+      vol 55% x 0.30 flag 1 tau  5.0 d tE  97.0 d: quadrature  3053.96  MC  3054.16 (0.82)  diff -0.20 bps  z -0.25
+      vol 55% x 0.90 flag 0 tau  0.0 d tE   0.0 d: quadrature  7842.42  MC  7840.45 (1.63)  diff +1.97 bps  z +1.21
+      vol 55% x 0.90 flag 1 tau  0.0 d tE  36.0 d: quadrature  7526.52  MC  7524.42 (1.41)  diff +2.10 bps  z +1.49
+      vol 55% x 0.70 flag 0 tau  0.0 d tE  91.0 d: quadrature  6981.79  MC  6981.58 (1.03)  diff +0.20 bps  z +0.19
+      vol 90% x 1.00 flag 0 tau  7.0 d tE  40.0 d: quadrature  6271.08  MC  6273.41 (1.49)  diff -2.32 bps  z -1.56
+      vol 90% x 0.90 flag 0 tau  7.0 d tE   3.0 d: quadrature  6117.97  MC  6119.84 (1.52)  diff -1.87 bps  z -1.23
+      vol 90% x 0.62 flag 0 tau  1.0 d tE  70.0 d: quadrature  5112.36  MC  5111.98 (0.81)  diff +0.38 bps  z +0.47
+      vol 90% x 0.60 flag 0 tau  7.0 d tE  20.0 d: quadrature  4894.50  MC  4894.73 (0.80)  diff -0.23 bps  z -0.29
+      vol 90% x 0.55 flag 0 tau  3.5 d tE   4.0 d: quadrature  4539.63  MC  4538.91 (0.76)  diff +0.72 bps  z +0.94
+      vol 90% x 1.08 flag 0 tau  2.0 d tE  60.0 d: quadrature  6354.16  MC  6355.39 (1.45)  diff -1.22 bps  z -0.84
+      vol 90% x 0.50 flag 1 tau  7.0 d tE  11.0 d: quadrature  4203.74  MC  4204.60 (0.81)  diff -0.85 bps  z -1.06
+      vol 90% x 1.05 flag 1 tau  2.3 d tE  55.0 d: quadrature  6314.91  MC  6315.50 (1.46)  diff -0.60 bps  z -0.41
+      vol 90% x 0.30 flag 1 tau  5.0 d tE  97.0 d: quadrature  2785.75  MC  2785.49 (1.15)  diff +0.27 bps  z +0.23
+      vol 90% x 0.90 flag 0 tau  0.0 d tE   0.0 d: quadrature  6181.62  MC  6181.20 (1.49)  diff +0.41 bps  z +0.28
+      vol 90% x 0.90 flag 1 tau  0.0 d tE  36.0 d: quadrature  6036.35  MC  6035.42 (1.32)  diff +0.93 bps  z +0.70
+      vol 90% x 0.70 flag 0 tau  0.0 d tE  91.0 d: quadrature  5628.45  MC  5628.71 (1.03)  diff -0.26 bps  z -0.25
+  PASS  40 states: max |z| 2.98
+(g) a full week ahead reproduces the fixed point; tau -> 0 is continuous
+  PASS  value(tau = dt) = W_j at grid nodes: max |difference| 1.5e-14
+  PASS  value(tau = 3 ms) = value(tau = 0), away from the barriers: max |difference| 2.3e-11
+(h) no earnings jump: no dependence on tE
+  PASS  spread over tE: 0.0e+00
+(i) deep knocked-in notes: value / x -> alpha (no heal in sight)
+  PASS  vol 20%: value(0.05) / 0.05 = 1.04209, alpha = 1.04207
+  PASS  vol 55%: value(0.05) / 0.05 = 1.04136, alpha = 1.04207
+
+ALL PASS  (506 s)

@@ -1,0 +1,26 @@
+data: ml/data/tsla_daily.csv  window 2016-09-28 .. 2026-09-28  returns 2512  returns/yr D = 251.062
+earnings: ml/data/tsla_earnings.json  (SEC EDGAR submissions API, form 8-K with item 2.02; fetched 2026-10-01T21:25:47+00:00)
+reaction days: 40  (2016-10-27 .. 2026-07-23), days between releases {'min': 70, 'max': 119, 'mean': 91.18}
+ordinary days: 2472  std 0.035971/day  excess kurtosis 4.132
+reaction days: mean -0.01301  std 0.089709  rms 0.089531  mean |r| 0.07570  min -0.1569  max +0.1982
+  variance ratio reaction / ordinary: 6.22
+  mean reaction return: t = -0.92 (not different from 0; the teacher's earnings jump is driftless)
+  Levene test, equal variances: W = 122.6, p = 7.57e-28
+
+Merton MLE on ordinary days (12 starts): -logL -4873.5579
+param                            estimate       stderr  all days (v3)
+m (drift/day)                    0.001359     0.000739       0.001299
+sigma_d (/sqrt day)              0.023953     0.001478       0.024369
+lambda (jumps/trading day)       0.301802     0.092709       0.287697
+muJ                              0.000562     0.002557      -0.000006
+sigmaJ                           0.048284     0.005738       0.052610
+
+sigmaE (std of the extra log move on a reaction day): MLE 0.083187 +- 0.010885   moments 0.082344
+  likelihood ratio vs no earnings jump: 79.7 (1 parameter)
+
+calendar year: lambda 75.7712/yr  diffusion var 0.144046  jump var 0.176670  earnings var 0.027756 (4.0110 releases/yr)
+  total vol (volRef) 0.590315   shares: diffusion 0.4134  jumps 0.5070  earnings 0.0797
+  v3 (all days, no earnings): volRef 0.590779  jump share 0.572809
+  sample: sqrt(D) * std of all returns = 0.5932
+
+wrote ml/perp_earnings_fit.json and ml/teacher_perp_config.json
