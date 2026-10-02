@@ -796,6 +796,7 @@ docker logs -f sp-devnode                 # the node itself
 | `sp-devnode` | oneshot, `backend/ops/node.sh`: waits for docker, `up.sh` (start or create the container), `up.sh --recreate` if the node can't sequence after a hard kill, `deploy.py --if-missing`. Stop: `down.sh` (graceful, 60 s). |
 | `sp-backend` | `backend/run.sh` on 8650, restarted if it exits; after `sp-devnode`. |
 | `sp-reset` | oneshot, `backend/ops/reset.sh`: `POST /demo/reset` to the service, or `up.sh --recreate` + `deploy.py` when it is down. Not enabled: run it by hand. |
+| `sp-prices` | `backend/ops/push-prices.py`: every 5 min, each mock feed's real price through `/demo/feed` (ETH from Coinbase, RHTSLA from the real feed on Robinhood Chain mainnet), and a round at least every 6 h so no feed turns stale. A real price outside the model's spot range is not pushed (the default RHTSLA series, struck at $250.00). Not enabled: `systemctl --user enable --now sp-prices`. |
 
 `start.sh` and `stop.sh` use the units when they are installed and fall back
 to `nohup` with a pid file in `backend/run/` when they are not (no systemd
@@ -901,6 +902,34 @@ series sum to it), every series' escrow covers its claims (pairs while live,
 NOTE and WRITER payouts once settled), and the Desk's balance covers what it
 set aside for claims. Exit 0 only if everything passes; the logs of passing
 runs are `backend/scenarios/logs/happy_path-{clock,hybrid}.log`.
+
+## App states scenario
+
+```sh
+python3 backend/scenarios/app_states.py stage   # three new stocks, each with one listed note
+python3 backend/scenarios/app_states.py play    # after buying in the app: nine weeks on, a check at a time
+python3 backend/scenarios/app_states.py fresh   # a round at today's price on every live feed
+```
+
+For the frontend, on the dev node the app reads (not a node of its own), over
+the HTTP API only, so it runs through the tunnel with plain Python. `stage`
+adds three K2-term notes at $250.00 with the first check six days out: `CRASH`
+(knocks in at its 8th check from now and runs on), `ENDED` (knocks in and
+matures at 54 % nine checks from now) and `EARLY` (autocalls at its 3rd).
+Buy both legs of each in the app, then `play`. It moves the clock **one
+observation at a time** (nine moves): a fixing still unrecorded
+`MAX_ROLL + FALLBACK_GRACE` = 9 days after its observation is replaced by the
+previous one (NoteSeries), so one jump over all nine loses the script and
+autocalls a note that has no fixing yet (the fallback of observation 1 is the
+initial). With `CLOCK` set to how `clock.sh` runs from there (on the host:
+`CLOCK="sudo -iu <user> <checkout>/backend/devnode/clock.sh"`) it moves the
+clock itself; without it, it prints each `clock.sh set-absolute` to run on
+the host and waits for the chain to get there. After each move it calls
+`/demo/fixing` for every passed observation, on these notes as scripted and
+on every other live note at its feed's price (a note above its initial, like
+a fresh ETH one, autocalls), and it ends with `fresh`. The clock stays ahead
+until `/demo/reset`. `fresh` is `/demo/feed` at the price each live feed is
+at, for when the 26 h staleness limit pauses the quotes.
 
 ## Tests
 
