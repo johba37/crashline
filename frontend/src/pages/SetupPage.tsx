@@ -2,7 +2,7 @@ import { CheckCircle, Info, WarningCircle } from '@phosphor-icons/react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { type Address, type Hex, isAddressEqual, parseAbi } from 'viem'
+import { type Address, type Hex, encodeFunctionData, isAddressEqual, parseAbi } from 'viem'
 import { useAccount, useReadContract } from 'wagmi'
 import { getAccount, getPublicClient, sendTransaction, switchChain, waitForTransactionReceipt } from 'wagmi/actions'
 import { robinhoodTestnet } from 'wagmi/chains'
@@ -24,7 +24,9 @@ import { chain, config, setNetwork } from '../wagmi.ts'
 const files = import.meta.glob<Addresses>('../../../deployments/46630.json', { eager: true, import: 'default' })
 const addresses: Addresses | undefined = Object.values(files)[0]
 const chainId = robinhoodTestnet.id
-const ownerAbi = parseAbi(['function owner() view returns (address)'])
+const ownerAbi = parseAbi(['function owner() view returns (address)', 'function transferOwnership(address newOwner)'])
+// johba's server (the wallet that deployed the contracts): it keeps the testnet's notes going from here on.
+const SERVER: Address = '0x7BB8f265FE906F4d21CB790Bfa56d2D3F96A452C'
 const FEEDS_KEY = `crashline-setup-feeds-${chainId}`
 
 const BUTTON = 'h-12 self-start rounded-full bg-accent px-6 type-button text-on-accent transition-[background-color,box-shadow] duration-160 ease-out hover:bg-accent-hover hover:shadow-ignition active:bg-accent-pressed disabled:cursor-not-allowed disabled:bg-surface-overlay disabled:text-ink-faint disabled:shadow-none'
@@ -38,7 +40,7 @@ async function price(yahoo: string): Promise<number> {
 }
 
 type Sent = { label: string; hash?: Hex }
-type Run = { what: 'notes' | 'deposit'; busy: boolean; error?: string; done?: boolean }
+type Run = { what: 'notes' | 'deposit' | 'handover'; busy: boolean; error?: string; done?: boolean }
 
 export default function SetupPage() {
   const { address } = useAccount()
@@ -98,6 +100,8 @@ export default function SetupPage() {
   const busy = !!run?.busy
   const notes = run?.what === 'notes' ? run : null
   const paid = run?.what === 'deposit' ? run : null
+  const handed = run?.what === 'handover' ? run : null
+  const atServer = !!owner.data && isAddressEqual(owner.data, SERVER)
   const waiting = sent.length > 0 && !sent[sent.length - 1].hash
 
   return (
@@ -127,7 +131,7 @@ export default function SetupPage() {
         </div>
 
         {!address && <Notice status={{ tone: 'info', icon: Info, label: 'Connect the Desk’s owner', message: 'Use the wallet button at the top right.' }} />}
-        {address && owner.data && !isOwner && (
+        {address && owner.data && !isOwner && !atServer && (
           <Notice status={{ tone: 'abort', icon: WarningCircle, label: 'This wallet doesn’t own the Desk', message: `The owner is ${owner.data}. Only it can list notes.` }} />
         )}
 
@@ -169,6 +173,27 @@ export default function SetupPage() {
           </button>
           {paid?.error && <Notice status={{ tone: 'abort', icon: WarningCircle, label: 'It stopped', message: paid.error }} />}
           {paid?.done && <Notice status={{ tone: 'go', icon: CheckCircle, label: 'Deposited' }} />}
+        </Step>
+
+        <Step n={3} title="Hand the Desk to johba’s server" state={atServer ? 'done' : 'current'}>
+          <p className="type-body text-ink-muted">
+            One transaction makes <span className="type-code break-all text-ink">{SERVER}</span> the Desk’s owner. From then on only that wallet can list notes, and only it can hand the Desk back.
+            The four price feeds stay with this wallet: a feed can’t change its owner.
+          </p>
+          <button
+            type="button"
+            disabled={!isOwner || busy}
+            aria-busy={(busy && !!handed) || undefined}
+            onClick={() => start('handover', async (io) => {
+              await io.send('Hand the Desk to johba’s server', { to: a.desk, data: encodeFunctionData({ abi: ownerAbi, functionName: 'transferOwnership', args: [SERVER] }) })
+              await owner.refetch()
+            })}
+            className={BUTTON}
+          >
+            {busy && handed ? (waiting ? 'Confirm in your wallet…' : 'Waiting for the network…') : 'Hand the Desk over'}
+          </button>
+          {handed?.error && <Notice status={{ tone: 'abort', icon: WarningCircle, label: 'It stopped', message: handed.error }} />}
+          {atServer && <Notice status={{ tone: 'go', icon: CheckCircle, label: 'The Desk belongs to johba’s server', message: 'This wallet can no longer list notes.' }} />}
         </Step>
 
         {sent.length > 0 && (
