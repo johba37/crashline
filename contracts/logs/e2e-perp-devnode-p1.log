@@ -1,0 +1,91 @@
+
+== 0. Nitro dev node (offchainlabs/nitro-node:v3.11.4-7d5ac27) on http://127.0.0.1:8657
+chain id 412346, dev account 0x3f1Eae7D46d88F08fc2F8ed27FCb2AB183EB2d0E (1000.000000000000000000 ETH)
+
+== 1. Stylus PerpPricer from /opt/ai/surrogate-pricer-backend/model/p1
+pricer 0xda52b25ddb0e3b9cc393b0690ac62245ac772527, model p1, weightsHash 0x650a942371b5608601728735d72df2e3b1687116f86f8ef15aad99cdac3ef807
+  contract size: 21.8 KB (21785 bytes)
+  product (knock-in bps, melt share, interval, drift bps, discount bps) (6000,18995352771274247,604800,400,0)
+  certified vol 2000..9000 bps
+
+== 2. MockUSDG, MockChainlinkFeed, SeriesFactory (recorders), PerpFactory, PerpQuoter, PerpDesk
+USDG       0x1294b86822ff4976BfE136cB06CF43eC7FCF2574
+FEED       0xA6E41fFD769491a42A6e5Ce453259b93983a22EF
+V1_FACTORY 0xe1080224B632A93951A7CFA33EeEa9Fd81558b5e
+FACTORY    0x7E32b54800705876d3b5cFbc7d9c226a211F7C1a
+QUOTER     0x525c2aBA45F66987217323E8a05EA400C65D06DC
+DESK       0x85D9a8a4bd77b9b5559c1B7FCb8eC9635922Ed49
+
+== 3. Staged feed history: first fixing 2026-08-21 01:36:17 UTC, 5 fixings since, the next at +240s
+rounds 18446744073709551623 (2^64 + n); current spot 8840 bps of the first fixing
+
+== 4. Perpetual series (k 60%, melt share 1.8995% per weekly fixing, coupon reserve 23.5%), past fixings
+series 0x7661426900E067bb036D4Ee3588A446059A76089, NOTE 0x5f58161a3685eA3fc0Cfd17bf2151FbaACbFB3F5, WRITER 0x8E734feb6Dc3875A00C21E32dA4c277a618c9a4E, recorder 0xB9465980Cb7fA753a0DafbDcb78E1D28a5F37aE5
+phase 1 (1 = Live), reference 26000000000 (the high at fixing 2), fixingsDone 5, knockedIn false
+notional per token 0.908563579224513 (= (1 - a)^5), NOTE index 112923979657726461949602032, WRITER index 0
+  = tools/perp_vectors.py (the Python twin of the fixing rule)
+
+== 5. LP deposits 100,000.000000 USDG
+LP shares 100000000000000000 (12 decimals), Desk totalAssets 100,000.000000
+
+== 6. Curator lists the series: vol 5500 +- 200 bps, next earnings 2026-11-01; spread 20/30 bps, risk budget 2000 bps
+listing: (true, 0xda52b25ddB0e3B9CC393b0690Ac62245Ac772527, 5500, 1793496737 [1.793e9], 50000000000 [5e10])
+
+== 7. Buyer buys 10,000.000000 NOTE tokens (fee 20 bps to the integrator)
+quote: 9,299.148234 USDG at 10215 bps of notional; maxCost 9,345.643975
+  vol 5300: inputs (8500, 5300, 232, 5, 0) -> formula 7823 bps, correction 12 bps, coupon 2350 bps = NOTE 10185 bps
+  vol 5700: inputs (8500, 5700, 232, 5, 0) -> formula 7608 bps, correction 14 bps, coupon 2350 bps = NOTE 9972 bps
+  NOTE quotes lo 9972, hi 10185 bps; buyNote traded at 10215 bps: 10000000000 tokens = 9,085.635792 USDG of notional, paid 9,299.148234 USDG
+  L2 execution gas 787363 (the quotes: closed form in Solidity + the model, twice with a vol band; mint or unwind; transfers)
+Desk holds NOTE 0.000000, WRITER 10,000.000000; released to it 0.000000; at risk 2,065.165015 of a budget of 20,026.893481 USDG
+
+== 7b. Hedger buys 12,000.000000 WRITER tokens as cover: pays the premium, the Desk funds the pairs
+risk budget first (quotes don't check it): 17,961.728466 USDG of room
+quote: 2,745.206684 USDG at 2398 bps incl. a fee of 500 bps of the premium; maxCost 2,800.110817
+  vol 5300: inputs (8500, 5300, 227, 5, 0) -> formula 7823 bps, correction 12 bps, coupon 2350 bps = NOTE 10185 bps
+  vol 5700: inputs (8500, 5700, 227, 5, 0) -> formula 7608 bps, correction 14 bps, coupon 2350 bps = NOTE 9972 bps
+  NOTE quotes lo 9972, hi 10185 bps; buyCover traded at 2398 bps: 12000000000 tokens = 10,902.762950 USDG of notional, paid 2,745.206684 USDG
+  L2 execution gas 614865 (the quotes: closed form in Solidity + the model, twice with a vol band; mint or unwind; transfers)
+Desk holds NOTE 2,000.000000, WRITER 0.000000; released to it 0.000000; at risk 1,404.094155 of a budget of 20,067.222802 USDG
+
+== 7c. Buyer wraps 3,000.000000 NOTE: shares for a holder that never claims
+wrapper 0x11673B5eF84c5e30898246fBf5499a6080Ce50Ca ("wpNOTE-0x81c32ed2"), shares 3000000000000000 (12 decimals) for 3,000.000000 NOTE
+
+== 8. Buyer sells 2,000.000000 NOTE tokens back
+quote: 1,804.770693 USDG at 9952 bps; minProceeds 1,795.746840
+  vol 5300: inputs (8500, 5300, 221, 5, 0) -> formula 7823 bps, correction 12 bps, coupon 2350 bps = NOTE 10185 bps
+  vol 5700: inputs (8500, 5700, 221, 5, 0) -> formula 7608 bps, correction 14 bps, coupon 2350 bps = NOTE 9972 bps
+  NOTE quotes lo 9972, hi 10185 bps; sellNote traded at 9952 bps: 2000000000 tokens = 1,817.127158 USDG of notional, paid 1,804.770693 USDG
+  L2 execution gas 521684 (the quotes: closed form in Solidity + the model, twice with a vol band; mint or unwind; transfers)
+Desk holds NOTE 4,000.000000, WRITER 0.000000; released to it 0.000000; at risk 2,808.188310 of a budget of 20,072.129045 USDG
+Desk totalAssets 100,360.645227 USDG (NOTE and WRITER marked at the quote)
+
+== 9. Waiting 219s for fixing 6 at 01:36:17 UTC
+fixing pending: maxRedeem 0, but the LP queues 20000000000000000 shares (20%) for redemption
+fixing at 5980 bps of the first fixing = 57.5% of the reference: knockedIn true, fixingsDone 6, nothing settles
+released per token (1e27): NOTE 13979373419025973312919101 (a x (0.575 + R)), WRITER 7334856423563010688877307 (a x 0.425): the hedger's cover pays
+
+== 10. The fixing's USDG: holders claim, the Desk collects, the wrapper reinvests
+buyer (NOTE) claimed 69.896867 USDG for 5,000.000000 tokens
+hedger (WRITER) claimed 88.018277 USDG for 12,000.000000 tokens
+Desk collected 55.917493 USDG for its 4,000.000000 NOTE
+wrapper: 41.938120 USDG released, reinvested at the Desk: now 3,058.003557 NOTE for the same 3000000000000000 shares
+Desk holds NOTE 3,941.996443, WRITER 0.000000; released to it 0.000000; at risk 1,997.436977 of a budget of 19,923.875459 USDG
+
+== 11. Unwind: unwrap, sell everything back, queue paid, LP out
+buyer unwrapped 3000000000000000 shares; holds 8,058.003556 NOTE
+  vol 5300: inputs (6000, 5300, 604791, 4, 1) -> formula 5738 bps, correction -6 bps, coupon 2350 bps = NOTE 8082 bps
+  vol 5700: inputs (6000, 5700, 604791, 4, 1) -> formula 5644 bps, correction -7 bps, coupon 2350 bps = NOTE 7987 bps
+  NOTE quotes lo 7987, hi 8082 bps; sellNote traded at 7967 bps: 8058003556 tokens = 7,182.139613 USDG of notional, paid 5,722.010629 USDG
+  L2 execution gas 713569 (the quotes: closed form in Solidity + the model, twice with a vol band; mint or unwind; transfers)
+  vol 5300: inputs (6000, 5300, 604788, 4, 1) -> formula 5738 bps, correction -6 bps, coupon 2350 bps = NOTE 8082 bps
+  vol 5700: inputs (6000, 5700, 604788, 4, 1) -> formula 5644 bps, correction -7 bps, coupon 2350 bps = NOTE 7987 bps
+  NOTE quotes lo 7987, hi 8082 bps; sellCover traded at 4238 bps: 12000000000 tokens = 10,695.661122 USDG of notional, paid 4,532.821183 USDG
+  L2 execution gas 556213 (the quotes: closed form in Solidity + the model, twice with a vol band; mint or unwind; transfers)
+queue processed: 20000000000000000 shares filled for 19,923.875459 USDG, claimed by the LP
+LP redeemed the other 79999999999997829 of 100000000000000000 shares (2171 left, a rounding sliver); in total 99,750.572437 USDG (deposited 100,000.000000; P&L -249.427563)
+buyer P&L -1,702.470045, hedger P&L 1,875.632776, integrator fees 76.264827 USDG
+left over: Desk 1, series escrow 4, wrapper 0 base units
+USDG conserved: every base unit minted is with the LP, the buyer, the hedger, the integrator or in that dust
+
+== E2E PASS: perpetual note, pricer stylus p1 (0x650a942371b5608601728735d72df2e3b1687116f86f8ef15aad99cdac3ef807)

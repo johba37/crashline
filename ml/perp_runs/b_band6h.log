@@ -1,0 +1,55 @@
+# python ml/perp_train.py --train /opt/ai/cache/sp-perp/train_s1.npz --val /opt/ai/cache/sp-perp/p1_val_labels.npz --band 21600 --widths 64,48,40,40 --seed 0 --epochs 1500 --device cuda --gpu-mem-mb 300 --out-dir /opt/ai/cache/sp-perp/runs/b6h
+train 1000000 rows (3.8% in bands; target min -332 max 261 bps); val 372600 rows (357052 outside bands); band 21600 s; params 7145; device cuda
+mse ep   100 loss 3.508e-04  V out-band max   107.0 p99    8.4 mean  1.23  best   107.0@('mse', 100)  (155s)
+mse ep   200 loss 1.808e-04  V out-band max    77.2 p99    5.3 mean  0.79  best    77.2@('mse', 200)  (287s)
+mse ep   300 loss 1.462e-04  V out-band max    57.2 p99    3.9 mean  0.63  best    57.2@('mse', 300)  (409s)
+mse ep   400 loss 7.333e-05  V out-band max    38.0 p99    3.3 mean  0.56  best    38.0@('mse', 400)  (556s)
+mse ep   500 loss 4.656e-05  V out-band max    38.5 p99    3.0 mean  0.52  best    37.3@('mse', 420)  (687s)
+mse ep   600 loss 5.244e-05  V out-band max    35.5 p99    2.8 mean  0.50  best    35.5@('mse', 600)  (830s)
+mse ep   700 loss 3.805e-05  V out-band max    32.9 p99    2.6 mean  0.47  best    32.9@('mse', 700)  (974s)
+mse ep   800 loss 3.075e-05  V out-band max    30.1 p99    2.4 mean  0.46  best    30.1@('mse', 800)  (1111s)
+mse ep   900 loss 2.645e-05  V out-band max    27.6 p99    2.4 mean  0.45  best    27.6@('mse', 900)  (1247s)
+mse ep  1000 loss 2.408e-05  V out-band max    25.1 p99    2.3 mean  0.44  best    25.1@('mse', 1000)  (1395s)
+mse ep  1100 loss 2.130e-05  V out-band max    23.0 p99    2.3 mean  0.43  best    23.0@('mse', 1100)  (1546s)
+mse ep  1200 loss 2.075e-05  V out-band max    22.0 p99    2.3 mean  0.43  best    22.0@('mse', 1200)  (1686s)
+mse ep  1300 loss 1.824e-05  V out-band max    21.8 p99    2.2 mean  0.43  best    21.7@('mse', 1290)  (1827s)
+mse ep  1400 loss 1.771e-05  V out-band max    22.0 p99    2.2 mean  0.43  best    21.6@('mse', 1310)  (1958s)
+mse ep  1500 loss 1.722e-05  V out-band max    22.0 p99    2.2 mean  0.43  best    21.6@('mse', 1310)  (2112s)
+
+selected ('mse', 1310) (V float out-band max 21.6); quantization |int - float| max 1.67 bps
+== V, formula + INTEGER student vs teacher ==
+region (outside exclusions unless stated)        n      max      p99    mean
+outside exclusions (GATE)                   357052     21.4      2.3    0.49
+inside exclusions (refused on-chain)         15548    131.8     16.8    2.15
+clean, spot 5000-7000                        80369     21.4      3.6    0.66
+clean, elsewhere                            112306      5.6      1.6    0.44
+knocked in, spot 9500-10500                  42876      8.7      2.7    0.65
+knocked in, elsewhere                       121501      2.8      1.1    0.37
+tau <= 1 day                                110454     21.4      3.0    0.53
+tau 1-3 days                                123117      9.2      2.2    0.49
+tau > 3 days                                123481     11.7      1.8    0.46
+n = 0 (release before the fixing)            31850     11.8      2.8    0.57
+n = 1                                        31951     21.4      3.0    0.56
+n >= 2                                      293251     21.2      2.1    0.48
+vol <= 2500                                  89510     21.4      2.8    0.50
+vol 2501-4999                               118787     15.4      2.4    0.49
+vol 5000-7499                                59599      8.6      1.9    0.48
+vol >= 7500                                  89156      7.4      2.1    0.49
+spot < 5000                                  54331      1.8      1.0    0.35
+spot > 10500                                 45350      2.8      1.3    0.39
+  worst {'spot': 5970, 'vol': 2050, 'tau': 21700, 'n': 1, 'knockedIn': 0, 'err': 21.39054394178129}
+  worst {'spot': 6030, 'vol': 2050, 'tau': 21700, 'n': 2, 'knockedIn': 0, 'err': -21.246422406858073}
+  worst {'spot': 6010, 'vol': 2050, 'tau': 21700, 'n': 2, 'knockedIn': 0, 'err': -18.088043221940097}
+  worst {'spot': 6010, 'vol': 2500, 'tau': 21700, 'n': 1, 'knockedIn': 0, 'err': 17.337972355468082}
+  worst {'spot': 6038, 'vol': 2135, 'tau': 21642, 'n': 1, 'knockedIn': 0, 'err': -16.62011072039968}
+  worst {'spot': 6030, 'vol': 2050, 'tau': 21700, 'n': 1, 'knockedIn': 0, 'err': -15.603342907250408}
+  worst {'spot': 5992, 'vol': 2575, 'tau': 36993, 'n': 3, 'knockedIn': 0, 'err': -15.405162033308443}
+  worst {'spot': 6050, 'vol': 2050, 'tau': 21700, 'n': 1, 'knockedIn': 0, 'err': -14.943395742116081}
+  worst {'spot': 5970, 'vol': 2050, 'tau': 21700, 'n': 2, 'knockedIn': 0, 'err': 14.504271689517736}
+  worst {'spot': 5901, 'vol': 2062, 'tau': 24970, 'n': 13, 'knockedIn': 0, 'err': -14.150335976175484}
+== V, formula alone vs teacher ==
+region (outside exclusions unless stated)        n      max      p99    mean
+outside exclusions (GATE)                   357052    255.8     78.0   14.22
+inside exclusions (refused on-chain)         15548    292.1    169.9   36.24
+== V with 86400 s bands instead: n 325881 max 11.7 p99 1.9 mean 0.46 ==
+done in 2139s -> /opt/ai/cache/sp-perp/runs/b6h

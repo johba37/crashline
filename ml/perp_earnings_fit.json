@@ -1,0 +1,40 @@
+{
+  "csv": "ml/data/tsla_daily.csv",
+  "earnings": "ml/data/tsla_earnings.json",
+  "window": [
+    "2016-09-28",
+    "2026-09-28"
+  ],
+  "returns": 2512,
+  "returnsPerYear": 251.06243154435924,
+  "reactionDays": 40,
+  "ordinary_day": {
+    "m": 0.0013588822949335698,
+    "sigma_d": 0.02395296386595783,
+    "lambda": 0.3018022623120018,
+    "muJ": 0.0005618036983817832,
+    "sigmaJ": 0.04828364121056926,
+    "stderr": {
+      "m": 0.000738656643992947,
+      "sigma_d": 0.0014781028260789123,
+      "lambda": 0.0927085996476146,
+      "muJ": 0.0025565482206068775,
+      "sigmaJ": 0.005738128267397563
+    }
+  },
+  "reaction_day": {
+    "sigmaE": 0.08318714094577395,
+    "stderr": 0.010884851518686192,
+    "sigmaE_moments": 0.0823438755340437,
+    "meanReturn": -0.013010878468882325,
+    "std": 0.08970925426668035,
+    "likelihoodRatio": 79.68119489542522
+  },
+  "calendar_year": {
+    "lambdaYear": 75.7712098216397,
+    "diffusionVarYear": 0.14404568372276114,
+    "jumpVarYear": 0.17666977057063912,
+    "earningsVarYear": 0.027756419410325823,
+    "totalVolYear": 0.5903150630838807
+  }
+}

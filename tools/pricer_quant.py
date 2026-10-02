@@ -1,9 +1,15 @@
-"""Integer reference for the Surrogate Pricer student (featureSpecVersion 1).
+"""Integer reference for the Surrogate Pricer student (featureSpecVersion 1 and 2).
 
 This module is the bit-exact definition of what the Stylus contract computes.
 Anything the contract does must be reproducible here with plain integers, and
 the golden vectors are generated from `forward()` below — never from a float
 model. Spec: docs/model-export-format.md.
+
+Feature spec 1 is the v1 autocallable (PricerInputs, 10 fields, the model
+returns a price). Feature spec 2 is the v2 perpetual note (PerpPricerInputs, 5
+fields, docs/v2-spec.md): the model returns a signed correction to the closed
+form, and its export pins the product in a `product` section. Every function
+takes the spec from the export; the defaults are spec 1.
 
 Four jobs:
   * `check_domain()` / `normalize()` / `forward()` — the contract's twin: refuse
@@ -50,12 +56,30 @@ FIELDS: tuple[Field, ...] = (
 )
 FIELD_NAMES = tuple(f.name for f in FIELDS)
 
+# v2 perpetual note (docs/v2-spec.md section 5): PerpPricerInputs struct order.
+FIELDS_V2: tuple[Field, ...] = (
+    Field("spotBpsOfReference", 1_000, 15_000),
+    Field("volBpsAnnual", 1_500, 15_000),
+    Field("timeToNextFixingSecs", 0, 604_800),
+    Field("fixingsBeforeEarnings", 0, 20),  # 0: the next earnings release comes before or at the next fixing
+    Field("flags", 0, 1),
+)
+SPEC_FIELDS: dict[int, tuple[Field, ...]] = {1: FIELDS, 2: FIELDS_V2}
+
 PRICE_MAX_BPS = 65_535  # uint16 return type
+# head clamp per feature spec: a uint16 price (1), an int16 correction (2)
+OUTPUT_RANGE: dict[int, tuple[int, int]] = {1: (0, PRICE_MAX_BPS), 2: (-32_768, 32_767)}
+
+
+def spec_fields(export_or_spec) -> tuple[Field, ...]:
+    """The input fields of an export (or of a featureSpecVersion number)."""
+    spec = export_or_spec["featureSpecVersion"] if isinstance(export_or_spec, dict) else export_or_spec
+    return SPEC_FIELDS[spec]
 
 
 class OutOfRange(ValueError):
     def __init__(self, index: int, value: int):
-        super().__init__(f"{FIELDS[index].name}={value} outside the certified range")
+        super().__init__(f"field {index} = {value} outside the certified range")
         self.index = index
         self.value = value
 
@@ -68,7 +92,7 @@ class Uncertified(ValueError):
 
 class Inconsistent(ValueError):
     def __init__(self, index: int):
-        super().__init__(f"derived field {FIELDS[index].name} does not match")
+        super().__init__(f"derived field {index} does not match")
         self.index = index
 
 
@@ -76,12 +100,13 @@ DIST, TTM, TNEXT, OBS = 1, 6, 7, 8
 SPOT, KI = 0, 3
 
 
-def default_domain() -> dict:
+def default_domain(fields: tuple[Field, ...] = FIELDS) -> dict:
     """Accept the full normalization ranges, no exclusions, no consistency
     rules. Only right for a model trained over all of it."""
+    consistency = {"distToKnockIn": False, "observationIntervalSecs": 0} if fields is FIELDS else {}
     return {
-        "ranges": [{"name": f.name, "min": f.lo, "max": f.hi} for f in FIELDS],
-        "consistency": {"distToKnockIn": False, "observationIntervalSecs": 0},
+        "ranges": [{"name": f.name, "min": f.lo, "max": f.hi} for f in fields],
+        "consistency": consistency,
         "exclusions": [],
     }
 
@@ -89,17 +114,18 @@ def default_domain() -> dict:
 def check_domain(domain: dict, values: list[int]) -> None:
     """Refuse outside the certified domain. Order is binding (the contract
     reports the same first failure): ranges by field index, then derived
-    fields (dist, then ttm), then exclusions in order."""
+    fields (dist, then ttm; feature spec 1 only), then exclusions in order."""
     for i, r in enumerate(domain["ranges"]):
         if not (r["min"] <= values[i] <= r["max"]):
             raise OutOfRange(i, values[i])
     c = domain["consistency"]
-    if c["distToKnockIn"] and values[DIST] != values[SPOT] - values[KI]:
+    if c.get("distToKnockIn") and values[DIST] != values[SPOT] - values[KI]:
         raise Inconsistent(DIST)
-    if c["observationIntervalSecs"] and values[TTM] != values[TNEXT] + values[OBS] * c["observationIntervalSecs"]:
+    if c.get("observationIntervalSecs") and values[TTM] != values[TNEXT] + values[OBS] * c["observationIntervalSecs"]:
         raise Inconsistent(TTM)
+    names = [r["name"] for r in domain["ranges"]]
     for k, ex in enumerate(domain["exclusions"]):
-        if all(b["min"] <= values[FIELD_NAMES.index(b["field"])] <= b["max"] for b in ex["bounds"]):
+        if all(b["min"] <= values[names.index(b["field"])] <= b["max"] for b in ex["bounds"]):
             raise Uncertified(k, ex["name"])
 
 
@@ -121,13 +147,13 @@ def qmax(bits: int) -> int:
     return (1 << (bits - 1)) - 1
 
 
-def normalize(raw: dict[str, int] | list[int], bits: int = 16) -> list[int]:
+def normalize(raw: dict[str, int] | list[int], bits: int = 16, fields: tuple[Field, ...] = FIELDS) -> list[int]:
     """Raw feature units -> signed `bits`-wide ints in [-qmax, qmax].
     Out-of-range raises (the contract reverts); inputs are never clamped."""
     q = qmax(bits)
-    values = [raw[f.name] for f in FIELDS] if isinstance(raw, dict) else list(raw)
+    values = [raw[f.name] for f in fields] if isinstance(raw, dict) else list(raw)
     out = []
-    for i, (f, x) in enumerate(zip(FIELDS, values)):
+    for i, (f, x) in enumerate(zip(fields, values)):
         if not (f.lo <= x <= f.hi):
             raise OutOfRange(i, x)
         rng = f.hi - f.lo
@@ -151,15 +177,17 @@ def _layer_int(x: list[int], layer: dict, out_dim: int, in_dim: int, wbits: int)
 
 def forward(export: dict, raw) -> int:
     """Domain check, then the integer forward pass. Returns the clean
-    priceBpsOfNotional (uint16)."""
-    values = [raw[f.name] for f in FIELDS] if isinstance(raw, dict) else list(raw)
+    priceBpsOfNotional (uint16) for feature spec 1, the signed correctionBps
+    (int16) for feature spec 2."""
+    fields = spec_fields(export)
+    values = [raw[f.name] for f in fields] if isinstance(raw, dict) else list(raw)
     # v1 exports (no domain) behave as before: the full normalization ranges
-    check_domain(export.get("certifiedDomain") or default_domain(), values)
+    check_domain(export.get("certifiedDomain") or default_domain(fields), values)
     raw = values
     bits = export["quantization"]["activationBits"]
     wbits = export["quantization"]["weightBits"]
     q = qmax(bits)
-    x = normalize(raw, bits)
+    x = normalize(raw, bits, fields)
     arch = export["architecture"]["layers"]
     for spec, layer in zip(arch[:-1], export["layers"][:-1]):
         acc = _layer_int(x, layer, spec["out"], spec["in"], wbits)
@@ -172,18 +200,19 @@ def forward(export: dict, raw) -> int:
     (acc,) = _layer_int(x, head, head_spec["out"], head_spec["in"], wbits)
     out = export["output"]
     price = round_shift(acc * out["multiplierQ16"], 16 + out["shift"]) + out["offsetBps"]
-    return max(0, min(PRICE_MAX_BPS, price))
+    lo, hi = OUTPUT_RANGE[export["featureSpecVersion"]]
+    return max(lo, min(hi, price))
 
 
 # ---------------------------------------------------------------------------
 # Float -> integer quantization (usable by the distillation lane as-is)
 # ---------------------------------------------------------------------------
 
-def normalized_float_inputs(raws: list, bits: int = 16) -> np.ndarray:
+def normalized_float_inputs(raws: list, bits: int = 16, fields: tuple[Field, ...] = FIELDS) -> np.ndarray:
     """What the float student must be trained on: the *integer* normalization
     divided by qmax, so float training and on-chain inference see identical
     inputs (no train/serve skew)."""
-    return np.array([normalize(r, bits) for r in raws], dtype=np.float64) / qmax(bits)
+    return np.array([normalize(r, bits, fields) for r in raws], dtype=np.float64) / qmax(bits)
 
 
 def _mult_shift(m: float) -> tuple[int, int]:
@@ -201,10 +230,15 @@ def _mult_shift(m: float) -> tuple[int, int]:
 
 def quantize(weights: list[np.ndarray], biases: list[np.ndarray], calib_x: np.ndarray,
              price_scale_bps: float, offset_bps: int, act_headroom: float = 2.0,
-             activation_bits: int = 16, weight_bits: int = 16, domain: dict | None = None) -> dict:
+             activation_bits: int = 16, weight_bits: int = 16, domain: dict | None = None,
+             spec: int = FEATURE_SPEC_VERSION, product: dict | None = None) -> dict:
     """Float MLP (relu hidden layers, linear head, trained on
     normalized_float_inputs -> (priceBps - offset_bps) / price_scale_bps) ->
     student_export dict (weightsHash filled in).
+
+    spec 2 (the perpetual note): the target is the correction in bps, and
+    `product` (integers only: what the model was trained for) goes into the
+    export and so into the hash.
 
     weights[l] has shape (out, in). calib_x is float input in [-1, 1] used to
     size the per-tensor activation scales. Arithmetic is i64 in the contract
@@ -245,38 +279,47 @@ def quantize(weights: list[np.ndarray], biases: list[np.ndarray], calib_x: np.nd
             arch.append({"in": in_dim, "out": 1, "activation": "linear"})
         layers_out.append(entry)
 
+    fields = SPEC_FIELDS[spec]
+    assert weights[0].shape[1] == len(fields), "input width != feature count"
+    assert (product is not None) == (spec == 2), "a product section belongs to feature spec 2, and only to it"
     export = {
         "exportFormatVersion": EXPORT_FORMAT_VERSION,
-        "featureSpecVersion": FEATURE_SPEC_VERSION,
+        "featureSpecVersion": spec,
         "weightsHash": "0x",
         "architecture": {
-            "inputDim": len(FIELDS),
+            "inputDim": len(fields),
             "layers": arch,
             "parameterCount": int(sum(W.size + b.size for W, b in zip(weights, biases))),
         },
         "quantization": {"weightBits": weight_bits, "activationBits": activation_bits},
-        "featureNormalization": [{"name": f.name, "min": f.lo, "max": f.hi} for f in FIELDS],
-        "certifiedDomain": domain or default_domain(),
+        "featureNormalization": [{"name": f.name, "min": f.lo, "max": f.hi} for f in fields],
+        "certifiedDomain": domain or default_domain(fields),
         "layers": layers_out,
         "output": {"multiplierQ16": head_m, "shift": head_s, "offsetBps": int(offset_bps)},
     }
-    validate_domain(export["certifiedDomain"])
+    if product is not None:
+        export["product"] = product
+    validate_domain(export["certifiedDomain"], fields)
     export["weightsHash"] = weights_hash(export)
     return export
 
 
-def validate_domain(domain: dict) -> None:
+def validate_domain(domain: dict, fields: tuple[Field, ...] = FIELDS) -> None:
     """Same checks as the Rust build script: every certified range inside its
     normalization range, exclusions over known fields."""
-    assert [r["name"] for r in domain["ranges"]] == list(FIELD_NAMES), "certifiedDomain.ranges order"
-    for f, r in zip(FIELDS, domain["ranges"]):
+    names = [f.name for f in fields]
+    assert [r["name"] for r in domain["ranges"]] == names, "certifiedDomain.ranges order"
+    for f, r in zip(fields, domain["ranges"]):
         assert f.lo <= r["min"] <= r["max"] <= f.hi, f"{f.name}: certified range outside normalization"
     for ex in domain["exclusions"]:
         assert ex["bounds"], "empty exclusion excludes everything"
         for b in ex["bounds"]:
-            assert b["field"] in FIELD_NAMES and b["min"] <= b["max"], f"exclusion {ex['name']}: bad bound"
+            assert b["field"] in names and b["min"] <= b["max"], f"exclusion {ex['name']}: bad bound"
     c = domain["consistency"]
-    assert isinstance(c["distToKnockIn"], bool) and c["observationIntervalSecs"] >= 0
+    if fields is FIELDS:
+        assert isinstance(c["distToKnockIn"], bool) and c["observationIntervalSecs"] >= 0
+    else:
+        assert c == {}, "feature spec 2 has no derived fields"
 
 
 def check_reject_vectors(export: dict, rows: list[dict]) -> None:
@@ -297,7 +340,7 @@ def certify(export: dict, domain: dict) -> dict:
     """Return a format-v2 copy of `export` (v1 or v2) carrying `domain`, with
     the hash recomputed. Weights are untouched: the domain is where the
     fidelity evidence says the model may answer."""
-    validate_domain(domain)
+    validate_domain(domain, spec_fields(export))
     out = json.loads(json.dumps(export))
     out["exportFormatVersion"] = EXPORT_FORMAT_VERSION
     out["certifiedDomain"] = domain

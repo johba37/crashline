@@ -1,0 +1,310 @@
+[
+  {
+    "type": "function",
+    "name": "MAX_FEED_STALENESS",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint40",
+        "internalType": "uint40"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "inputs",
+    "inputs": [
+      {
+        "name": "series",
+        "type": "address",
+        "internalType": "contract IPerpSeries"
+      },
+      {
+        "name": "volBpsAnnual",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "nextEarnings",
+        "type": "uint40",
+        "internalType": "uint40"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct PerpPricerInputs",
+        "components": [
+          {
+            "name": "spotBpsOfReference",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "volBpsAnnual",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "timeToNextFixingSecs",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "fixingsBeforeEarnings",
+            "type": "uint8",
+            "internalType": "uint8"
+          },
+          {
+            "name": "flags",
+            "type": "uint8",
+            "internalType": "uint8"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "notePriceBps",
+    "inputs": [
+      {
+        "name": "series",
+        "type": "address",
+        "internalType": "contract IPerpSeries"
+      },
+      {
+        "name": "pricer",
+        "type": "address",
+        "internalType": "contract IPerpPricer"
+      },
+      {
+        "name": "volBpsAnnual",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "nextEarnings",
+        "type": "uint40",
+        "internalType": "uint40"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "priceBps",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "weightsHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "quote",
+    "inputs": [
+      {
+        "name": "series",
+        "type": "address",
+        "internalType": "contract IPerpSeries"
+      },
+      {
+        "name": "pricer",
+        "type": "address",
+        "internalType": "contract IPerpPricer"
+      },
+      {
+        "name": "volBpsAnnual",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "nextEarnings",
+        "type": "uint40",
+        "internalType": "uint40"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct PerpQuote",
+        "components": [
+          {
+            "name": "priceBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "formulaBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "correctionBps",
+            "type": "int16",
+            "internalType": "int16"
+          },
+          {
+            "name": "couponBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "weightsHash",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "quoteAtSpot",
+    "inputs": [
+      {
+        "name": "series",
+        "type": "address",
+        "internalType": "contract IPerpSeries"
+      },
+      {
+        "name": "pricer",
+        "type": "address",
+        "internalType": "contract IPerpPricer"
+      },
+      {
+        "name": "volBpsAnnual",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "nextEarnings",
+        "type": "uint40",
+        "internalType": "uint40"
+      },
+      {
+        "name": "spot",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct PerpQuote",
+        "components": [
+          {
+            "name": "priceBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "formulaBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "correctionBps",
+            "type": "int16",
+            "internalType": "int16"
+          },
+          {
+            "name": "couponBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "weightsHash",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "spot",
+    "inputs": [
+      {
+        "name": "series",
+        "type": "address",
+        "internalType": "contract IPerpSeries"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "error",
+    "name": "BadFeedAnswer",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "EarningsDatePassed",
+    "inputs": [
+      {
+        "name": "nextEarnings",
+        "type": "uint40",
+        "internalType": "uint40"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "FeedStale",
+    "inputs": [
+      {
+        "name": "updatedAt",
+        "type": "uint40",
+        "internalType": "uint40"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "FixingPending",
+    "inputs": [
+      {
+        "name": "fixingTime",
+        "type": "uint40",
+        "internalType": "uint40"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "NotLive",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ProductMismatch",
+    "inputs": [
+      {
+        "name": "field",
+        "type": "uint8",
+        "internalType": "uint8"
+      }
+    ]
+  }
+]

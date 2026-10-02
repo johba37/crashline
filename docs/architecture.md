@@ -135,3 +135,58 @@ Sources: [Opyn Gamma OZ audit](https://www.openzeppelin.com/news/opyn-gamma-prot
   the vault. The spread is a vol band (the model is asked at the listing's vol −/+ the
   band, once the model takes a range of vols) plus a flat floor. A risk budget per feed caps what its positions can lose, as a share of
   vault assets. Same series, same model: nothing below L3 changed.
+
+## v2: the perpetual note, layer by layer
+
+The same four layers, a second set of contracts next to v1 ([v2-perpetual-note.md](v2-perpetual-note.md),
+[v2-spec.md](v2-spec.md), frontend guide [interfaces-v2.md](interfaces-v2.md)). Nothing in
+v1 changed; both generations share one `FixingsRecorder` per feed.
+
+```
+┌─ L3  INTEGRATIONS ─────────────────────────────────────────────────────────────────────┐
+│ PerpDesk     the v1 Desk for a note that never settles: both legs at two prices, a      │
+│              risk budget per stock, the LP queue; adds the earnings date per listing,   │
+│              the USDG its tokens are paid at every fixing, a capped weekend price       │
+│ PerpWrapper  auto-compounding wrapper of one leg, for holders that never claim          │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+        │ quote()                                                       │ mint · redeemPair · claim
+        ▼                                                               │
+┌─ L2  QUOTER ─ view only ─────────────────────────────────────┐        │
+│ PerpQuoter   price = closed form + model correction + coupon │        │
+│              reserve; state from the series, never the caller│        │
+└──────────────────────────────────────────────────────────────┘        │
+══ MODEL BOUNDARY: nothing below calls a pricer ════════════════════════╪═════════════════
+                                                                        ▼
+┌─ L1  CORE ─ no model · no admin · no pause · no upgrade ───────────────────────────────┐
+│ PerpFactory.createSeries(terms)     same terms → same series (CREATE2)                  │
+│ PerpSeries   one USDG escrow, no expiry                                                 │
+│   • the first fixing sets the reference H                                               │
+│   • every fixing: H ratchets up, or the note knocks in; a share a of everything is      │
+│     released: NOTE a·(p + R), WRITER a·(1 − p); nothing is redeemed                      │
+│   • mint n      lock n × notionalPerToken × (1 + R) → n NOTE + n WRITER                  │
+│   • redeemPair  burn both → the same back, any time                                     │
+│   • claim(to)   pull the USDG released so far (a cumulative index per token)            │
+│   • four fixings in a row without a price → Closed: everything is released              │
+│ NOTE, WRITER (PerpToken)  ERC-20; before a transfer the token tells its series, which   │
+│                           settles both holders. No hook reaches a receiver.            │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+                              ▼
+┌─ L0  PRIMITIVES ───────────────────────────────────────────────────────────────────────┐
+│ PerpPricer (Stylus)    PerpFormula (library)    PerpPayout (library)   FixingsRecorder  │
+│   signed correction,     closed form in 1e18      pure: fixing →         v1's, shared   │
+│   weightsHash pins the   fixed point, ~27k gas    releases, same rules                  │
+│   weights, the domain    PerpFormulaPricer:       as the teacher, shared                │
+│   and the product        correction 0             test vectors                          │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+| Decision | Why |
+|---|---|
+| The price is linear in the coupon reserve, and the model prices the principal only | The coupon stream is the same in every state of the stock (`a × R` of what is left, at every fixing), so its value is exact. One model then serves any coupon; the roadmap's open item 5 ("one model per stock unless c becomes a student input") goes away |
+| The closed form is computed in Solidity by the quoter, the student returns only a correction | The formula stays readable and testable on its own (a formula-only pricer exists), the quote shows both parts, and the student has nothing to learn that the formula already knows |
+| Discount rate 0 in model P1 | A pair redeems for `1 + R` at any time, so NOTE + WRITER = `1 + R` holds only if payouts are discounted at what the escrow earns: nothing. Teacher v3's convention (k3-vol-input.md). The roadmap's check table used 4%; the formula takes both rates |
+| `firstFixing` stays in the terms | It anchors the fixing grid, and it is what makes a fresh series after a crash a different series |
+| A token transfer calls the series | The cumulative index must be settled for both holders before balances move (Pendle's YT does the same). Only the series is called |
+| Trades in tokens, prices per unit of notional | A token stands for less notional after each fixing; a price per unit of notional is what the model and the formula produce, and it doesn't drift with the melt |
+| One `Traded` event and one `quote` view for all four sides | PerpDesk is 23.5 KB of the 24.6 KB limit |
+| A missed fixing reuses the last one and still melts | The notional per token stays a function of the number of fixing times that have passed, whatever the feed did |

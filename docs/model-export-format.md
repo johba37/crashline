@@ -142,6 +142,53 @@ contract returns the recomputed hash from `weightsHash()`.
   can express, each consistency rule, each exclusion. CI requires exactly that
   revert.
 
+## featureSpecVersion 2: the v2 perpetual note
+
+Same export format (`exportFormatVersion` 2), same arithmetic, same hash rule. A spec-2
+export differs in four places; `tools/pricer_quant.py` and the Stylus build read the spec
+from the export and handle both ([v2-spec.md](v2-spec.md) §5).
+
+| | spec 1 (v1 autocallable) | spec 2 (v2 perpetual) |
+|---|---|---|
+| Inputs | 10, `PricerInputs` | 5, `PerpPricerInputs` (below) |
+| Output | clean price, `uint16`, head clamp 0..65,535 | **correction** to the closed form's principal, `int16`, head clamp −32,768..32,767; `offsetBps` 0 |
+| Derived fields | `distToKnockInBps`, `timeToMaturitySecs` | none: `"consistency": {}`, no `Inconsistent` error |
+| Pinned product | certified ranges with min == max | a `product` section, inside the hash |
+
+| # | Field | Min | Max |
+|---|---|---|---|
+| 0 | spotBpsOfReference | 1,000 | 15,000 |
+| 1 | volBpsAnnual | 1,500 | 15,000 |
+| 2 | timeToNextFixingSecs | 0 | 604,800 |
+| 3 | fixingsBeforeEarnings (0: the release comes before or at the next fixing) | 0 | 20 |
+| 4 | flags (bit0 knockedIn) | 0 | 1 |
+
+```jsonc
+"product": {
+  "kiBarrierBps": 6000,
+  "meltShareWad": 18995352771274247,   // a, 1e18 fixed point
+  "fixingIntervalSecs": 604800,
+  "driftBps": 400,                     // the closed form's r
+  "discountBps": 0,                    // the closed form's rho
+  "teacher": { … }                     // the teacher's constants as integers: pinned by the hash, not read on chain
+}
+```
+
+The contract exposes the first five as `product()`, and `answer(inputs)` returns the
+correction, the product and the hash in one call (the quoter's path: entering a Stylus
+contract costs gas each time). PerpQuoter prices a series with a
+model only if the series' knock-in, melt share and interval equal them, and computes the
+closed form with the model's two rates. The coupon reserve is not pinned: the note's price
+is linear in it and the model prices the principal only.
+
+Training target: `teacher principal − closed form principal`, in bps, with the closed form
+evaluated on the integer inputs (`x = spotBpsOfReference / 1e4`), so the student learns
+what the formula gets wrong and nothing else. `pq.quantize(..., spec=2, product=…)`;
+`golden_vectors.json` carries `expectedCorrectionBps`; at least one model vector must be
+negative. `PRICER_MODEL_DIR=model/p1 cargo test` builds the `PerpPricer` contract
+(`cfg(perp)`) and runs the spec-2 golden tests. `model/synthetic-p` is the toy spec-2
+export (`tools/make_synthetic_perp.py`).
+
 ## Changes from GapGuard's format, and why
 
 | Change | Why (measured on a 3,873-parameter synthetic student) |

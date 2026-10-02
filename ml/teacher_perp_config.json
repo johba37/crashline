@@ -1,0 +1,41 @@
+{
+  "name": "merton-earnings-tsla-2016-2026",
+  "teacherVersion": "perp-1",
+  "rFree": 0.04,
+  "rDiscount": 0.0,
+  "yearSecs": 31536000,
+  "weekSecs": 604800,
+  "clock": "calendar time, 365-day year, uniform diffusion and jump intensity",
+  "jumps": {
+    "lambdaYear": 75.7712,
+    "muJ": 0.000561804,
+    "sigmaJ": 0.0482836,
+    "volRef": 0.590315,
+    "derived_jumpShare": 0.506984
+  },
+  "earnings": {
+    "sigmaE": 0.0831871,
+    "cycleSecs": 7862400,
+    "derived_earningsShare": 0.0796518
+  },
+  "derived_diffusionShare": 0.413364,
+  "volConvention": "volBpsAnnual is TOTAL annualized vol; muJ, sigmaJ and sigmaE are the sizes at volRef and scale with vol / volRef, so jump variance = derived_jumpShare * vol^2 per year, earnings variance = derived_earningsShare * vol^2 per year (one release every cycleSecs), and diffusion variance = the rest",
+  "riskNeutral": "drift rFree - lambdaYear*kappa(vol) between releases, each earnings move is N(-sigmaE(vol)^2/2, sigmaE(vol)^2) in log price; payouts discounted at rDiscount (the escrow earns nothing); Q parameters = fitted P parameters",
+  "calibration": {
+    "script": "ml/calibrate_earnings.py",
+    "log": "ml/calibrate_earnings.log",
+    "fit": "ml/perp_earnings_fit.json",
+    "data": "ml/data/tsla_daily.csv",
+    "earnings": "ml/data/tsla_earnings.json",
+    "earningsSource": [
+      "https://data.sec.gov/submissions/CIK0001318605.json",
+      "https://data.sec.gov/submissions/CIK0001318605-submissions-001.json"
+    ],
+    "window": [
+      "2016-09-28",
+      "2026-09-28"
+    ],
+    "returns": 2512,
+    "returnsPerYear": 251.06243154435924
+  }
+}
