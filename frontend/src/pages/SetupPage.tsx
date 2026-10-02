@@ -16,7 +16,7 @@ import Step from '../components/dashboard/Step.tsx'
 import TickerBadge from '../components/dashboard/TickerBadge.tsx'
 import { date, usd } from '../market/format.ts'
 import { type Addresses, type Io, NOTES, createNotes, deposit } from '../setup/notes.ts'
-import { chain, config } from '../wagmi.ts'
+import { chain, config, setNetwork } from '../wagmi.ts'
 
 // The curator's page, on a local branch only: it lists the testnet's notes with the connected
 // wallet (the Desk's owner), one confirmation per transaction. src/setup/notes.ts has the steps.
@@ -52,7 +52,11 @@ export default function SetupPage() {
   if (chain.id !== chainId || !addresses) {
     return (
       <main className="mx-auto max-w-3xl p-6">
-        <Notice status={{ tone: 'hold', icon: Info, label: 'This build isn’t on the testnet', message: 'Start it without the dev node’s settings: VITE_CHAIN_ID= VITE_API_URL= VITE_RPC_URL= npm run dev' }} />
+        <Notice status={{ tone: 'hold', icon: Info, label: 'The app isn’t on the testnet', message: 'This page lists the testnet’s notes.' }}>
+          <button type="button" onClick={() => setNetwork(chainId)} className="mt-1 h-8 self-start rounded-full border border-line-strong px-3 type-label text-ink transition-colors duration-160 hover:bg-surface-overlay">
+            Switch to the testnet
+          </button>
+        </Notice>
       </main>
     )
   }
