@@ -187,7 +187,9 @@ at the same network size; p99 went from 7.9 to 14.1.
 `model/k3`, 7,465 params, 10-64-48-40-40-1, 16-bit. `PRICER_MODEL_DIR=../../model/k3 cargo test`:
 100 golden vectors exact, 35 reject vectors (every range, derived field and all five exclusions).
 `cargo stylus check` against Robinhood Chain testnet: **23,901 bytes** (limit 24,576), activation
-passes (data fee 0.000086 ETH). Since 2026-10-01 `model/k3` is the default build (`build.rs`,
+passes (data fee 0.000086 ETH). Deployed there on 2026-10-02 at
+`0xAC002A7788B8Bf4645D5B7607fa2de7E608F6Bb7` (a local `--no-verify` build, 23,923 bytes): `weightsHash`
+matches and all 135 vectors give the same result on chain. Since 2026-10-01 `model/k3` is the default build (`build.rs`,
 `backend/devnode/deploy.py`, `contracts/script/e2e-devnode.sh`), after `cargo test` passed for
 k3, k2, k1-r1 and synthetic; `model/k2` stays selectable with `PRICER_MODEL_DIR` /
 `--model-dir`. The e2e run with k3 at vol 5500 ± a 200 bps band passes

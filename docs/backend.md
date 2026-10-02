@@ -822,7 +822,8 @@ service is stopped just makes it rescan.
 
 ```sh
 backend/.venv/bin/python backend/ops/make-config.py deployments/46630.json \
-    --rpc https://rpc.testnet.chain.robinhood.com --out backend/config.json   # demo off; --deployment-block N if the RPC has no old state
+    --rpc https://rpc.testnet.chain.robinhood.com --deployment-block 127553444 \
+    --out backend/config.json   # demo off; the block is given because this RPC has no old state
 backend/run.sh
 ```
 

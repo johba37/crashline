@@ -24,9 +24,22 @@ All of the above pass `forge test` and the dev node end-to-end run
 No frozen interface or ABI changed since the freeze; `IDeskCover` and its ABI are new.
 
 Robinhood Chain testnet: chain ID 46630, RPC `https://rpc.testnet.chain.robinhood.com`,
-USDG `0x7E955252E15c84f5768B83c41a71F9eba181802F` (6 decimals). `contracts/script/Deploy.s.sol`
-simulates cleanly against it; not broadcast yet, so no deployed addresses. They will be
-listed here.
+USDG `0x7E955252E15c84f5768B83c41a71F9eba181802F` (6 decimals). Deployed 2026-10-02 with
+`contracts/script/Deploy.s.sol` (`deployments/46630.json`, first block 127553444):
+
+| Contract | Address |
+|---|---|
+| Desk | `0x613e80C7c94f1f0ad1D9B8b82606d6eDf4A1DAea` |
+| SeriesFactory | `0x7A878B50509ba94D51C43941B451A2641D7973e2` |
+| NoteQuoter | `0x682EFa8609014D617649122A2281FFeC0279756A` |
+| SurrogatePricer (`model/k3`) | `0xAC002A7788B8Bf4645D5B7607fa2de7E608F6Bb7` |
+| MockChainlinkFeed (RHTSLA, staged prices) | `0xb32871181e23404F88632fA353D553584611259A` |
+| FixingsRecorder of that feed | `0xcfF29DB4E2e64B5A3F6971c65F842873CfFC5c64` |
+| NoteSeries implementation | `0x982F643c5d38A72a5D70c37f5095cb56B5850FD7` |
+| SeriesToken implementation | `0xb34D404041E130174d22881a8Cee6b291E4e4256` |
+
+The Desk's owner (curator) is `0x933a8C0f852f034f1f3b4a17Db4aD831eB3F67e3`. No series is
+listed yet.
 
 Implementation notes beyond the interfaces:
 - `desk.listedSeries()` also returns delisted series; check `desk.listing(s)`.
