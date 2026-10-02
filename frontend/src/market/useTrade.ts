@@ -4,17 +4,18 @@ import {
   getAccount,
   readContract,
   simulateContract,
+  switchChain,
   waitForTransactionReceipt,
   writeContract,
 } from 'wagmi/actions'
 import { chain, config } from '../wagmi'
-import { deskAbi } from './abi'
+import { deskAbi, noteSeriesAbi } from './abi'
 import type { Deployment } from './deployments'
 import { decodeRefusal } from './errors'
-import type { SeriesView, TradeKind, TradeState } from './types'
+import type { CollectKind, SeriesView, TradeKind, TradeState } from './types'
 
 const BPS = 10_000n
-// Writes name the chain, so a wallet on another network fails instead of sending there.
+// Writes name the chain, so a wallet that is still on another network fails instead of sending there.
 const chainId = chain.id
 
 const QUOTE = {
@@ -25,24 +26,31 @@ const QUOTE = {
 } as const
 
 /** A trade that went through after its order was left behind. */
-export type LateTrade = { series: SeriesView; kind: TradeKind; amount: bigint; hash: Hex }
+export type LateTrade = { series: SeriesView; kind: TradeKind | CollectKind; amount: bigint; hash: Hex }
+
+/** The last trade that went through, and the block it is in: what a read of the wallet has to have reached to show it. */
+export type Traded = { series: SeriesView; kind: TradeKind | CollectKind; block: bigint }
 
 export type TradeParams = {
   series: SeriesView
-  kind: TradeKind
+  kind: TradeKind | CollectKind
   amount: bigint // NOTE or WRITER base units
-  slippageBps: number
+  slippageBps: number // the three below are the Desk's: collecting has no price and no fee
   feeBps: number
   feeReceiver: Address
 }
 
-/** One Desk trade at a time: quote, approve if the allowance is short, trade. */
+/**
+ * One trade at a time. With the Desk: quote, approve if the allowance is short, trade. Collecting
+ * from a note that has ended is one transaction to the note itself.
+ */
 export function useTrade(deployment: Deployment | null): {
   state: TradeState
   run(p: TradeParams): Promise<void>
   reset(): void
   late: LateTrade | null
   dismissLate(): void
+  traded: Traded | null
 } {
   const [state, setState] = useState<TradeState>({ step: 'idle' })
   // Bumped by every run and by reset: a run that was left behind stops before its next step
@@ -57,6 +65,8 @@ export function useTrade(deployment: Deployment | null): {
   const asked = useRef(false)
   // The one case a left-behind order still trades: its request was open and she confirmed it.
   const [late, setLate] = useState<LateTrade | null>(null)
+  // Kept through reset, and set by a left-behind trade too.
+  const [traded, setTraded] = useState<Traded | null>(null)
 
   const run = useCallback((p: TradeParams) => {
     const id = ++current.current
@@ -84,7 +94,40 @@ export function useTrade(deployment: Deployment | null): {
         const { desk, usdg } = deployment
         const account = getAccount(config).address
         if (!account) throw new Error('Connect a wallet first')
+        // A wallet on another network is asked to switch first (and to add the network, if it doesn't
+        // know it), so the order goes on instead of failing. Declining ends the run as cancelled.
+        if (getAccount(config).chainId !== chainId) {
+          set({ step: 'approving' })
+          await ask(switchChain(config, { chainId }))
+          if (left()) return
+          set({ step: 'quoting' })
+        }
         const { series, kind, amount, feeBps, feeReceiver } = p
+        // Once sent, a trade can't be taken back: the run waits for it even when it was left behind.
+        const send = async (write: Promise<Hex>) => {
+          hash = await ask(write)
+          set({ step: 'trading', hash })
+          const receipt = await waitForTransactionReceipt(config, { hash, chainId })
+          setTraded({ series, kind, block: receipt.blockNumber })
+          if (left()) setLate({ series, kind, amount, hash })
+          set({ step: 'done', hash })
+        }
+
+        // A note that has ended pays out of its own escrow: the series burns the leg it is handed
+        // (redeem), so there is no price to quote and nothing to approve.
+        if (kind === 'collect' || kind === 'collectCover') {
+          set({ step: 'trading' })
+          const { request } = await simulateContract(config, {
+            address: series.address,
+            abi: noteSeriesAbi,
+            functionName: 'redeem',
+            args: kind === 'collect' ? [amount, 0n, account] : [0n, amount, account],
+            account,
+            chainId,
+          })
+          if (left()) return
+          return await send(writeContract(config, request))
+        }
         const isBuy = kind === 'buy' || kind === 'buyCover'
 
         const [quoted] = await readContract(config, {
@@ -138,12 +181,7 @@ export function useTrade(deployment: Deployment | null): {
           chainId,
         })
         if (left()) return
-        // Once sent, a trade can't be taken back: the run waits for it even when it was left behind.
-        hash = await ask(writeContract(config, request))
-        set({ step: 'trading', hash })
-        await waitForTransactionReceipt(config, { hash, chainId })
-        if (left()) setLate({ series, kind, amount, hash })
-        set({ step: 'done', hash })
+        await send(writeContract(config, request))
       } catch (error) {
         set({ step: 'failed', hash, refusal: decodeRefusal(error) })
       }
@@ -158,5 +196,5 @@ export function useTrade(deployment: Deployment | null): {
 
   const dismissLate = useCallback(() => setLate(null), [])
 
-  return { state, run, reset, late, dismissLate }
+  return { state, run, reset, late, dismissLate, traded }
 }

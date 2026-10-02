@@ -1,0 +1,29 @@
+/* A position that is on its way: while the backend catches up, a band of light sweeps over its
+   card. One pseudo-element, transform only. Reduced motion: the card rests without the band.
+   In the components layer so Tailwind utilities on the same element win. */
+
+@layer components {
+.position-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.position-shimmer::after {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 40%;
+  pointer-events: none;
+  /* Fades out to both sides, so the band has no edge; the slant comes from the skew. */
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-glass-highlight) 50%, transparent), transparent);
+  transform: translateX(-150%) skewX(-12deg);
+  animation: position-shimmer 1600ms var(--ease-in-out) infinite;
+}
+/* The band is 40% of the card wide: 250% of itself is the card's right edge, the rest clears the slant. */
+@keyframes position-shimmer {
+  to { transform: translateX(300%) skewX(-12deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .position-shimmer::after { display: none; }
+}
+}

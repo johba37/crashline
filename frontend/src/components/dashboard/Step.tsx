@@ -10,9 +10,11 @@ export default function Step({
   return (
     <section aria-labelledby={`step-${n}`} className="panel rounded-lg p-5 sm:p-6">
       <div className="flex items-center gap-3">
+        {/* Flex, not grid: it centres the number even when the text is larger than the circle expects (text zoom).
+            One line high, with figures of equal width, so the number has the same room on every side. */}
         <span
           aria-hidden="true"
-          className={`grid size-8 shrink-0 place-items-center rounded-full type-label ${
+          className={`flex size-8 shrink-0 items-center justify-center rounded-full type-label leading-none tabular-nums ${
             state === 'current' ? 'bg-accent text-on-accent' : state === 'done' ? 'bg-surface-overlay text-ink' : 'bg-surface-well text-ink-faint'
           }`}
         >

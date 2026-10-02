@@ -1,0 +1,15 @@
+[Unit]
+Description=Crashline: real prices for the dev node's mock feeds (every 5 min)
+Documentation=file://@ROOT@/docs/backend.md
+Wants=sp-backend.service
+After=sp-backend.service
+
+[Service]
+Type=simple
+EnvironmentFile=-@ROOT@/backend/.env
+ExecStart=@ROOT@/backend/.venv/bin/python @ROOT@/backend/ops/push-prices.py
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=default.target

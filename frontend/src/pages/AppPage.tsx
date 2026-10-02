@@ -9,18 +9,20 @@ import { GLOSSARY } from '../components/dashboard/glossary.ts'
 import LevelPicker, { type Goal } from '../components/dashboard/LevelPicker.tsx'
 import MarketList from '../components/dashboard/MarketList.tsx'
 import ModelCard from '../components/dashboard/ModelCard.tsx'
+import NetworkChip from '../components/dashboard/NetworkChip.tsx'
 import Notice from '../components/dashboard/Notice.tsx'
-import Order, { TxLink, type Trade } from '../components/dashboard/Order.tsx'
+import Order, { TxLink, type Placed, type Trade } from '../components/dashboard/Order.tsx'
 import Positions from '../components/dashboard/Positions.tsx'
 import { Calendar, PriceDetails } from '../components/dashboard/SeriesDetail.tsx'
 import Step from '../components/dashboard/Step.tsx'
-import Switch from '../components/dashboard/Switch.tsx'
+import ModeSwitch from '../components/dashboard/ModeSwitch.tsx'
 import Term from '../components/dashboard/Term.tsx'
 import TickerBadge from '../components/dashboard/TickerBadge.tsx'
 import { refusalStatus, seriesStatus } from '../components/dashboard/status.ts'
+import EarnRate from '../components/landing/EarnRate.tsx'
 import InfoTip from '../components/Tooltip.tsx'
-import { UNIT, bestCase, date, fromFeed, parseAmount, pct, roomFor, soldOut, span, toUnits, tradeAmounts, trigger, usd, usdg, wholeUsdg } from '../market/format.ts'
-import { FEE_BPS, PLACEHOLDERS } from '../market/settings.ts'
+import { UNIT, bestCase, date, fromFeed, parseAmount, roomFor, soldOut, span, toUnits, tradeAmounts, trigger, usd, usdg, wholeUsdg } from '../market/format.ts'
+import { FEE_BPS } from '../market/settings.ts'
 import type { SeriesView } from '../market/types.ts'
 import { useMarket } from '../market/useMarket.ts'
 import { usePositions } from '../market/usePositions.ts'
@@ -35,7 +37,10 @@ const NAMES: Record<string, string> = { TSLA: 'Tesla', NVDA: 'Nvidia', AAPL: 'Ap
 /** What a trade did, in the order form's words: "bought cover for 1,000.00 USDG of TSLA". */
 const did = ({ kind, amount, series }: LateTrade) => {
   const of = `${usdg(amount)} USDG of ${series.symbol}`
-  return { buy: `bought ${of} NOTE`, sell: `sold ${of} NOTE back`, buyCover: `bought cover for ${of}`, sellCover: `sold cover for ${of} back` }[kind]
+  return {
+    buy: `bought ${of} NOTE`, sell: `sold ${of} NOTE back`, buyCover: `bought cover for ${of}`, sellCover: `sold cover for ${of} back`,
+    collect: `collected what ${of} NOTE paid`, collectCover: `collected what your cover for ${of} paid`,
+  }[kind]
 }
 
 /**
@@ -48,9 +53,9 @@ const did = ({ kind, amount, series }: LateTrade) => {
  */
 export default function AppPage() {
   const [params, setParams] = useSearchParams()
-  // Test mode: the example market with every kind of note, and a buy button that only walks through
-  // the steps. Off: only the notes that are really open.
-  const test = (params.get('test') ?? (PLACEHOLDERS ? '1' : '0')) === '1'
+  // Prototype (?test=1): the example market with every kind of note, and a buy button that only
+  // walks through the steps. Testnet, the default: only the notes that are really open.
+  const test = params.get('test') === '1'
   const { data: market, isLoading, error, deployment, unreachable } = useMarket(test)
   const chainTrade = useTrade(deployment)
   const practiceTrade = usePracticeTrade()
@@ -67,7 +72,13 @@ export default function AppPage() {
     reset()
     return reset
   }, [reset, order])
-  const { positions, supported } = usePositions(test)
+  // The order that went through, with the steps it was put together from. A look at My positions
+  // clears the trade's status but not this: it stays until the reader changes a step (dropped
+  // here, before anything renders with it), and until then the order's button rests.
+  const [placed, setPlaced] = useState<{ steps: string; order: Placed } | null>(null)
+  const steps = [test, params.get('stock'), params.get('goal'), params.get('series')].join('|')
+  if (placed && placed.steps !== steps) setPlaced(null)
+  const held = usePositions(test, market, chainTrade.traded)
   const set = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams(params)
     for (const [k, v] of Object.entries(changes)) {
@@ -82,20 +93,18 @@ export default function AppPage() {
     next.delete('series') // the two markets don't share notes
     setParams(next, { replace: true, preventScrollReset: true })
   }
-  const testSwitch = (
-    <Switch label="Test mode" hint="On: example stocks and notes, and nothing is bought. Off: only what is really open." checked={test} onChange={setTest} />
-  )
+  const testSwitch = <ModeSwitch test={test} onChange={setTest} />
   const tab = (to: 'buy' | 'positions', label: string) => (
     <button
       type="button"
       aria-current={view === to ? 'page' : undefined}
-      onClick={() => { trade.reset(); set({ view: to === 'buy' ? null : to }) }}
+      onClick={() => { trade.reset(); set({ view: to === 'buy' ? null : to, open: null }) }}
       className={`h-9 rounded-full px-4 type-label whitespace-nowrap transition-colors duration-160 ${view === to ? 'bg-surface-overlay text-ink shadow-[inset_0_0_0_1px_var(--color-line)]' : 'text-ink-muted hover:text-ink'}`}
     >
       {label}
     </button>
   )
-  const tabs = <div className="flex items-center gap-1">{tab('buy', 'Buy')}{tab('positions', 'My positions')}</div>
+  const tabs = <div className="flex flex-wrap items-center gap-1">{tab('buy', 'Protect or earn')}{tab('positions', 'My positions')}</div>
   // The amount starts empty. Once there is one, the last valid entry stays in force while the
   // field is being edited, so the steps below don't close and reopen with every keystroke.
   // Until the field holds an amount again it shows its error, and the order in step 6 waits.
@@ -165,18 +174,25 @@ export default function AppPage() {
       <header className="sticky top-[max(0.75rem,env(safe-area-inset-top))] z-(--z-nav) px-4 sm:px-6">
         <nav className="glass-strong mx-auto mt-3 flex h-14 max-w-3xl items-center justify-between gap-4 rounded-full pr-2 pl-5">
           <Link to="/" className="inline-flex items-center gap-2 text-ink">
-            <Logo className="h-7 w-auto" />
+            <Logo className="h-6 w-auto" />
             <Wordmark />
           </Link>
-          <div className="hidden sm:block">{tabs}</div>
-          <ConnectButton showBalance={false} chainStatus="icon" accountStatus="address" />
+          <div className="hidden shrink-0 md:block">{tabs}</div>
+          <div className="flex min-w-0 items-center">
+            {/* The network chip warns of a wrong network and switches the wallet, so RainbowKit's own chain button is
+                off (and on a wrong network its button shows nothing: the chip shows the address then).
+                When the bar runs short, the chip's name gives way: the tabs don't shrink, so they never wrap. */}
+            <NetworkChip />
+            <ConnectButton showBalance={false} chainStatus="none" accountStatus="address" />
+          </div>
         </nav>
       </header>
 
       <main className="mx-auto flex max-w-3xl flex-col gap-4 px-4 pt-10 pb-24 sm:px-6">
-        {/* The capsule has no room for the two views on a phone, so they sit here, next to the test switch. */}
-        <div className="-mt-6 flex items-center justify-between gap-2">
-          <div className="sm:hidden">{tabs}</div>
+        {/* Below md the capsule has no room for the tabs, so they sit here, next to the Testnet / Prototype switch
+            (on a phone the switch wraps under them). */}
+        <div className="-mt-6 flex flex-wrap items-center justify-between gap-2">
+          <div className="md:hidden">{tabs}</div>
           <div className="ml-auto">{testSwitch}</div>
         </div>
         <div className="mb-2 flex flex-col gap-2">
@@ -196,19 +212,20 @@ export default function AppPage() {
           </Notice>
         )}
 
-        {view === 'positions' && (
-          <Positions positions={positions} supported={supported} now={market?.now ?? 0} trade={trade} onBuy={() => set({ view: null })} />
+        {/* A position is told with its note's prices: without the market, the notices below say why there is none. */}
+        {view === 'positions' && market && (
+          <Positions {...held} open={params.get('open')} now={market.now} trade={trade} onBuy={() => set({ view: null, open: null })} />
         )}
 
-        {view === 'buy' && !test && !market && !isLoading && !error && (
+        {!test && !market && !isLoading && !error && (
           <Notice
             status={unreachable
-              ? { tone: 'hold', icon: Info, label: 'Can’t reach the backend', message: `Nothing answers at ${API_URL} (${unreachable.message}). If it runs behind an SSH tunnel, start the tunnel: this page then switches over by itself. Or switch on test mode at the top to try the flow with example notes.` }
-              : { tone: 'info', icon: Info, label: 'Nothing is live yet', message: 'The contracts aren’t on the test network yet. Switch on test mode at the top to try the flow with example notes.' }}
+              ? { tone: 'hold', icon: Info, label: 'Can’t reach the backend', message: `Nothing answers at ${API_URL} (${unreachable.message}). If it runs behind an SSH tunnel, start the tunnel: this page then switches over by itself. Or switch to Prototype at the top to try the flow with example notes.` }
+              : { tone: 'info', icon: Info, label: 'Nothing is live yet', message: 'The contracts aren’t on the test network yet. Switch to Prototype at the top to try the flow with example notes.' }}
           />
         )}
-        {view === 'buy' && error && <Notice status={{ tone: 'abort', icon: Info, label: 'Can’t read the market', message: error.message }} />}
-        {view === 'buy' && isLoading && <p className="type-body text-ink-muted">Reading the market…</p>}
+        {error && <Notice status={{ tone: 'abort', icon: Info, label: 'Can’t read the market', message: error.message }} />}
+        {isLoading && <p className="type-body text-ink-muted">Reading the market…</p>}
         {view === 'buy' && market && all.length === 0 && (
           <Notice status={{ tone: 'neutral', icon: Info, label: 'Nothing open yet', message: 'The Desk hasn’t opened anything yet. Check back soon.' }} />
         )}
@@ -246,8 +263,8 @@ export default function AppPage() {
                     value: 'earn',
                     icon: <Coins size={24} weight="bold" />,
                     title: 'Earn a weekly income',
-                    aside: notes[0] ? `${pct(notes[0].terms.couponBpsPerPeriod)} a week` : undefined,
-                    body: 'Be the insurer: you earn a fixed income for every week, paid at the end. In a big crash, you get back less.',
+                    // The rate differs from note to note, so no single figure stands here: the range, once it is live.
+                    body: <>Be the insurer: you earn <EarnRate />. In a big crash, you get back less.</>,
                   },
                 ]}
               />
@@ -275,6 +292,7 @@ export default function AppPage() {
                     const parsed = parseAmount(v)
                     if (parsed) setAmount(parsed)
                     trade.reset()
+                    setPlaced(null)
                   }}
                   onBlur={() => setAmountTouched(true)}
                   error={(amountTouched || entered !== null) && parseAmount(amountText) === null
@@ -349,7 +367,13 @@ export default function AppPage() {
               state={goal && ready && chosen ? 'current' : 'upcoming'}
               hint="Last, you see what you pay and what you can get back."
             >
-              {goal && ready && chosen && <Order key={`${chosen.address}-${goal}`} s={chosen} goal={goal} amount={amount} amountOk={parseAmount(amountText) !== null} market={market} trade={trade} />}
+              {goal && ready && chosen && (
+                <Order
+                  key={`${chosen.address}-${goal}`} s={chosen} goal={goal} amount={amount} amountOk={parseAmount(amountText) !== null} market={market} trade={trade} placed={placed?.order ?? null} onPlaced={(order) => setPlaced(order && { steps, order })}
+                  // ?open= names the position as the list keys its rows: the note and the side that was bought.
+                  onView={() => set({ view: 'positions', open: `${chosen.address}-${goal === 'protect' ? 'cover' : 'note'}` })}
+                />
+              )}
             </Step>
 
             {detail && (

@@ -1,8 +1,50 @@
-/* The hero sky's two loops, both compositor-only (transform and opacity), so nothing repaints:
+/* The sky's two loops, both compositor-only (transform and opacity), so nothing repaints:
    the Milky Way drifts very slowly behind the stars, and a few stars twinkle.
-   Reduced motion leaves both at rest. */
+   Reduced motion leaves both at rest. The sky is part of the page and scrolls with it. */
 
 @layer components {
+/* The landing hero ends by fading into the ground below it (--page-veil): in the dark theme the
+   veil that dims the sky, in the light theme the silver page. Eased rather than linear, so the
+   fade has no visible start or end band. */
+.sky-fade {
+  background: linear-gradient(to bottom, transparent,
+    color-mix(in oklab, var(--page-veil) 8%, transparent) 25%,
+    color-mix(in oklab, var(--page-veil) 25%, transparent) 45%,
+    color-mix(in oklab, var(--page-veil) 55%, transparent) 65%,
+    color-mix(in oklab, var(--page-veil) 85%, transparent) 85%,
+    var(--page-veil));
+}
+
+/* The stage (the hero) in detail: it reaches --sky-handover past the hero's bottom edge and fades
+   out over that stretch, into the page's sky underneath. */
+.starfield-stage {
+  position: absolute;
+  inset: 0 0 auto;
+  height: calc(var(--stage-h, 100lvh) + var(--sky-handover));
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - var(--sky-handover)), transparent);
+  mask-image: linear-gradient(to bottom, black calc(100% - var(--sky-handover)), transparent);
+}
+/* The rest of the page: repeating star tiles that fade in where the stage fades out, and twinkles. */
+.starfield-rest {
+  position: absolute;
+  inset: var(--stage-h, 100lvh) 0 0;
+}
+.starfield-tiles {
+  position: absolute;
+  inset: 0;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black var(--sky-handover));
+  mask-image: linear-gradient(to bottom, transparent, black var(--sky-handover));
+}
+/* In the light theme the page's ground is solid, so the sky below the stage is never seen. */
+:root[data-theme="light"] .starfield-rest {
+  display: none;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .starfield-rest {
+    display: none;
+  }
+}
+
 /* --sky-margin larger than the box on every side; the drift stays inside that margin. */
 .starfield-sky {
   position: absolute;

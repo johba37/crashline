@@ -100,6 +100,8 @@ export type MarketData = {
   desk: Address
   usdg: Address
   series: SeriesView[] // active listings only
+  /** Listed once: nothing to buy, but the Desk still buys them back and a wallet may hold them. */
+  delisted: SeriesView[]
   models: Record<Address, ModelView>
   /** The redemption queue. A trade that adds to the Desk's position pays it first: processQueue(QUEUE_BATCH). */
   queue: {
@@ -128,6 +130,9 @@ export type Position = {
 
 /** The four Desk trades. */
 export type TradeKind = 'buy' | 'sell' | 'buyCover' | 'sellCover'
+
+/** Collecting what a note that has ended pays, per leg: the series pays it (redeem), not the Desk. */
+export type CollectKind = 'collect' | 'collectCover'
 
 // 'waiting': behind a request of an earlier order that is still open in the wallet
 export type TradeStep = 'idle' | 'waiting' | 'quoting' | 'approving' | 'trading' | 'done' | 'failed'

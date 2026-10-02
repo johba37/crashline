@@ -1,10 +1,13 @@
 import { CalendarCheck, CaretDown, Coins, FlagCheckered, ShieldCheck, TrendDown } from '@phosphor-icons/react'
+import EarnRate from './EarnRate.tsx'
 import FlowMap from './FlowMap.tsx'
 import Section from './Section.tsx'
 
-// The page speaks about any stock; one note is the worked example here and in FlowMap.tsx: TSLA,
+// The page speaks about any stock; one note is the worked example, and only here: TSLA,
 // 26 weekly checks, the end one week after the last (27 weeks, "six months"), crash line 60%, ends
-// early at 100%, weekly income 0.25% (25 bps), for 1,000 USDG of the stock.
+// early at 100%, weekly income 0.25% (25 bps), for 1,000 USDG of the stock. The income is this
+// note's own: other notes will pay other rates, so outside the example the rate is a range over
+// the open notes (EarnRate.tsx, still a red placeholder).
 //
 // Payouts (contracts/src/interfaces/INoteSeries.sol), 2.50 a week:
 //   the pot, locked on day one (maxPayout)   1,000 + 27 x 2.50 = 1,067.50
@@ -23,7 +26,7 @@ import Section from './Section.tsx'
 //   13 checks (14 weeks), swing 55%           9,961  ->  cover 38.90
 //    4 checks (5 weeks), swing 55%           10,067  ->  cover  5.80
 //   26 checks, swing 30%                     10,122  ->  cover 55.30
-// (The shorter notes are quoted in FlowMap.tsx, in the Protect pay step.)
+// (Only the first row is on the page.)
 // These are the model's prices: the Desk's gap between buying and selling and the fee come on top.
 // Ask again when the model changes.
 
@@ -46,6 +49,7 @@ const SIDES = [
   {
     name: 'Protect',
     Icon: ShieldCheck,
+    tone: 'text-protect',
     who: 'You hold 1,000 USDG of TSLA and cover all of it.',
     payLabel: 'You pay once, up front',
     pay: '−85.50 USDG',
@@ -60,6 +64,7 @@ const SIDES = [
   {
     name: 'Earn',
     Icon: Coins,
+    tone: 'text-earn',
     who: 'You take the other side of the same note, and with it the crash risk.',
     payLabel: 'You put in once, up front',
     pay: '−982.00 USDG',
@@ -79,22 +84,30 @@ export default function HowItWorks() {
       id="how-it-works"
       title="How it works"
       divider={false}
-      intro="Pay once, and if your stock crashes by more than 40%, you are paid what it lost: that is Protect. Earn is the other side: it takes over that risk for a fixed weekly income. Pick any step or arrow below to follow one example, six months on Tesla’s stock."
+      intro={
+        <>
+          <span className="whitespace-nowrap">
+            <ShieldCheck size={20} weight="duotone" aria-hidden="true" className="inline align-[-0.15em] text-protect" /> Protect
+          </span>{' '}
+          your stock: pay once, and if it crashes, you are paid what it lost.{' '}
+          <span className="whitespace-nowrap">
+            <Coins size={20} weight="duotone" aria-hidden="true" className="inline align-[-0.15em] text-earn" /> Earn
+          </span>{' '}
+          is the other side: it takes over that risk for a fixed weekly income, <EarnRate />.
+        </>
+      }
     >
       <FlowMap />
 
       <h3 className="mt-16 type-heading text-ink">An example in numbers</h3>
       <p className="mt-2 max-w-prose type-body text-ink-muted">
-        Six months on 1,000 USDG of TSLA: its price is checked once a week, 26 times, and the note ends a week later.
-        Before the note is sold, the Desk locks everything it could ever pay out in a pot: 1,067.50 USDG, the 1,000
-        being covered plus 67.50 for 27 weeks of income at 2.50 a week. What the two sides then put in adds up to exactly
-        that amount, and the weekly checks decide who gets how much of it back. USDG is a digital dollar.
+        One note as an example: six months on 1,000 USDG of TSLA. Every note has its own price and weekly income.
       </p>
       <div className="mt-6 grid items-start gap-6 md:grid-cols-2">
-        {SIDES.map(({ name, Icon, who, payLabel, pay, pays, outcomes, net }) => (
+        {SIDES.map(({ name, Icon, tone, who, payLabel, pay, pays, outcomes, net }) => (
           <article key={name} aria-labelledby={`side-${name}`} className="panel flex flex-col rounded-lg p-5 sm:p-6">
             <div className="flex items-center gap-3">
-              <Icon size={32} weight="duotone" aria-hidden="true" className="shrink-0 text-accent-text" />
+              <Icon size={32} weight="duotone" aria-hidden="true" className={`shrink-0 ${tone}`} />
               <h4 id={`side-${name}`} className="type-heading text-ink">
                 {name}
               </h4>
@@ -143,10 +156,8 @@ export default function HowItWorks() {
         ))}
       </div>
       <p className="mt-4 max-w-prose type-caption text-ink-muted">
-        Prices are the model’s for this note on its first day. They move with the stock’s price, the time left and how
-        much the stock swings. The Desk sells a little above them and a fee can come on top, both with built-in limits
-        (see Risks and fees). The app shows the exact amount before you buy. Today this is a test version, with no
-        real money.
+        The model’s prices for this note on its first day. The Desk sells a little above them, and a fee can come on
+        top. Today this is a test version, with no real money.
       </p>
     </Section>
   )

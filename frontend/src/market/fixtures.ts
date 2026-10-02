@@ -125,6 +125,7 @@ export const fixtureMarket: MarketData = {
     // back. Last in the list, so the positions below find their notes where they were.
     series({ n: 11, stock: TSLA, initial: 27_300_000_000n, done: 18, sinceObs: 2 * DAY, coverMid: 210, soldOut: true }),
   ],
+  delisted: [],
   models: {
     [MODEL]: {
       address: MODEL,

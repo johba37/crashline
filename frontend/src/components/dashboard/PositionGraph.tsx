@@ -121,9 +121,14 @@ export default function PositionGraph({ s, side, path, now }: {
             <Term t="endsEarly">Ends early</Term> from here up
           </span>
         )}
+        {/* A note that has ended says what did happen at the line, one that runs what does or would. */}
         <p className="absolute right-2 bottom-2 left-27 type-label text-ink">
-          {hit ? `${s.symbol} closed below this line` : 'Below this line at a weekly check'}:{' '}
-          {side === 'note' ? 'your money is at risk.' : hit ? 'your cover is switched on.' : 'your cover switches on.'}
+          {ended && !hit ? `${s.symbol} never closed below this line at a weekly check.` : (
+            <>
+              {hit ? `${s.symbol} closed below this line` : 'Below this line at a weekly check'}:{' '}
+              {side === 'note' ? `your money ${ended ? 'was' : 'is'} at risk.` : hit ? `your cover ${ended ? 'was' : 'is'} switched on.` : 'your cover switches on.'}
+            </>
+          )}
         </p>
       </div>
 

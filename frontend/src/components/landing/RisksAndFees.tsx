@@ -16,15 +16,15 @@ import Section from './Section.tsx'
 const RISKS = [
   {
     title: 'Earn can lose money in a crash',
-    text: 'If the stock is below the crash line at a weekly check and ends below its starting price, Earn gets back only the share of value the stock kept, plus the weekly income. You can lose most of what you paid, but never more.',
+    text: 'After a crash, Earn gets back only the share of value the stock kept, plus the weekly income. You can lose most of what you put in, but never more.',
   },
   {
     title: 'Protect only pays in a crash',
-    text: 'Like any insurance: if no crash comes, cover pays nothing at the end. A dip between two weekly checks doesn’t count, and neither does a fall that never reaches the crash line. And if the stock is back at or above its starting price at a weekly check, the note ends early: you get the unused weeks back, but your cover ends too.',
+    text: 'No crash, no payout, like any insurance. A dip between two weekly checks doesn’t count, nor does a fall that stays above the crash line. If a note ends early, your cover ends too.',
   },
   {
     title: 'The model can be wrong',
-    text: 'The model follows its simulation closely, but the simulation can be wrong about a stock. Its sudden drops are modelled on ten years of Tesla’s prices: a check on 12 more stocks found that shape close for large companies like Apple and Microsoft, and further off for stocks with rare, very large drops. A wrong price changes what you trade at, never what a note pays: payouts follow the weekly checks, and the money is already in the pot.',
+    text: 'The simulation can be wrong about a stock. Its sudden drops are modelled on ten years of Tesla’s prices, which fits large companies well and stocks with rare, very large drops less. A wrong price changes what you trade at, never what a note pays.',
   },
   {
     title: 'Trading pauses at times',
@@ -65,9 +65,9 @@ export default function RisksAndFees() {
           </dl>
         </div>
         <p className="mt-6 max-w-prose type-body text-ink-muted md:col-span-7 md:mt-0">
-          Apps that sell through the Desk can add a fee, up to a limit that is built in. This app shows the fee before you buy.
-          Half of every fee stays in the Desk as a reserve against its own losses, and the other half goes to the app. The Desk can also sell a little above the model’s price
-          and buy a little below it. That gap stays in the Desk too.
+          Apps that sell through the Desk can add a fee up to these limits. This app shows it before you buy. Half of
+          each fee goes to the app, half stays in the Desk as a reserve. The Desk also sells a little above the
+          model’s price and buys a little below it.
         </p>
       </div>
 
@@ -76,8 +76,8 @@ export default function RisksAndFees() {
         <div>
           <p className="type-label text-ink">Testnet only</p>
           <p className="mt-1 type-body text-ink-muted">
-            Crashline runs on Robinhood Chain’s test network, with stock prices we set ourselves for testing. No
-            real money is involved, the contracts have had no outside audit yet, and nothing here is financial advice.
+            Crashline runs on Robinhood Chain’s test network, with stock prices we set ourselves. No real money, no
+            outside audit yet, and nothing here is financial advice.
           </p>
         </div>
       </div>

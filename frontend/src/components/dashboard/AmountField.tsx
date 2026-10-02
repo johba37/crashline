@@ -33,7 +33,8 @@ export default function AmountField({
           onBlur={onBlur}
           aria-invalid={error ? true : undefined}
           aria-describedby={`${id}-help`}
-          className="min-w-0 flex-1 bg-transparent type-data text-ink outline-none placeholder:text-ink-muted"
+          // The example is fainter and lighter than a typed amount, so an empty field doesn't read as filled in.
+          className="min-w-0 flex-1 bg-transparent type-data text-ink outline-none placeholder:font-normal placeholder:text-ink-faint"
         />
         <span className="type-label text-ink-muted">{unit}</span>
       </div>

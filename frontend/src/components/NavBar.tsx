@@ -12,8 +12,10 @@ const LINKS = [
   { label: 'Roadmap', href: '#roadmap' },
 ]
 
+// Optical centring in the bar: the text read high, so the wordmark and the links sit 1px lower
+// (pt-0.5 moves the label, not its hover pill).
 const LINK_CLASS =
-  'inline-flex h-10 items-center rounded-full px-3 type-label text-ink-muted transition-colors duration-160 ease-out hover:bg-surface-overlay hover:text-ink'
+  'inline-flex h-10 items-center rounded-full px-3 pt-0.5 type-label text-ink-muted transition-colors duration-160 ease-out hover:bg-surface-overlay hover:text-ink'
 
 /** Floating glass nav. Hidden while `revealAfter` (the hero's call to action) is on screen or
     below it, so exactly one primary button is visible at a time. */
@@ -41,8 +43,10 @@ export default function NavBar({ revealAfter }: { revealAfter: RefObject<HTMLEle
         className="glass-strong mx-auto flex h-14 max-w-app items-center gap-2 rounded-full pr-2 pl-5 [--elevation-glass:var(--elevation-glass-lifted)]"
       >
         <a href="#top" className="inline-flex items-center gap-2 text-ink">
-          <Logo className="h-7 w-auto" />
-          <Wordmark />
+          <Logo className="h-6 w-auto" />
+          <span className="translate-y-px">
+            <Wordmark />
+          </span>
         </a>
         <ul className="ml-auto hidden items-center gap-1 md:flex">
           {LINKS.map((link) => (
