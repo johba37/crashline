@@ -14,6 +14,7 @@ import ScrollToTop from './components/ScrollToTop.tsx'
 import './index.css'
 import AppPage from './pages/AppPage.tsx'
 import Landing from './pages/Landing.tsx'
+import SetupPage from './pages/SetupPage.tsx'
 import { rainbowKitTheme } from './rainbowkit-theme.ts'
 import { config } from './wagmi.ts'
 
@@ -29,6 +30,7 @@ createRoot(document.getElementById('root')!).render(
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/app" element={<AppPage />} />
+              <Route path="/setup" element={<SetupPage />} />
             </Routes>
           </BrowserRouter>
         </RainbowKitProvider>
