@@ -56,16 +56,18 @@ option prices (the market's crash premium), one model per group of stocks.
 
 ## Deployed contracts
 
-Robinhood Chain testnet (chain ID 46630). Addresses will be added after deployment
-(submission format: `network: address — label`).
+Robinhood Chain testnet (chain ID 46630), deployed 2026-10-02. The addresses are also in
+[deployments/46630.json](deployments/46630.json), which the app reads. No note is listed yet,
+so no trade has run there.
 
 | Contract | Address | Explorer |
 |---|---|---|
-| SurrogatePricer (Stylus) | TBD | TBD |
-| SeriesFactory | TBD | TBD |
-| NoteQuoter | TBD | TBD |
-| FixingsRecorder | TBD | TBD |
-| Desk (ERC-4626) | TBD | TBD |
+| SurrogatePricer (Stylus, `model/k3`) | `0xAC002A7788B8Bf4645D5B7607fa2de7E608F6Bb7` | [explorer](https://explorer.testnet.chain.robinhood.com/address/0xAC002A7788B8Bf4645D5B7607fa2de7E608F6Bb7) |
+| SeriesFactory | `0x7A878B50509ba94D51C43941B451A2641D7973e2` | [explorer](https://explorer.testnet.chain.robinhood.com/address/0x7A878B50509ba94D51C43941B451A2641D7973e2) |
+| NoteQuoter | `0x682EFa8609014D617649122A2281FFeC0279756A` | [explorer](https://explorer.testnet.chain.robinhood.com/address/0x682EFa8609014D617649122A2281FFeC0279756A) |
+| FixingsRecorder (of the RHTSLA feed) | `0xcfF29DB4E2e64B5A3F6971c65F842873CfFC5c64` | [explorer](https://explorer.testnet.chain.robinhood.com/address/0xcfF29DB4E2e64B5A3F6971c65F842873CfFC5c64) |
+| MockChainlinkFeed (RHTSLA, staged prices) | `0xb32871181e23404F88632fA353D553584611259A` | [explorer](https://explorer.testnet.chain.robinhood.com/address/0xb32871181e23404F88632fA353D553584611259A) |
+| Desk (ERC-4626) | `0x613e80C7c94f1f0ad1D9B8b82606d6eDf4A1DAea` | [explorer](https://explorer.testnet.chain.robinhood.com/address/0x613e80C7c94f1f0ad1D9B8b82606d6eDf4A1DAea) |
 | USDG (Paxos, existing) | `0x7E955252E15c84f5768B83c41a71F9eba181802F` | [explorer](https://explorer.testnet.chain.robinhood.com/address/0x7E955252E15c84f5768B83c41a71F9eba181802F) |
 
 ## Demo
