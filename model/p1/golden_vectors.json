@@ -1,0 +1,1151 @@
+{
+ "featureSpecVersion": 2,
+ "weightsHash": "0x650a942371b5608601728735d72df2e3b1687116f86f8ef15aad99cdac3ef807",
+ "modelVectors": [
+  {
+   "features": {
+    "spotBpsOfReference": 2000,
+    "volBpsAnnual": 2000,
+    "timeToNextFixingSecs": 0,
+    "fixingsBeforeEarnings": 0,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 0
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 13000,
+    "volBpsAnnual": 9000,
+    "timeToNextFixingSecs": 604800,
+    "fixingsBeforeEarnings": 18,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 65
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 2000,
+    "volBpsAnnual": 3831,
+    "timeToNextFixingSecs": 66108,
+    "fixingsBeforeEarnings": 5,
+    "flags": 0
+   },
+   "expectedCorrectionBps": -1
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 13000,
+    "volBpsAnnual": 5159,
+    "timeToNextFixingSecs": 55590,
+    "fixingsBeforeEarnings": 6,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 8
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 10945,
+    "volBpsAnnual": 2000,
+    "timeToNextFixingSecs": 600481,
+    "fixingsBeforeEarnings": 3,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 0
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 2606,
+    "volBpsAnnual": 9000,
+    "timeToNextFixingSecs": 166301,
+    "fixingsBeforeEarnings": 3,
+    "flags": 1
+   },
+   "expectedCorrectionBps": -2
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 5363,
+    "volBpsAnnual": 5936,
+    "timeToNextFixingSecs": 0,
+    "fixingsBeforeEarnings": 2,
+    "flags": 1
+   },
+   "expectedCorrectionBps": -3
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 6759,
+    "volBpsAnnual": 6751,
+    "timeToNextFixingSecs": 604800,
+    "fixingsBeforeEarnings": 17,
+    "flags": 0
+   },
+   "expectedCorrectionBps": -8
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 4417,
+    "volBpsAnnual": 6432,
+    "timeToNextFixingSecs": 565459,
+    "fixingsBeforeEarnings": 0,
+    "flags": 1
+   },
+   "expectedCorrectionBps": -6
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 9514,
+    "volBpsAnnual": 4661,
+    "timeToNextFixingSecs": 236855,
+    "fixingsBeforeEarnings": 18,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 31
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 5663,
+    "volBpsAnnual": 4422,
+    "timeToNextFixingSecs": 350623,
+    "fixingsBeforeEarnings": 9,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 34
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 11804,
+    "volBpsAnnual": 8140,
+    "timeToNextFixingSecs": 469061,
+    "fixingsBeforeEarnings": 18,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 55
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 6212,
+    "volBpsAnnual": 5849,
+    "timeToNextFixingSecs": 21601,
+    "fixingsBeforeEarnings": 13,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 52
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 4999,
+    "volBpsAnnual": 3122,
+    "timeToNextFixingSecs": 13010,
+    "fixingsBeforeEarnings": 3,
+    "flags": 0
+   },
+   "expectedCorrectionBps": -2
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 7001,
+    "volBpsAnnual": 6809,
+    "timeToNextFixingSecs": 3506,
+    "fixingsBeforeEarnings": 12,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 51
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 5138,
+    "volBpsAnnual": 3624,
+    "timeToNextFixingSecs": 15331,
+    "fixingsBeforeEarnings": 6,
+    "flags": 1
+   },
+   "expectedCorrectionBps": -2
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 10359,
+    "volBpsAnnual": 3308,
+    "timeToNextFixingSecs": 21601,
+    "fixingsBeforeEarnings": 11,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 8
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 9499,
+    "volBpsAnnual": 2203,
+    "timeToNextFixingSecs": 19422,
+    "fixingsBeforeEarnings": 12,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 2
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 10501,
+    "volBpsAnnual": 8453,
+    "timeToNextFixingSecs": 11166,
+    "fixingsBeforeEarnings": 1,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 23
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 9524,
+    "volBpsAnnual": 7067,
+    "timeToNextFixingSecs": 3935,
+    "fixingsBeforeEarnings": 3,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 14
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 10288,
+    "volBpsAnnual": 8677,
+    "timeToNextFixingSecs": 583607,
+    "fixingsBeforeEarnings": 12,
+    "flags": 1
+   },
+   "expectedCorrectionBps": -18
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 5392,
+    "volBpsAnnual": 7693,
+    "timeToNextFixingSecs": 474784,
+    "fixingsBeforeEarnings": 8,
+    "flags": 1
+   },
+   "expectedCorrectionBps": -4
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 5510,
+    "volBpsAnnual": 3222,
+    "timeToNextFixingSecs": 336444,
+    "fixingsBeforeEarnings": 6,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 0
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 2884,
+    "volBpsAnnual": 8153,
+    "timeToNextFixingSecs": 278334,
+    "fixingsBeforeEarnings": 18,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 2
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 4336,
+    "volBpsAnnual": 4489,
+    "timeToNextFixingSecs": 269405,
+    "fixingsBeforeEarnings": 8,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 0
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 10420,
+    "volBpsAnnual": 4080,
+    "timeToNextFixingSecs": 493753,
+    "fixingsBeforeEarnings": 8,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 4
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 5984,
+    "volBpsAnnual": 3429,
+    "timeToNextFixingSecs": 9660,
+    "fixingsBeforeEarnings": 11,
+    "flags": 1
+   },
+   "expectedCorrectionBps": -1
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 9059,
+    "volBpsAnnual": 8280,
+    "timeToNextFixingSecs": 266735,
+    "fixingsBeforeEarnings": 13,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 26
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 3214,
+    "volBpsAnnual": 3755,
+    "timeToNextFixingSecs": 190982,
+    "fixingsBeforeEarnings": 17,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 0
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 8126,
+    "volBpsAnnual": 4296,
+    "timeToNextFixingSecs": 454390,
+    "fixingsBeforeEarnings": 2,
+    "flags": 0
+   },
+   "expectedCorrectionBps": -22
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 10538,
+    "volBpsAnnual": 2448,
+    "timeToNextFixingSecs": 437889,
+    "fixingsBeforeEarnings": 12,
+    "flags": 1
+   },
+   "expectedCorrectionBps": -2
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 6152,
+    "volBpsAnnual": 6221,
+    "timeToNextFixingSecs": 283124,
+    "fixingsBeforeEarnings": 12,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 4
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 8381,
+    "volBpsAnnual": 5074,
+    "timeToNextFixingSecs": 407144,
+    "fixingsBeforeEarnings": 15,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 10
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 5099,
+    "volBpsAnnual": 2407,
+    "timeToNextFixingSecs": 304923,
+    "fixingsBeforeEarnings": 11,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 0
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 10513,
+    "volBpsAnnual": 3343,
+    "timeToNextFixingSecs": 290765,
+    "fixingsBeforeEarnings": 10,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 8
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 7466,
+    "volBpsAnnual": 5468,
+    "timeToNextFixingSecs": 382762,
+    "fixingsBeforeEarnings": 12,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 4
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 3153,
+    "volBpsAnnual": 4111,
+    "timeToNextFixingSecs": 144077,
+    "fixingsBeforeEarnings": 4,
+    "flags": 1
+   },
+   "expectedCorrectionBps": -1
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 7939,
+    "volBpsAnnual": 5148,
+    "timeToNextFixingSecs": 309954,
+    "fixingsBeforeEarnings": 2,
+    "flags": 0
+   },
+   "expectedCorrectionBps": -21
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 5533,
+    "volBpsAnnual": 4877,
+    "timeToNextFixingSecs": 192757,
+    "fixingsBeforeEarnings": 0,
+    "flags": 1
+   },
+   "expectedCorrectionBps": -4
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 2934,
+    "volBpsAnnual": 6183,
+    "timeToNextFixingSecs": 61138,
+    "fixingsBeforeEarnings": 13,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 0
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 4886,
+    "volBpsAnnual": 6559,
+    "timeToNextFixingSecs": 519211,
+    "fixingsBeforeEarnings": 13,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 1
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 10665,
+    "volBpsAnnual": 4205,
+    "timeToNextFixingSecs": 285010,
+    "fixingsBeforeEarnings": 16,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 14
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 7083,
+    "volBpsAnnual": 6237,
+    "timeToNextFixingSecs": 164189,
+    "fixingsBeforeEarnings": 2,
+    "flags": 0
+   },
+   "expectedCorrectionBps": -15
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 5182,
+    "volBpsAnnual": 6784,
+    "timeToNextFixingSecs": 550328,
+    "fixingsBeforeEarnings": 18,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 18
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 8184,
+    "volBpsAnnual": 2426,
+    "timeToNextFixingSecs": 446957,
+    "fixingsBeforeEarnings": 10,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 0
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 7592,
+    "volBpsAnnual": 8854,
+    "timeToNextFixingSecs": 379366,
+    "fixingsBeforeEarnings": 2,
+    "flags": 0
+   },
+   "expectedCorrectionBps": -44
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 8615,
+    "volBpsAnnual": 7026,
+    "timeToNextFixingSecs": 160008,
+    "fixingsBeforeEarnings": 7,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 8
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 7379,
+    "volBpsAnnual": 8427,
+    "timeToNextFixingSecs": 413878,
+    "fixingsBeforeEarnings": 12,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 6
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 10113,
+    "volBpsAnnual": 3414,
+    "timeToNextFixingSecs": 28243,
+    "fixingsBeforeEarnings": 7,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 8
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 6410,
+    "volBpsAnnual": 5986,
+    "timeToNextFixingSecs": 36870,
+    "fixingsBeforeEarnings": 0,
+    "flags": 1
+   },
+   "expectedCorrectionBps": -5
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 8473,
+    "volBpsAnnual": 7092,
+    "timeToNextFixingSecs": 53143,
+    "fixingsBeforeEarnings": 7,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 25
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 5049,
+    "volBpsAnnual": 4273,
+    "timeToNextFixingSecs": 137404,
+    "fixingsBeforeEarnings": 14,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 1
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 8825,
+    "volBpsAnnual": 4130,
+    "timeToNextFixingSecs": 33097,
+    "fixingsBeforeEarnings": 9,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 8
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 7698,
+    "volBpsAnnual": 7915,
+    "timeToNextFixingSecs": 337270,
+    "fixingsBeforeEarnings": 10,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 5
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 11883,
+    "volBpsAnnual": 7305,
+    "timeToNextFixingSecs": 541138,
+    "fixingsBeforeEarnings": 2,
+    "flags": 0
+   },
+   "expectedCorrectionBps": -3
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 3288,
+    "volBpsAnnual": 5709,
+    "timeToNextFixingSecs": 377405,
+    "fixingsBeforeEarnings": 10,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 0
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 7039,
+    "volBpsAnnual": 2005,
+    "timeToNextFixingSecs": 317044,
+    "fixingsBeforeEarnings": 5,
+    "flags": 0
+   },
+   "expectedCorrectionBps": -4
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 4015,
+    "volBpsAnnual": 5439,
+    "timeToNextFixingSecs": 323815,
+    "fixingsBeforeEarnings": 3,
+    "flags": 0
+   },
+   "expectedCorrectionBps": -1
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 5456,
+    "volBpsAnnual": 8557,
+    "timeToNextFixingSecs": 463588,
+    "fixingsBeforeEarnings": 17,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 8
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 2080,
+    "volBpsAnnual": 3670,
+    "timeToNextFixingSecs": 406059,
+    "fixingsBeforeEarnings": 15,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 0
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 10909,
+    "volBpsAnnual": 4229,
+    "timeToNextFixingSecs": 140413,
+    "fixingsBeforeEarnings": 18,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 28
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 3862,
+    "volBpsAnnual": 3052,
+    "timeToNextFixingSecs": 98971,
+    "fixingsBeforeEarnings": 14,
+    "flags": 0
+   },
+   "expectedCorrectionBps": -1
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 5327,
+    "volBpsAnnual": 4392,
+    "timeToNextFixingSecs": 94973,
+    "fixingsBeforeEarnings": 11,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 0
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 10690,
+    "volBpsAnnual": 2429,
+    "timeToNextFixingSecs": 54800,
+    "fixingsBeforeEarnings": 18,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 7
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 12783,
+    "volBpsAnnual": 3110,
+    "timeToNextFixingSecs": 324054,
+    "fixingsBeforeEarnings": 17,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 14
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 12938,
+    "volBpsAnnual": 7064,
+    "timeToNextFixingSecs": 464041,
+    "fixingsBeforeEarnings": 5,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 7
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 5940,
+    "volBpsAnnual": 2981,
+    "timeToNextFixingSecs": 117081,
+    "fixingsBeforeEarnings": 7,
+    "flags": 1
+   },
+   "expectedCorrectionBps": -1
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 9107,
+    "volBpsAnnual": 2430,
+    "timeToNextFixingSecs": 416151,
+    "fixingsBeforeEarnings": 18,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 4
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 2261,
+    "volBpsAnnual": 3368,
+    "timeToNextFixingSecs": 101498,
+    "fixingsBeforeEarnings": 16,
+    "flags": 0
+   },
+   "expectedCorrectionBps": -1
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 10750,
+    "volBpsAnnual": 8148,
+    "timeToNextFixingSecs": 220000,
+    "fixingsBeforeEarnings": 13,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 38
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 8563,
+    "volBpsAnnual": 2712,
+    "timeToNextFixingSecs": 81513,
+    "fixingsBeforeEarnings": 5,
+    "flags": 1
+   },
+   "expectedCorrectionBps": -3
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 4342,
+    "volBpsAnnual": 2275,
+    "timeToNextFixingSecs": 274336,
+    "fixingsBeforeEarnings": 10,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 0
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 12353,
+    "volBpsAnnual": 8497,
+    "timeToNextFixingSecs": 24725,
+    "fixingsBeforeEarnings": 7,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 16
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 5133,
+    "volBpsAnnual": 3269,
+    "timeToNextFixingSecs": 514982,
+    "fixingsBeforeEarnings": 1,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 0
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 2718,
+    "volBpsAnnual": 3630,
+    "timeToNextFixingSecs": 291986,
+    "fixingsBeforeEarnings": 12,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 0
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 9359,
+    "volBpsAnnual": 5647,
+    "timeToNextFixingSecs": 321919,
+    "fixingsBeforeEarnings": 11,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 15
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 7966,
+    "volBpsAnnual": 3083,
+    "timeToNextFixingSecs": 600787,
+    "fixingsBeforeEarnings": 1,
+    "flags": 1
+   },
+   "expectedCorrectionBps": -6
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 9295,
+    "volBpsAnnual": 8864,
+    "timeToNextFixingSecs": 378585,
+    "fixingsBeforeEarnings": 18,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 37
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 7586,
+    "volBpsAnnual": 6090,
+    "timeToNextFixingSecs": 587856,
+    "fixingsBeforeEarnings": 17,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 8
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 12723,
+    "volBpsAnnual": 3166,
+    "timeToNextFixingSecs": 234289,
+    "fixingsBeforeEarnings": 10,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 7
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 12886,
+    "volBpsAnnual": 3317,
+    "timeToNextFixingSecs": 257148,
+    "fixingsBeforeEarnings": 3,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 2
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 12615,
+    "volBpsAnnual": 5481,
+    "timeToNextFixingSecs": 284795,
+    "fixingsBeforeEarnings": 8,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 14
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 3472,
+    "volBpsAnnual": 3513,
+    "timeToNextFixingSecs": 422344,
+    "fixingsBeforeEarnings": 12,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 1
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 7266,
+    "volBpsAnnual": 8212,
+    "timeToNextFixingSecs": 442277,
+    "fixingsBeforeEarnings": 16,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 14
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 9923,
+    "volBpsAnnual": 4385,
+    "timeToNextFixingSecs": 511588,
+    "fixingsBeforeEarnings": 17,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 5
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 4715,
+    "volBpsAnnual": 5015,
+    "timeToNextFixingSecs": 145024,
+    "fixingsBeforeEarnings": 10,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 0
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 10264,
+    "volBpsAnnual": 7064,
+    "timeToNextFixingSecs": 214336,
+    "fixingsBeforeEarnings": 14,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 36
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 12058,
+    "volBpsAnnual": 7086,
+    "timeToNextFixingSecs": 288788,
+    "fixingsBeforeEarnings": 9,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 22
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 2647,
+    "volBpsAnnual": 3471,
+    "timeToNextFixingSecs": 60272,
+    "fixingsBeforeEarnings": 9,
+    "flags": 0
+   },
+   "expectedCorrectionBps": -1
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 8517,
+    "volBpsAnnual": 7712,
+    "timeToNextFixingSecs": 369192,
+    "fixingsBeforeEarnings": 3,
+    "flags": 0
+   },
+   "expectedCorrectionBps": -27
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 10493,
+    "volBpsAnnual": 3086,
+    "timeToNextFixingSecs": 263254,
+    "fixingsBeforeEarnings": 6,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 3
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 2871,
+    "volBpsAnnual": 4744,
+    "timeToNextFixingSecs": 29245,
+    "fixingsBeforeEarnings": 2,
+    "flags": 0
+   },
+   "expectedCorrectionBps": -1
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 6388,
+    "volBpsAnnual": 2144,
+    "timeToNextFixingSecs": 282010,
+    "fixingsBeforeEarnings": 16,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 0
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 2699,
+    "volBpsAnnual": 2243,
+    "timeToNextFixingSecs": 157659,
+    "fixingsBeforeEarnings": 12,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 0
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 8396,
+    "volBpsAnnual": 3563,
+    "timeToNextFixingSecs": 455708,
+    "fixingsBeforeEarnings": 11,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 0
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 11343,
+    "volBpsAnnual": 4282,
+    "timeToNextFixingSecs": 246219,
+    "fixingsBeforeEarnings": 18,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 28
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 2136,
+    "volBpsAnnual": 6798,
+    "timeToNextFixingSecs": 178646,
+    "fixingsBeforeEarnings": 3,
+    "flags": 0
+   },
+   "expectedCorrectionBps": -1
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 11762,
+    "volBpsAnnual": 5590,
+    "timeToNextFixingSecs": 403818,
+    "fixingsBeforeEarnings": 18,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 43
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 7056,
+    "volBpsAnnual": 7983,
+    "timeToNextFixingSecs": 481347,
+    "fixingsBeforeEarnings": 15,
+    "flags": 0
+   },
+   "expectedCorrectionBps": 5
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 11904,
+    "volBpsAnnual": 4116,
+    "timeToNextFixingSecs": 374102,
+    "fixingsBeforeEarnings": 10,
+    "flags": 1
+   },
+   "expectedCorrectionBps": 13
+  }
+ ],
+ "rejectVectors": [
+  {
+   "features": {
+    "spotBpsOfReference": 1999,
+    "volBpsAnnual": 3045,
+    "timeToNextFixingSecs": 110762,
+    "fixingsBeforeEarnings": 16,
+    "flags": 0
+   },
+   "error": "OutOfRange",
+   "index": 0
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 13001,
+    "volBpsAnnual": 4926,
+    "timeToNextFixingSecs": 310627,
+    "fixingsBeforeEarnings": 15,
+    "flags": 0
+   },
+   "error": "OutOfRange",
+   "index": 0
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 8072,
+    "volBpsAnnual": 1999,
+    "timeToNextFixingSecs": 460234,
+    "fixingsBeforeEarnings": 18,
+    "flags": 1
+   },
+   "error": "OutOfRange",
+   "index": 1
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 12464,
+    "volBpsAnnual": 9001,
+    "timeToNextFixingSecs": 152558,
+    "fixingsBeforeEarnings": 15,
+    "flags": 1
+   },
+   "error": "OutOfRange",
+   "index": 1
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 5085,
+    "volBpsAnnual": 7428,
+    "timeToNextFixingSecs": 604801,
+    "fixingsBeforeEarnings": 0,
+    "flags": 1
+   },
+   "error": "OutOfRange",
+   "index": 2
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 11379,
+    "volBpsAnnual": 2984,
+    "timeToNextFixingSecs": 317615,
+    "fixingsBeforeEarnings": 19,
+    "flags": 1
+   },
+   "error": "OutOfRange",
+   "index": 3
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 6674,
+    "volBpsAnnual": 3645,
+    "timeToNextFixingSecs": 264577,
+    "fixingsBeforeEarnings": 9,
+    "flags": 2
+   },
+   "error": "OutOfRange",
+   "index": 4
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 5000,
+    "volBpsAnnual": 8315,
+    "timeToNextFixingSecs": 0,
+    "fixingsBeforeEarnings": 4,
+    "flags": 0
+   },
+   "error": "Uncertified",
+   "index": 0
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 7000,
+    "volBpsAnnual": 3391,
+    "timeToNextFixingSecs": 21600,
+    "fixingsBeforeEarnings": 7,
+    "flags": 0
+   },
+   "error": "Uncertified",
+   "index": 0
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 6000,
+    "volBpsAnnual": 2213,
+    "timeToNextFixingSecs": 10800,
+    "fixingsBeforeEarnings": 1,
+    "flags": 0
+   },
+   "error": "Uncertified",
+   "index": 0
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 9500,
+    "volBpsAnnual": 3696,
+    "timeToNextFixingSecs": 0,
+    "fixingsBeforeEarnings": 3,
+    "flags": 1
+   },
+   "error": "Uncertified",
+   "index": 1
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 10500,
+    "volBpsAnnual": 2764,
+    "timeToNextFixingSecs": 21600,
+    "fixingsBeforeEarnings": 15,
+    "flags": 1
+   },
+   "error": "Uncertified",
+   "index": 1
+  },
+  {
+   "features": {
+    "spotBpsOfReference": 10000,
+    "volBpsAnnual": 5470,
+    "timeToNextFixingSecs": 10800,
+    "fixingsBeforeEarnings": 14,
+    "flags": 1
+   },
+   "error": "Uncertified",
+   "index": 1
+  }
+ ]
+}

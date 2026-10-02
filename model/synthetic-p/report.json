@@ -1,0 +1,20 @@
+{
+ "note": "SYNTHETIC toy correction, not the teacher's residual. Quantization numbers only.",
+ "featureSpecVersion": 2,
+ "parameterCount": 1889,
+ "weightsHash": "0x39a1cdea54d2457149c068026c14a6711f3f7406a63dbf77ca02e554953e522a",
+ "correctionRangeBps": [
+  -37,
+  91
+ ],
+ "quantizationErrorBps": {
+  "p50": 0.24693709936061303,
+  "p99": 0.4958244434248409,
+  "max": 0.5060947051064115
+ },
+ "floatFitErrorBps": {
+  "p50": 0.28603850839695655,
+  "p99": 1.7883782917375513,
+  "max": 3.0193905213673986
+ }
+}

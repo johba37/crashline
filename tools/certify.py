@@ -6,7 +6,9 @@ Usage (from tools/):
 
 Writes <out>/student_export.json (format v2, keccak weightsHash recomputed;
 weights untouched) and <out>/golden_vectors.json:
-  modelVectors  100 in-domain rows -> expected clean priceBps (pq.forward)
+  modelVectors  100 in-domain rows -> expected clean priceBps (pq.forward);
+                for a feature spec 2 export (the perpetual note) the expected
+                correctionBps
   rejectVectors one row per refusal the domain defines (range bounds, derived
                 fields, excluded regions), each with its expected error.
 
@@ -24,16 +26,23 @@ import numpy as np
 
 import pricer_quant as pq
 
-TYPE_MIN = {1: -(2**31)}  # distToKnockInBps is int32; every other field is unsigned
-TYPE_MAX = {0: 2**16 - 1, 1: 2**31 - 1, 2: 2**16 - 1, 3: 2**16 - 1, 4: 2**16 - 1, 5: 2**16 - 1,
-            6: 2**32 - 1, 7: 2**32 - 1, 8: 2**8 - 1, 9: 2**8 - 1}
+# ABI type bounds per feature spec: a reject vector must be encodable
+TYPE_MIN = {1: {1: -(2**31)}, 2: {}}  # distToKnockInBps is int32; every other field is unsigned
+TYPE_MAX = {1: {0: 2**16 - 1, 1: 2**31 - 1, 2: 2**16 - 1, 3: 2**16 - 1, 4: 2**16 - 1, 5: 2**16 - 1,
+                6: 2**32 - 1, 7: 2**32 - 1, 8: 2**8 - 1, 9: 2**8 - 1},
+            2: {0: 2**16 - 1, 1: 2**16 - 1, 2: 2**32 - 1, 3: 2**8 - 1, 4: 2**8 - 1}}
+EXPECTED_KEY = {1: "expectedPriceBps", 2: "expectedCorrectionBps"}
+
+
+def _names(export: dict) -> list[str]:
+    return [f.name for f in pq.spec_fields(export)]
 
 
 def _fix_derived(v: list[int], dom: dict) -> list[int]:
     c = dom["consistency"]
-    if c["distToKnockIn"]:
+    if c.get("distToKnockIn"):
         v[pq.DIST] = v[pq.SPOT] - v[pq.KI]
-    if c["observationIntervalSecs"]:
+    if c.get("observationIntervalSecs"):
         v[pq.TTM] = v[pq.TNEXT] + v[pq.OBS] * c["observationIntervalSecs"]
     return v
 
@@ -69,7 +78,8 @@ def golden_rows(export: dict, rng: np.random.Generator) -> list[list[int]]:
         if _accepted(export, v):
             rows.append(v)
     # every range bound with the other fields sampled
-    for i in range(len(pq.FIELDS)):
+    names = _names(export)
+    for i in range(len(names)):
         for bound in (lo[i], hi[i]):
             for _ in range(50):
                 v = sample_in_domain(export, rng, 1)[0]
@@ -81,12 +91,12 @@ def golden_rows(export: dict, rng: np.random.Generator) -> list[list[int]]:
     # just outside each exclusion, per bound
     for ex in dom["exclusions"]:
         for b in ex["bounds"]:
-            f = pq.FIELD_NAMES.index(b["field"])
+            f = names.index(b["field"])
             for edge in (b["min"] - 1, b["max"] + 1):
                 for _ in range(200):
                     v = sample_in_domain(export, rng, 1)[0]
                     for bb in ex["bounds"]:  # put the other bounds inside the region
-                        g = pq.FIELD_NAMES.index(bb["field"])
+                        g = names.index(bb["field"])
                         v[g] = int(rng.integers(bb["min"], bb["max"] + 1))
                     v[f] = edge
                     v = _fix_derived(v, dom)
@@ -99,14 +109,16 @@ def golden_rows(export: dict, rng: np.random.Generator) -> list[list[int]]:
 
 def reject_rows(export: dict, rng: np.random.Generator) -> list[dict]:
     dom = export["certifiedDomain"]
+    names = _names(export)
+    spec = export["featureSpecVersion"]
     out = []
 
     def add(v, error, index):
-        out.append({"features": dict(zip(pq.FIELD_NAMES, v)), "error": error, "index": index})
+        out.append({"features": dict(zip(names, v)), "error": error, "index": index})
 
     for i, r in enumerate(dom["ranges"]):
         for v_i in (r["min"] - 1, r["max"] + 1):
-            if not (TYPE_MIN.get(i, 0) <= v_i <= TYPE_MAX[i]):
+            if not (TYPE_MIN[spec].get(i, 0) <= v_i <= TYPE_MAX[spec][i]):
                 continue
             # ranges are checked first, in field order, and every other field of
             # an in-domain sample is in range: the first failure is field i
@@ -114,11 +126,11 @@ def reject_rows(export: dict, rng: np.random.Generator) -> list[dict]:
             v[i] = v_i
             add(v, "OutOfRange", i)
     c = dom["consistency"]
-    if c["distToKnockIn"]:
+    if c.get("distToKnockIn"):
         v = sample_in_domain(export, rng, 1)[0]
         v[pq.DIST] += 1 if v[pq.DIST] < dom["ranges"][pq.DIST]["max"] else -1
         add(v, "Inconsistent", pq.DIST)
-    if c["observationIntervalSecs"]:
+    if c.get("observationIntervalSecs"):
         v = sample_in_domain(export, rng, 1)[0]
         v[pq.TTM] += 1 if v[pq.TTM] < dom["ranges"][pq.TTM]["max"] else -1
         add(v, "Inconsistent", pq.TTM)
@@ -126,7 +138,7 @@ def reject_rows(export: dict, rng: np.random.Generator) -> list[dict]:
         for corner in ("min", "max", "mid"):
             v = sample_in_domain(export, rng, 1)[0]
             for b in ex["bounds"]:
-                g = pq.FIELD_NAMES.index(b["field"])
+                g = names.index(b["field"])
                 v[g] = b[corner] if corner != "mid" else (b["min"] + b["max"]) // 2
             v = _fix_derived(v, dom)
             add(v, "Uncertified", k)
@@ -146,12 +158,12 @@ def main() -> None:
     rows = golden_rows(export, rng)
     rejects = reject_rows(export, rng)
     pq.check_reject_vectors(export, rejects)
+    names = _names(export)
+    spec = export["featureSpecVersion"]
     vectors = {
-        "featureSpecVersion": pq.FEATURE_SPEC_VERSION,
+        "featureSpecVersion": spec,
         "weightsHash": export["weightsHash"],
-        "modelVectors": [
-            {"features": dict(zip(pq.FIELD_NAMES, r)), "expectedPriceBps": pq.forward(export, r)} for r in rows
-        ],
+        "modelVectors": [{"features": dict(zip(names, r)), EXPECTED_KEY[spec]: pq.forward(export, r)} for r in rows],
         "rejectVectors": rejects,
     }
     out = pathlib.Path(args.out)

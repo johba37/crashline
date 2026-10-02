@@ -1,0 +1,20 @@
+{
+ "ranges": [
+  {"name": "spotBpsOfReference", "min": 2000, "max": 13000},
+  {"name": "volBpsAnnual", "min": 2000, "max": 9000},
+  {"name": "timeToNextFixingSecs", "min": 0, "max": 604800},
+  {"name": "fixingsBeforeEarnings", "min": 0, "max": 18},
+  {"name": "flags", "min": 0, "max": 1}
+ ],
+ "consistency": {},
+ "exclusions": [
+  {"name": "knockInFixingBand",
+   "bounds": [{"field": "timeToNextFixingSecs", "min": 0, "max": 21600},
+              {"field": "spotBpsOfReference", "min": 5000, "max": 7000},
+              {"field": "flags", "min": 0, "max": 0}]},
+  {"name": "healFixingBand",
+   "bounds": [{"field": "timeToNextFixingSecs", "min": 0, "max": 21600},
+              {"field": "spotBpsOfReference", "min": 9500, "max": 10500},
+              {"field": "flags", "min": 1, "max": 1}]}
+ ]
+}

@@ -20,9 +20,6 @@ pub struct Layer {
 
 include!(concat!(env!("OUT_DIR"), "/model.rs"));
 
-pub const NUM_FEATURES: usize = 10;
-pub const PRICE_MAX_BPS: i64 = u16::MAX as i64;
-
 /// Why the model refuses. Never clamped: the model only speaks where it was
 /// certified against the teacher.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -35,12 +32,28 @@ pub enum Refusal {
     Inconsistent(u8),
 }
 
-const SPOT: usize = 0;
-const DIST: usize = 1;
-const KI: usize = 3;
-const TTM: usize = 6;
-const TNEXT: usize = 7;
-const OBS: usize = 8;
+/// Derived fields of feature spec 1 (spec 2 has none).
+#[cfg(not(perp))]
+fn check_derived(raw: &[i64; NUM_FEATURES]) -> Result<(), Refusal> {
+    const SPOT: usize = 0;
+    const DIST: usize = 1;
+    const KI: usize = 3;
+    const TTM: usize = 6;
+    const TNEXT: usize = 7;
+    const OBS: usize = 8;
+    if CHECK_DIST && raw[DIST] != raw[SPOT] - raw[KI] {
+        return Err(Refusal::Inconsistent(DIST as u8));
+    }
+    if OBS_INTERVAL != 0 && raw[TTM] != raw[TNEXT] + raw[OBS] * OBS_INTERVAL {
+        return Err(Refusal::Inconsistent(TTM as u8));
+    }
+    Ok(())
+}
+
+#[cfg(perp)]
+fn check_derived(_raw: &[i64; NUM_FEATURES]) -> Result<(), Refusal> {
+    Ok(())
+}
 
 /// Order is binding (mirrors `pq.check_domain`): ranges by field index, then
 /// derived fields (dist, then ttm), then exclusions in order.
@@ -50,12 +63,7 @@ pub fn check_domain(raw: &[i64; NUM_FEATURES]) -> Result<(), Refusal> {
             return Err(Refusal::OutOfRange { field: i as u8, value: raw[i] });
         }
     }
-    if CHECK_DIST && raw[DIST] != raw[SPOT] - raw[KI] {
-        return Err(Refusal::Inconsistent(DIST as u8));
-    }
-    if OBS_INTERVAL != 0 && raw[TTM] != raw[TNEXT] + raw[OBS] * OBS_INTERVAL {
-        return Err(Refusal::Inconsistent(TTM as u8));
-    }
+    check_derived(raw)?;
     for (k, bounds) in EXCLUSIONS.iter().enumerate() {
         if bounds.iter().all(|&(f, lo, hi)| raw[f] >= lo && raw[f] <= hi) {
             return Err(Refusal::Uncertified(k as u8));
@@ -88,8 +96,22 @@ pub fn normalize(raw: &[i64; NUM_FEATURES]) -> Result<[i64; NUM_FEATURES], Refus
     Ok(x)
 }
 
-/// Clean fair value in bps of notional, clamped to [0, 65535].
+/// Clean fair value in bps of notional, clamped to [0, 65535] (feature spec 1).
+#[cfg(not(perp))]
 pub fn price_bps(raw: &[i64; NUM_FEATURES]) -> Result<u16, Refusal> {
+    forward(raw).map(|p| p as u16)
+}
+
+/// Correction to the closed form's principal in bps of live notional, clamped
+/// to the int16 range (feature spec 2).
+#[cfg(perp)]
+pub fn correction_bps(raw: &[i64; NUM_FEATURES]) -> Result<i16, Refusal> {
+    forward(raw).map(|p| p as i16)
+}
+
+/// Domain check, then the integer forward pass; the head is clamped to
+/// [OUTPUT_MIN, OUTPUT_MAX], the return type of the feature spec.
+pub fn forward(raw: &[i64; NUM_FEATURES]) -> Result<i64, Refusal> {
     check_domain(raw)?;
     let x0 = normalize(raw)?;
     let mut a = [0i64; MAX_WIDTH];
@@ -108,7 +130,7 @@ pub fn price_bps(raw: &[i64; NUM_FEATURES]) -> Result<u16, Refusal> {
     let head = &head[0];
     let acc = dot(head, 0, &a);
     let price = round_shift(acc * head.m[0], head.s[0]) + OUTPUT_OFFSET_BPS;
-    Ok(price.clamp(0, PRICE_MAX_BPS) as u16)
+    Ok(price.clamp(OUTPUT_MIN, OUTPUT_MAX))
 }
 
 #[inline]
