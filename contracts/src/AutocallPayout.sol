@@ -60,7 +60,7 @@ library AutocallPayout {
     }
 
     /// Apply the next fixing (index nextIndex(p)) to a Live note. Settles on an
-    /// autocall or at maturity. Returns true if the note settled.
+    /// autocall or at maturity: read p.phase to see whether it did.
     function observe(
         Progress memory p,
         uint16 kiBarrierBps,
@@ -68,8 +68,8 @@ library AutocallPayout {
         uint16 couponBpsPerPeriod,
         uint8 observationCount,
         uint96 fixing
-    ) internal pure returns (bool settled) {
-        uint8 i = p.observationsDone + 1;
+    ) internal pure {
+        uint8 i = nextIndex(p);
         uint256 scaledFixing = uint256(fixing) * BPS;
         p.lastFixing = fixing;
         if (i <= observationCount) {
@@ -77,10 +77,10 @@ library AutocallPayout {
             if (scaledFixing >= uint256(acBarrierBps) * p.initialFixing) {
                 p.autocalled = true;
                 _settle(p, i, UNIT + couponUnits(couponBpsPerPeriod, i));
-                return true;
+            } else if (scaledFixing < uint256(kiBarrierBps) * p.initialFixing) {
+                p.knockedIn = true;
             }
-            if (scaledFixing < uint256(kiBarrierBps) * p.initialFixing) p.knockedIn = true;
-            return false;
+            return;
         }
         // maturity fixing, one interval after the last barrier observation
         uint256 coupons = couponUnits(couponBpsPerPeriod, uint256(observationCount) + 1);
@@ -88,7 +88,6 @@ library AutocallPayout {
             ? uint256(fixing) * UNIT / p.initialFixing + coupons
             : UNIT + coupons;
         _settle(p, i, payout);
-        return true;
     }
 
     function _settle(Progress memory p, uint8 at, uint256 payout) private pure {

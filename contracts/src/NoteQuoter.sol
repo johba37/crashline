@@ -4,7 +4,13 @@ pragma solidity ^0.8.24;
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {INoteQuoter} from "./interfaces/INoteQuoter.sol";
 import {INoteSeries, SeriesState, SeriesTerms, Phase} from "./interfaces/INoteSeries.sol";
-import {ISurrogatePricer, PricerInputs} from "./interfaces/ISurrogatePricer.sol";
+import {
+    ISurrogatePricer,
+    PricerInputs,
+    FIELD_SPOT,
+    FIELD_TIME_TO_MATURITY,
+    FIELD_TIME_TO_NEXT_OBS
+} from "./interfaces/ISurrogatePricer.sol";
 import {IAggregatorV3} from "./interfaces/IAggregatorV3.sol";
 
 /// L2: view-only glue between a series and a model (INoteQuoter). Every
@@ -37,25 +43,48 @@ contract NoteQuoter is INoteQuoter {
     }
 
     /// @inheritdoc INoteQuoter
-    function inputs(INoteSeries series, uint16 volBpsAnnual) public view returns (PricerInputs memory in_) {
+    function inputs(INoteSeries series, uint16 volBpsAnnual) external view returns (PricerInputs memory in_) {
+        (in_,) = _inputs(series, volBpsAnnual);
+    }
+
+    /// @inheritdoc INoteQuoter
+    /// @dev The accrued coupon rounds down to whole bps.
+    function notePriceBps(INoteSeries series, ISurrogatePricer pricer, uint16 volBpsAnnual)
+        external
+        view
+        returns (uint16 priceBps, bytes32 weightsHash)
+    {
+        (PricerInputs memory in_, SeriesTerms memory t) = _inputs(series, volBpsAnnual);
+        uint256 clean = pricer.priceBps(in_);
+        uint256 accrued = uint256(t.couponBpsPerPeriod) * (block.timestamp - t.strikeTime) / t.observationInterval;
+        priceBps = SafeCast.toUint16(clean + accrued);
+        weightsHash = pricer.weightsHash();
+    }
+
+    /// The model inputs, plus the series terms they were derived from.
+    function _inputs(INoteSeries series, uint16 volBpsAnnual)
+        internal
+        view
+        returns (PricerInputs memory in_, SeriesTerms memory t)
+    {
         SeriesState memory st = series.state();
         if (st.phase != Phase.Live) revert NotLive();
         (bool pending, uint40 obsTime) = series.pendingObservation();
         if (pending) revert FixingPending(obsTime);
-        SeriesTerms memory t = series.terms();
+        t = series.terms();
 
         // Every cast below is range-checked first (or exact by construction).
         // forge-lint: disable-start(unsafe-typecast)
         uint256 spot = _spot(IAggregatorV3(t.feed));
         uint256 spotBps = spot * BPS / st.initialFixing;
-        if (spotBps > type(uint16).max) revert ISurrogatePricer.OutOfRange(0, int64(uint64(spotBps)));
+        if (spotBps > type(uint16).max) revert ISurrogatePricer.OutOfRange(FIELD_SPOT, int64(uint64(spotBps)));
 
         uint256 obsRemaining = uint256(t.observationCount) - st.observationsDone;
         // not pending, so the next fixing time is now or later
         uint256 tNext = uint256(st.nextObservation) - block.timestamp;
-        if (tNext > type(uint32).max) revert ISurrogatePricer.OutOfRange(7, int64(uint64(tNext)));
+        if (tNext > type(uint32).max) revert ISurrogatePricer.OutOfRange(FIELD_TIME_TO_NEXT_OBS, int64(uint64(tNext)));
         uint256 ttm = tNext + obsRemaining * t.observationInterval;
-        if (ttm > type(uint32).max) revert ISurrogatePricer.OutOfRange(6, int64(uint64(ttm)));
+        if (ttm > type(uint32).max) revert ISurrogatePricer.OutOfRange(FIELD_TIME_TO_MATURITY, int64(uint64(ttm)));
 
         in_.spotBpsOfInitial = uint16(spotBps);
         in_.distToKnockInBps = int32(int256(spotBps) - int256(uint256(t.kiBarrierBps)));
@@ -68,21 +97,6 @@ contract NoteQuoter is INoteQuoter {
         in_.observationsRemaining = uint8(obsRemaining);
         in_.flags = st.knockedIn ? 1 : 0;
         // forge-lint: disable-end(unsafe-typecast)
-    }
-
-    /// @inheritdoc INoteQuoter
-    /// @dev The accrued coupon rounds down to whole bps.
-    function notePriceBps(INoteSeries series, ISurrogatePricer pricer, uint16 volBpsAnnual)
-        external
-        view
-        returns (uint16 priceBps, bytes32 weightsHash)
-    {
-        PricerInputs memory in_ = inputs(series, volBpsAnnual);
-        uint256 clean = pricer.priceBps(in_);
-        SeriesTerms memory t = series.terms();
-        uint256 accrued = uint256(t.couponBpsPerPeriod) * (block.timestamp - t.strikeTime) / t.observationInterval;
-        priceBps = SafeCast.toUint16(clean + accrued);
-        weightsHash = pricer.weightsHash();
     }
 
     function _spot(IAggregatorV3 feed) internal view returns (uint256) {

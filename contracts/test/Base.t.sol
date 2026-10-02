@@ -2,8 +2,8 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {MockChainlinkFeed} from "../src/MockChainlinkFeed.sol";
-import {MockUSDG} from "../src/MockUSDG.sol";
+import {MockChainlinkFeed} from "../src/mocks/MockChainlinkFeed.sol";
+import {MockUSDG} from "../src/mocks/MockUSDG.sol";
 import {SeriesFactory} from "../src/SeriesFactory.sol";
 import {NoteSeries} from "../src/NoteSeries.sol";
 import {SeriesToken} from "../src/SeriesToken.sol";

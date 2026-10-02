@@ -7,7 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SeriesFactory} from "../src/SeriesFactory.sol";
 import {NoteQuoter} from "../src/NoteQuoter.sol";
 import {Desk} from "../src/Desk.sol";
-import {MockChainlinkFeed} from "../src/MockChainlinkFeed.sol";
+import {MockChainlinkFeed} from "../src/mocks/MockChainlinkFeed.sol";
 import {ISurrogatePricer} from "../src/interfaces/ISurrogatePricer.sol";
 
 /// Robinhood Chain testnet (46630) deployment of the Solidity side: factory

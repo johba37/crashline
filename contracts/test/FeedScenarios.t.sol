@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {MockChainlinkFeed} from "../src/MockChainlinkFeed.sol";
+import {MockChainlinkFeed} from "../src/mocks/MockChainlinkFeed.sol";
 import {FixingsRecorder} from "../src/FixingsRecorder.sol";
 import {IFixingsRecorder} from "../src/interfaces/IFixingsRecorder.sol";
 

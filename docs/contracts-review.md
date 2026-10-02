@@ -1,10 +1,11 @@
-# Contracts self-review (lane C, 2026-09-30)
+# Contracts self-review (2026-09-30)
 
-Scope: `contracts/src/` on `lane/contracts`. That means SeriesFactory, NoteSeries,
-SeriesToken, AutocallPayout, FixingsRecorder, NoteQuoter and Desk, plus the two
-mocks. The interfaces in `contracts/src/interfaces/` are frozen at `f31793d` and
-were not changed. This is a self-review, not an audit. Each item below states
-what the code does, what was checked, and the decision.
+Scope: `contracts/src/`. That means SeriesFactory, NoteSeries, SeriesToken,
+AutocallPayout, FixingsRecorder, NoteQuoter and Desk, plus the two mocks
+(`contracts/src/mocks/`). The interfaces in `contracts/src/interfaces/` were
+taken as given, at commit `f31793d`, and the review changed none of them. This is
+a self-review, not an audit. Each item below states what the code does, what was
+checked, and the decision.
 
 How to reproduce what this document relies on:
 
@@ -27,7 +28,7 @@ script/e2e-devnode.sh                     # lifecycle on a Nitro dev node with t
 | `Desk.buy / sell / collect`, ERC-4626 `deposit / mint / withdraw / redeem` | USDG, series (`mint`, `redeemPair`, `redeem`), NOTE/WRITER, quoter → pricer, feed | `nonReentrant` on all of them. State (`soldNotional`) is written before the transfers. | Keep |
 | Desk views during a trade | `totalAssets()` is not guarded (read-only reentrancy) | The only contracts called mid-trade are factory clones, USDG and the quoter/pricer. None calls back into the Desk. A `nonReentrantView` guard would break OZ's own `deposit → previewDeposit → totalAssets` path. | Accept, documented |
 | `SeriesFactory.createSeries` | `feed.decimals()` (untrusted) and the clones' `initialize` | The series is registered before the initializers run. A feed that re-enters `createSeries` with the same terms creates the series in the nested call, and the outer `cloneDeterministic` then reverts: the whole transaction reverts. | Keep |
-| NOTE/WRITER tokens | none (plain OZ ERC-20, no hooks) | ERC-20 instead of ERC-1155 (the Siren lesson) | Keep |
+| NOTE/WRITER tokens | none (plain OZ ERC-20, no hooks) | ERC-20 instead of ERC-1155 (ERC-1155 receiver hooks are a reentrancy vector) | Keep |
 
 Lints excluded in `foundry.toml` with the reason inline: `reentrancy-events` (every
 entry point is guarded) and `calls-loop` (bounded loops over trusted contracts).
@@ -62,7 +63,7 @@ What the tests prove:
 - `afterInvariant`: after settling and redeeming every holder, the escrow holds
   less than one base unit per rounding operation (each mint, pair redemption and
   redeemed leg) and no token supply is left. **This is the precise form of the
-  brief's "≤ 1 base unit per holder".** A holder whose redemption is a single
+  original target of "≤ 1 base unit per holder".** A holder whose redemption is a single
   leg leaves less than 1 unit. A holder who redeems both NOTE and WRITER in one
   call can leave up to 2 units, because the interface fixes two separate floors.
   Mint ceilings also stay in the escrow.
@@ -210,12 +211,12 @@ open `mint`, so it must never be deployed where value is at stake.
 ## 7. Payout conformity with the teacher
 
 `tools/payout_vectors.py` was compared line by line with the teacher's `_simulate`
-(`ml/teacher.py`, first the K1 version, then lane A's jump teacher as merged
+(`ml/teacher.py`, the first, GBM-only teacher, then the jump-diffusion teacher as merged
 into main at `5353120`). They agree on the autocall test (`>=`, checked first),
 the knock-in test (`<`, latching, barrier observations only, not at maturity),
 the autocall payout 1 + c·i, the maturity fixing one interval after observation
 N, and the maturity payout with the loss measured against the **initial**
-fixing. The K1 teacher used `acBarrierBps` there (identical at ac = 10000). That
+fixing. The first teacher used `acBarrierBps` there (identical at ac = 10000). That
 mismatch was reported, and the merged teacher uses the initial fixing. The
 contracts' fallback fixing is not simulated by the teacher. That is consistent
 with teacher-spec §3 (no feed gaps in simulation).

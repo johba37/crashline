@@ -19,6 +19,19 @@ struct PricerInputs {
     uint8 flags; // bit0: knocked in
 }
 
+// Index of each PricerInputs field: the `field` of OutOfRange, Inconsistent,
+// certifiedRange and IDesk.ModelMismatch.
+uint8 constant FIELD_SPOT = 0;
+uint8 constant FIELD_DIST_TO_KNOCK_IN = 1;
+uint8 constant FIELD_VOL = 2;
+uint8 constant FIELD_KI_BARRIER = 3;
+uint8 constant FIELD_AC_BARRIER = 4;
+uint8 constant FIELD_COUPON = 5;
+uint8 constant FIELD_TIME_TO_MATURITY = 6;
+uint8 constant FIELD_TIME_TO_NEXT_OBS = 7;
+uint8 constant FIELD_OBSERVATIONS_REMAINING = 8;
+uint8 constant FIELD_FLAGS = 9;
+
 /// L0: the Stylus student model (stylus/pricer-model). Pure: no storage, no
 /// external calls, no block.timestamp. Weights compiled in, pinned by hash.
 interface ISurrogatePricer {
