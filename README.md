@@ -39,7 +39,7 @@ docs/model-export-format.md  the distillation ↔ contract boundary
 docs/contracts-review.md   self-review: reentrancy, rounding, USDG freeze/pause, provenance, staleness
 ```
 
-## Status (2026-09-30)
+## Status (2026-10-02)
 
 | Part | Result | Source |
 |---|---|---|
@@ -50,7 +50,7 @@ docs/contracts-review.md   self-review: reentrancy, rounding, USDG freeze/pause,
 | Note core, quoter, Desk | 140 forge tests pass: 260 payout-conformity vectors, quoter vectors for k1-r1, k2 and k3 (four vols), fuzz at 1,000 runs, invariants at 512 runs × 100 calls (escrow ≥ claims, no foreign clones). The Desk trades NOTE and WRITER (cover) at two prices and keeps NOTE, within a risk budget per stock; LPs can queue redemptions at any time | `forge test`, [docs/contracts-review.md](docs/contracts-review.md) |
 | End to end | local Nitro dev node with the Stylus k3 pricer, listed at vol 5500 ± a 200 bps band: series struck in the past, NOTE buy, cover buy by a hedger, **mid-life sell at observationsRemaining 16 at the band's quote ± the spread**, autocall (the LP queues a redemption while the fixing is pending), redeem, collect, queue paid, LP withdraw; the same with k2 (no band) | `contracts/script/e2e-devnode.sh`, logs [k3](contracts/logs/e2e-devnode-k3.log), [k2](contracts/logs/e2e-devnode-k2.log) |
 | Happy path | backend-driven on a fresh dev node with the k3 pricer: two weekly series on one product (A stays above the knock-in, B knocks in), both legs traded, every trade checked against teacher v3, matured with the dev clock, settled, redeemed, collected, LP out; USDG conserved to the base unit at every step | `backend/scenarios/happy_path.py`, logs [clock](backend/scenarios/logs/happy_path-clock.log), [hybrid](backend/scenarios/logs/happy_path-hybrid.log), [docs/backend.md](docs/backend.md#happy-path-scenario) |
-| Robinhood Chain testnet (46630) | `Deploy.s.sol` simulates cleanly; not broadcast yet (no deployer key set); `cargo stylus check` passes for k2 | |
+| Robinhood Chain testnet (46630) | deployed 2026-10-02: the k3 pricer (Stylus, activated; `weightsHash` matches `model/k3`, 100 golden and 35 reject vectors exact on chain), factory, quoter, Desk on the real USDG, a staged mock feed and its recorder. No series listed yet, so no trade has run there | `deployments/46630.json`, addresses in [docs/interfaces.md](docs/interfaces.md) |
 
 Known limit (teacher v2 / model/k2; lifted by teacher v3 / model/k3, which certifies 20–90%):
 the teacher's jump variance is pinned from history, so total vol must stay above 44.7%.
@@ -64,11 +64,11 @@ stocks with rare large earnings drops.
 
 | Check | Result |
 |---|---|
-| Golden vectors (100) vs Python reference | exact, native `cargo test` and on a local Nitro dev node |
+| Golden vectors (100) vs Python reference | exact, native `cargo test`, on a local Nitro dev node and (k3) on Robinhood Chain testnet |
 | Certified domain (format v2) | outside it: `OutOfRange` / `Inconsistent` / `Uncertified`; every rule has a reject vector |
 | `weightsHash()` | recomputed at build time; a flipped weight byte fails the build |
 | ABI | callable from Solidity through NoteQuoter's `ISurrogatePricer` / `PricerInputs` struct |
-| Activation on Robinhood Chain testnet (46630) | `cargo stylus check` passes for k2: 23,913 bytes compressed (limit 24,576; docs/k2-round2.md) |
+| Activation on Robinhood Chain testnet (46630) | k3 deployed and activated (a local `--no-verify` build): 23,923 bytes compressed (limit 24,576), data fee 0.000072 ETH, 5.9M gas to deploy and 3.6M to activate. `cargo stylus check` passed for k2 at 23,913 bytes (docs/k2-round2.md) |
 | Execution gas per quote | **~45,000** measured on the synthetic model (3,873 params; Solidity caller, `gasleft()` delta, uncached init included); not yet re-measured for k2/k3. A whole Desk buy incl. the k2 quote and the risk-budget check is 647,750 L2 execution gas on the dev node (497,983 before the check); with k3 and a vol band (two model calls) 775,042 |
 | Quantization error (int16 vs float, synthetic) | p50 0.3 / p99 1.2 / max 3.2 bps |
 
@@ -93,13 +93,13 @@ cd contracts && forge fmt --check && forge test && script/export-abi.sh
 tools/.venv/bin/python tools/payout_vectors.py          # regenerate the payout vectors
 contracts/script/e2e-devnode.sh                         # full lifecycle on a Nitro dev node (docker), model/k3
 PRICER_MODEL_DIR=model/k2 contracts/script/e2e-devnode.sh   # the same with K2 (vol pinned, no band)
-forge script script/Deploy.s.sol --rpc-url https://rpc.testnet.chain.robinhood.com   # add --broadcast with DEPLOYER_KEY
+forge script script/Deploy.s.sol --rpc-url https://rpc.testnet.chain.robinhood.com   # add --broadcast with DEPLOYER_KEY; PRICER and CURATOR as env
 
 # Stylus contract
 cd stylus/pricer-model
 cargo test                                   # golden vectors + ABI path
-cargo stylus check --endpoint https://rpc.testnet.chain.robinhood.com
-cargo stylus deploy --endpoint <rpc> --private-key-path <file>
+cargo stylus check --endpoint https://robinhood-testnet.drpc.org   # rpc.testnet.chain.robinhood.com refuses the activation dry-run
+cargo stylus deploy --endpoint https://robinhood-testnet.drpc.org --private-key-path <file>
 
 # Local gas measurement
 docker run -d --rm --name sp-devnode -p 127.0.0.1:8547:8547 \

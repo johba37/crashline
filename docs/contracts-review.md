@@ -224,7 +224,7 @@ with teacher-spec §3 (no feed gaps in simulation).
 ## 8. Out of scope / not done
 
 - No external audit. No formal verification.
-- `Deploy.s.sol` was only simulated against Robinhood Chain testnet: no
-  `DEPLOYER_KEY` was available, so nothing was broadcast and there is no
-  `deployments/46630.json`.
+- Robinhood Chain testnet: `Deploy.s.sol` was broadcast on 2026-10-02
+  (`deployments/46630.json`), but no series is listed there, so no trade has
+  run on it, and the contracts are not verified on the explorer.
 - NOTE collateral oracle, router and permit (roadmap, per architecture.md).
