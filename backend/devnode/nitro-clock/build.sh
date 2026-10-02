@@ -90,7 +90,7 @@ if [ "${SP_BUILDER:-}" = container ]; then
 fi
 
 start=$(date +%s)
-nice -n "$NICE" docker buildx build "${BUILDER_ARGS[@]}" --load -f "$tmp/Dockerfile" --target sp-nitro-node-clock \
+nice -n "$NICE" docker buildx build ${BUILDER_ARGS[@]+"${BUILDER_ARGS[@]}"} --load -f "$tmp/Dockerfile" --target sp-nitro-node-clock \
   --build-arg version="${IMAGE_TAG#*:}" --build-arg modified=true \
   --build-arg datetime="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   -t "$IMAGE_TAG" "$SRC"

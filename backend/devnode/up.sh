@@ -64,7 +64,7 @@ if [ "$state" = missing ]; then
   docker volume create "$VOLUME" >/dev/null
   # --dev keeps its data in /tmp/dev-test and runs as uid 1000: hand it the fresh volume
   docker run --rm -v "$VOLUME:/tmp/dev-test" --user root --entrypoint chown "$IMAGE" 1000:1000 /tmp/dev-test
-  docker run -d --name "$NAME" --stop-timeout 60 "${CLOCK_ENV[@]}" \
+  docker run -d --name "$NAME" --stop-timeout 60 ${CLOCK_ENV[@]+"${CLOCK_ENV[@]}"} \
     -v "$VOLUME:/tmp/dev-test" -p "127.0.0.1:$PORT:8547" "$IMAGE" \
     --dev --http.addr 0.0.0.0 --http.api=net,web3,eth,debug \
     --http.corsdomain='*' --http.vhosts='*' --execution.caching.archive >/dev/null
