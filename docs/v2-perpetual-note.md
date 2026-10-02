@@ -1,7 +1,10 @@
-# Roadmap: v2 perpetual note
+# v2 perpetual note
 
-Status: roadmap, 2026-09-29. Not for the Oct 4 submission; v1 interfaces stay frozen.
-Numbers below: `ml/perp_note_check.py` (~1 min, numpy only).
+Status: design of 2026-09-29, **built 2026-10-02 next to v1** (v1's contracts, interfaces
+and ABIs are untouched; not part of the Oct 4 submission). What was built, what was
+decided on the way and what the open items turned out to be: ["Implementation"](#implementation-2026-10-02)
+at the end. Exact rules: [v2-spec.md](v2-spec.md). The numbers in the design sections
+below are the original ones: `ml/perp_note_check.py` (~1 min, numpy only).
 
 ## Why
 
@@ -147,3 +150,95 @@ it says nothing about crash odds. Pool depth on Robinhood Chain: not checked.
 5. `c` is pinned per `weightsHash` and the fair `c` differs by vol, so one model per
    stock, unless `c` becomes a student input.
 6. Termination and split handling: only the rule above; not designed further.
+
+## Implementation (2026-10-02)
+
+Rules and units: [v2-spec.md](v2-spec.md). Frontend guide: [interfaces-v2.md](interfaces-v2.md).
+Self-review: [v2-contracts-review.md](v2-contracts-review.md). Teacher and student:
+[p1-perp-student.md](p1-perp-student.md).
+
+| Section above | Built | Where |
+|---|---|---|
+| The note | terms, the fixing rule, pair mint, structural collateral; 172 vectors exact against a Python reference, invariants | `PerpSeries`, `PerpPayout`, `PerpFactory`, `tools/perp_vectors.py` |
+| Holders | a cumulative index per token, settled for both holders before every transfer; `claim(to)`; the wrapper | `PerpSeries`, `PerpToken`, `PerpWrapper` |
+| Ending a perpetual | a fixing with no price reuses the last one; four in a row close the series with a full release at the last good fixing. Splits: not handled | `PerpSeries` |
+| Liquidity | one NOTE/WRITER per terms and first fixing. The merge of series in the same state: not built | |
+| Price | the closed form in 1e18 fixed point, with the weekly-fixing shift | `PerpFormula`, `PerpMath`, `tools/perp_formula.py` |
+| The student | on-chain price = formula + student + coupon reserve; `model/p1` | `PerpQuoter`, Stylus `PerpPricer`, `ml/teacher_perp.py` |
+| Weekend on-chain price | the Desk's logic (window, cap, wider spread, never for fixings or LP flows) against an interface; no pool adapter | `PerpDesk`, `IWeekendSource` |
+| What changes | `PerpTerms`, the shrunken `PerpPricerInputs`, per-holder indexes, the termination rule, the wrapper; FixingsRecorder shared with v1; the Desk and the export format carried over | `contracts/src/Perp*.sol`, `stylus/pricer-model` |
+
+End to end on a Nitro dev node with the Stylus student (`contracts/script/e2e-perp-devnode.sh`,
+[log](../contracts/logs/e2e-perp-devnode-p1.log)): 281 forge tests pass (140 of them v1's).
+
+### Decided while building
+
+1. **`firstFixing` stays in the terms.** "Drop `strikeTime`" can't go all the way: the
+   fixing grid needs an anchor, and a fresh series after a crash must differ from the old
+   one in something. It no longer starts a countdown.
+2. **The coupon is outside the model.** Every fixing pays `a × R` of what is left whatever
+   the stock did, so the coupon part of NOTE is worth exactly R (at discount 0). The price
+   is linear in R; the student prices the principal only.
+3. **Discount rate 0, drift 4%**, teacher v3's convention, not this document's ρ = r = 4%.
+   A pair redeems for `1 + R` at any time, so "WRITER = 1 + c/φ − NOTE" holds only if
+   payouts are discounted at what the escrow earns. The formula takes both rates; with
+   ρ = r it is the one above and reproduces the check table.
+4. **The earnings input is a count**: fixings before the next release, not seconds to it.
+   The value depends on the date only through that count, and between "before the next
+   fixing" and "after it" the price steps by up to 204 bps.
+5. **A missed fixing still melts.** It reuses the last fixing, so the notional per token
+   depends only on how many fixing times have passed.
+6. **Trades in tokens, prices per unit of notional**; one `Traded` event for all four trades.
+7. **The coupon reserve is a whole number of bps.** Prices are in bps; with a finer
+   reserve, buying both legs at the Desk would cost less than the pair redeems for.
+8. **The formula-only pricer adds the fixing accrual** (the week's release builds up in the
+   price and leaves it at the fixing) and refuses next to the barriers before a fixing.
+   Without it the share price of a Desk stepped at every fixing, and an LP could time it.
+9. **Friday's close is not a weekend price.** Inside the weekend window the Desk treats a
+   feed that hasn't updated since the window began as blind, however recent its last round.
+
+Items 7–9 came out of a second, adversarial review of the contracts
+([v2-contracts-review.md](v2-contracts-review.md), section 10): eight confirmed defects in
+the Desk, the wrapper and the formula-only pricer, none in the note core.
+
+### Fair coupon under discount 0
+
+The coupon with NOTE = 1 at x = 1. "Price" above solved V0(top) = 1 with ρ = r = 4%
+(at x = 1 those are 9.54 / 23.62 / 35.92).
+
+| vol | 20% | 30% | 40% | 55% | 70% | 80% | 90% |
+|---|---|---|---|---|---|---|---|
+| %/yr, formula, ρ = 0 | 1.36 | 5.83 | 11.59 | 20.22 | 27.99 | 32.65 | 36.93 |
+
+The teacher (jumps, earnings) is within 0.5 points of these.
+
+### The open items, answered
+
+1. **Mid-week and other vols.** Right after a fixing, in a smooth random walk, the formula
+   is off by +6 … +50 bps at vol 55% (the "5–51, always high" above), and by −37 … +64 over
+   vol 20–90%: below 55% it is not always high. Mid-week it is off by up to 192 bps next to
+   a barrier (177 in the teacher's world with jumps and earnings), 1–28 bps on average.
+2. **Jumps at a fixing.** Knock-in at x = k: 192 bps (vol 90%) to 447 bps (vol 20%). Heal
+   at x = 1: 88–134 bps. A clean note at x = 1 has a kink only (0.07 bps). The model
+   refuses quotes in the last 6 hours before a fixing next to either barrier; v1's
+   autocall jump needed a day.
+3. **Gas and rounding of x^β.** One price is 27,476 gas (clean), 24,659 (knocked in). The
+   fixed point is within 1.3e-7 bps of a 50-digit reference, 7e-11 bps from 20% vol up;
+   below 8% vol (|β| > 25) the contract refuses. A whole Desk buy with a vol band is
+   787,363 L2 gas with the student and 753,381 with the formula-only pricer, which
+   evaluates the formula a second time for its accrual (v1 with k3: 775,042).
+4. **Pitch.** Against the teacher with jumps and earnings, 330,554 states: the formula
+   alone is off by up to 270 bps (p99 77, mean 13.5); formula + student by up to **20.9**
+   (p99 2.2, mean 0.49), and 20.6 on a fresh set. With gap 1 alone the formula's worst is
+   mid-week next to a barrier, not the tens of bps after a fixing: the net earns its place
+   there too. The earnings date alone moves the price by 55–204 bps.
+5. **One model per stock?** No longer for the coupon (decision 2). Still one per knock-in
+   level, melt rate and set of jump constants.
+6. **Termination**: built (four missed fixings). **Splits**: still open; the feed's
+   adjustment policy for stock tokens is unverified.
+
+### Not built
+
+The merge of series that reached the same state; split handling; a pool adapter for the
+weekend price (pool depth on Robinhood Chain is unchecked); v2 in the backend service;
+a testnet deployment (`DeployPerp.s.sol` simulates cleanly, no deployer key is set).
