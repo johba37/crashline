@@ -16,7 +16,7 @@ import Section from './Section.tsx'
 const RISKS = [
   {
     title: 'Earn can lose money in a crash',
-    text: 'After a crash, Earn gets back only the share of value the stock kept, plus the weekly income. You can lose most of what you put in, but never more.',
+    text: 'After a crash, Earn gets back only the share of its value the coin or stock kept, plus the weekly income. You can lose most of what you put in, but never more.',
   },
   {
     title: 'Protect only pays in a crash',
@@ -24,16 +24,16 @@ const RISKS = [
   },
   {
     title: 'The model can be wrong',
-    text: 'The simulation can be wrong about a stock. Its sudden drops are modelled on ten years of Tesla’s prices, which fits large companies well and stocks with rare, very large drops less. A wrong price changes what you trade at, never what a note pays.',
+    text: 'The simulation can be wrong about a coin or stock. Its sudden drops are modelled on ten years of Tesla’s prices, which fits large companies well and stocks with rare, very large drops less. It hasn’t been checked on coins yet. A wrong price changes what you trade at, never what a note pays.',
   },
   {
     title: 'Trading pauses at times',
-    text: 'The Desk gives no price on weekends, shortly before each weekly check, or where the model refuses. Selling early then has to wait. Payouts don’t.',
+    text: 'The Desk gives no price while a stock’s market is closed, shortly before each weekly check, or where the model refuses. Selling early then has to wait. Payouts don’t.',
   },
 ]
 
 const FEE_CAPS = [
-  { label: 'Fee cap on Earn', value: '2%', of: 'of the stock value a note covers' },
+  { label: 'Fee cap on Earn', value: '2%', of: 'of the value a note covers' },
   { label: 'Fee cap on Protect', value: '10%', of: 'of the price of cover' },
 ]
 
@@ -76,7 +76,7 @@ export default function RisksAndFees() {
         <div>
           <p className="type-label text-ink">Testnet only</p>
           <p className="mt-1 type-body text-ink-muted">
-            Crashline runs on Robinhood Chain’s test network, with stock prices we set ourselves. No real money, no
+            Crashline runs on Robinhood Chain’s test network, with prices we set ourselves. No real money, no
             outside audit yet, and nothing here is financial advice.
           </p>
         </div>

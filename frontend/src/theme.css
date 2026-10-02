@@ -34,15 +34,17 @@
   --color-glass-edge: rgb(242 238 229 / 0.14);
   --color-glass-highlight: rgb(255 255 255 / 0.28);
   --color-glass-solid: #1f3a50;
-  --color-horizon-glow: rgb(138 193 209 / 0.2);
   --color-scrim: rgb(8 18 26 / 0.6);
   --color-chart-reference: #5ca2be;
   --color-nebula-core: #f2a866;
+  --color-nebula-ember: #a3341a;
   --color-nebula-arm: #9cc9d6;
   --color-nebula-dust: #0a1621;
   --color-nebula-rose: #e0647a;
   --color-nebula-violet: #7f74d6;
   --color-sky-veil: rgb(18 38 54 / 0.5);
+  --color-sky-veil-app: rgb(18 38 54 / 0.6);
+  --color-sky-peak-app: #5d6b79;
   --color-panel: #2c3134;
   --color-panel-top: #363c3f;
   --color-panel-edge: #3a4145;
@@ -52,6 +54,16 @@
   --color-panel-line-strong: #879297;
   --color-panel-ink-muted: #d5dbdd;
   --color-panel-ink-faint: #6f7a80;
+  --color-panel-sheer-top: rgb(44 49 52 / 0.7);
+  --color-panel-sheer: rgb(32 37 40 / 0.45);
+  --color-panel-sheer-firm-top: rgb(44 49 52 / 0.82);
+  --color-panel-sheer-firm: rgb(32 37 40 / 0.68);
+  --color-panel-sheer-edge: rgb(197 208 212 / 0.34);
+  --color-panel-sheer-overlay: rgb(197 208 212 / 0.06);
+  --color-panel-sheer-well: rgb(8 18 26 / 0.4);
+  --color-plot: rgb(8 18 26 / 0.7);
+  --color-panel-sheer-line: rgb(197 208 212 / 0.16);
+  --color-panel-sheen: rgb(255 255 255 / 0.04);
   --color-plate-top: #f0f4f5;
   --color-plate: #c5d0d4;
   --color-plate-protect-top: #e3eff4;
@@ -92,6 +104,10 @@
   --text-wordmark--line-height: 1;
   --text-wordmark--letter-spacing: 0em;
   --text-wordmark--font-weight: 400;
+  --text-wordmark-lg: 1.25rem;
+  --text-wordmark-lg--line-height: 1;
+  --text-wordmark-lg--letter-spacing: 0em;
+  --text-wordmark-lg--font-weight: 400;
   --text-heading: 1.25rem;
   --text-heading--line-height: 1.3;
   --text-heading--letter-spacing: 0em;
@@ -138,12 +154,13 @@
   --shadow-raised: var(--elevation-raised);
   --shadow-ignition: var(--elevation-ignition);
   --shadow-panel: var(--elevation-panel);
+  --shadow-panel-sheer: var(--elevation-panel-sheer);
   --shadow-plate: var(--elevation-plate);
 
   --blur-glass: 24px;
   --blur-glass-strong: 40px;
   --container-landing: 75rem;
-  --container-app: 70rem;
+  --container-app: 71rem;
 
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in: cubic-bezier(0.5, 0, 0.75, 0);
@@ -165,6 +182,7 @@
   --elevation-raised: inset 0px 1px 0px 0px rgb(255 255 255 / 0.05);
   --elevation-ignition: 0px 8px 28px -6px rgb(235 93 39 / 0.55);
   --elevation-panel: inset 0px 1px 0px 0px rgb(255 255 255 / 0.1), inset 0px -1px 0px 0px rgb(0 0 0 / 0.35), 0px 16px 32px -16px rgb(3 8 10 / 0.7);
+  --elevation-panel-sheer: inset 0px 1px 0px 0px rgb(255 255 255 / 0.34), inset 0px -1px 0px 0px rgb(0 0 0 / 0.2), 0px 16px 32px -16px rgb(3 8 10 / 0.5);
   --elevation-plate: inset 0px 1px 0px 0px rgb(255 255 255 / 0.9), inset 0px -1px 0px 0px rgb(12 27 39 / 0.28), 0px 14px 28px -14px rgb(3 8 10 / 0.75);
   --duration-instant: 100ms;
   --duration-fast: 160ms;
@@ -223,15 +241,17 @@
     --color-glass-edge: rgb(255 255 255 / 0.75);
     --color-glass-highlight: rgb(255 255 255 / 0.95);
     --color-glass-solid: #ffffff;
-    --color-horizon-glow: rgb(92 162 190 / 0.22);
     --color-scrim: rgb(6 18 23 / 0.32);
     --color-chart-reference: #2e6f8a;
     --color-nebula-core: #f2a866;
+    --color-nebula-ember: #a3341a;
     --color-nebula-arm: #9cc9d6;
     --color-nebula-dust: #0a1621;
     --color-nebula-rose: #e0647a;
     --color-nebula-violet: #7f74d6;
     --color-sky-veil: #f2f7f6;
+    --color-sky-veil-app: #f2f7f6;
+    --color-sky-peak-app: #5d6b79;
     --color-panel: #eceff0;
     --color-panel-top: #f5f7f7;
     --color-panel-edge: #aab3b7;
@@ -241,6 +261,16 @@
     --color-panel-line-strong: #6f7a80;
     --color-panel-ink-muted: #4c565b;
     --color-panel-ink-faint: #879297;
+    --color-panel-sheer-top: #f5f7f7;
+    --color-panel-sheer: #eceff0;
+    --color-panel-sheer-firm-top: #f5f7f7;
+    --color-panel-sheer-firm: #eceff0;
+    --color-panel-sheer-edge: #aab3b7;
+    --color-panel-sheer-overlay: #f5f7f7;
+    --color-panel-sheer-well: #ffffff;
+    --color-plot: #ffffff;
+    --color-panel-sheer-line: #c3cacd;
+    --color-panel-sheen: rgb(255 255 255 / 0.5);
     --color-plate-top: #f0f4f5;
     --color-plate: #c5d0d4;
     --color-plate-protect-top: #e3eff4;
@@ -259,6 +289,7 @@
     --elevation-raised: 0px 1px 2px 0px rgb(6 18 23 / 0.06), 0px 8px 24px -12px rgb(6 18 23 / 0.16);
     --elevation-ignition: 0px 8px 24px -8px rgb(235 93 39 / 0.45);
     --elevation-panel: inset 0px 1px 0px 0px rgb(255 255 255 / 0.95), 0px 1px 2px 0px rgb(6 18 23 / 0.1), 0px 10px 24px -14px rgb(6 18 23 / 0.28);
+    --elevation-panel-sheer: inset 0px 1px 0px 0px rgb(255 255 255 / 0.95), 0px 1px 2px 0px rgb(6 18 23 / 0.1), 0px 10px 24px -14px rgb(6 18 23 / 0.28);
     --elevation-plate: inset 0px 1px 0px 0px rgb(255 255 255 / 0.95), inset 0px -1px 0px 0px rgb(6 18 23 / 0.14), 0px 1px 2px 0px rgb(6 18 23 / 0.14), 0px 10px 24px -14px rgb(6 18 23 / 0.35);
   }
 }
@@ -293,15 +324,17 @@
   --color-glass-edge: rgb(255 255 255 / 0.75);
   --color-glass-highlight: rgb(255 255 255 / 0.95);
   --color-glass-solid: #ffffff;
-  --color-horizon-glow: rgb(92 162 190 / 0.22);
   --color-scrim: rgb(6 18 23 / 0.32);
   --color-chart-reference: #2e6f8a;
   --color-nebula-core: #f2a866;
+  --color-nebula-ember: #a3341a;
   --color-nebula-arm: #9cc9d6;
   --color-nebula-dust: #0a1621;
   --color-nebula-rose: #e0647a;
   --color-nebula-violet: #7f74d6;
   --color-sky-veil: #f2f7f6;
+  --color-sky-veil-app: #f2f7f6;
+  --color-sky-peak-app: #5d6b79;
   --color-panel: #eceff0;
   --color-panel-top: #f5f7f7;
   --color-panel-edge: #aab3b7;
@@ -311,6 +344,16 @@
   --color-panel-line-strong: #6f7a80;
   --color-panel-ink-muted: #4c565b;
   --color-panel-ink-faint: #879297;
+  --color-panel-sheer-top: #f5f7f7;
+  --color-panel-sheer: #eceff0;
+  --color-panel-sheer-firm-top: #f5f7f7;
+  --color-panel-sheer-firm: #eceff0;
+  --color-panel-sheer-edge: #aab3b7;
+  --color-panel-sheer-overlay: #f5f7f7;
+  --color-panel-sheer-well: #ffffff;
+  --color-plot: #ffffff;
+  --color-panel-sheer-line: #c3cacd;
+  --color-panel-sheen: rgb(255 255 255 / 0.5);
   --color-plate-top: #f0f4f5;
   --color-plate: #c5d0d4;
   --color-plate-protect-top: #e3eff4;
@@ -329,6 +372,7 @@
   --elevation-raised: 0px 1px 2px 0px rgb(6 18 23 / 0.06), 0px 8px 24px -12px rgb(6 18 23 / 0.16);
   --elevation-ignition: 0px 8px 24px -8px rgb(235 93 39 / 0.45);
   --elevation-panel: inset 0px 1px 0px 0px rgb(255 255 255 / 0.95), 0px 1px 2px 0px rgb(6 18 23 / 0.1), 0px 10px 24px -14px rgb(6 18 23 / 0.28);
+  --elevation-panel-sheer: inset 0px 1px 0px 0px rgb(255 255 255 / 0.95), 0px 1px 2px 0px rgb(6 18 23 / 0.1), 0px 10px 24px -14px rgb(6 18 23 / 0.28);
   --elevation-plate: inset 0px 1px 0px 0px rgb(255 255 255 / 0.95), inset 0px -1px 0px 0px rgb(6 18 23 / 0.14), 0px 1px 2px 0px rgb(6 18 23 / 0.14), 0px 10px 24px -14px rgb(6 18 23 / 0.35);
 }
 /* data-theme works on any element, so a section can force its theme (the landing hero is always dark). */
@@ -363,15 +407,17 @@
   --color-glass-edge: rgb(242 238 229 / 0.14);
   --color-glass-highlight: rgb(255 255 255 / 0.28);
   --color-glass-solid: #1f3a50;
-  --color-horizon-glow: rgb(138 193 209 / 0.2);
   --color-scrim: rgb(8 18 26 / 0.6);
   --color-chart-reference: #5ca2be;
   --color-nebula-core: #f2a866;
+  --color-nebula-ember: #a3341a;
   --color-nebula-arm: #9cc9d6;
   --color-nebula-dust: #0a1621;
   --color-nebula-rose: #e0647a;
   --color-nebula-violet: #7f74d6;
   --color-sky-veil: rgb(18 38 54 / 0.5);
+  --color-sky-veil-app: rgb(18 38 54 / 0.6);
+  --color-sky-peak-app: #5d6b79;
   --color-panel: #2c3134;
   --color-panel-top: #363c3f;
   --color-panel-edge: #3a4145;
@@ -381,6 +427,16 @@
   --color-panel-line-strong: #879297;
   --color-panel-ink-muted: #d5dbdd;
   --color-panel-ink-faint: #6f7a80;
+  --color-panel-sheer-top: rgb(44 49 52 / 0.7);
+  --color-panel-sheer: rgb(32 37 40 / 0.45);
+  --color-panel-sheer-firm-top: rgb(44 49 52 / 0.82);
+  --color-panel-sheer-firm: rgb(32 37 40 / 0.68);
+  --color-panel-sheer-edge: rgb(197 208 212 / 0.34);
+  --color-panel-sheer-overlay: rgb(197 208 212 / 0.06);
+  --color-panel-sheer-well: rgb(8 18 26 / 0.4);
+  --color-plot: rgb(8 18 26 / 0.7);
+  --color-panel-sheer-line: rgb(197 208 212 / 0.16);
+  --color-panel-sheen: rgb(255 255 255 / 0.04);
   --color-plate-top: #f0f4f5;
   --color-plate: #c5d0d4;
   --color-plate-protect-top: #e3eff4;
@@ -399,6 +455,7 @@
   --elevation-raised: inset 0px 1px 0px 0px rgb(255 255 255 / 0.05);
   --elevation-ignition: 0px 8px 28px -6px rgb(235 93 39 / 0.55);
   --elevation-panel: inset 0px 1px 0px 0px rgb(255 255 255 / 0.1), inset 0px -1px 0px 0px rgb(0 0 0 / 0.35), 0px 16px 32px -16px rgb(3 8 10 / 0.7);
+  --elevation-panel-sheer: inset 0px 1px 0px 0px rgb(255 255 255 / 0.34), inset 0px -1px 0px 0px rgb(0 0 0 / 0.2), 0px 16px 32px -16px rgb(3 8 10 / 0.5);
   --elevation-plate: inset 0px 1px 0px 0px rgb(255 255 255 / 0.9), inset 0px -1px 0px 0px rgb(12 27 39 / 0.28), 0px 14px 28px -14px rgb(3 8 10 / 0.75);
 }
 
@@ -488,13 +545,6 @@
   }
 }
 
-/* App ground: true black with an earth-limb glow at the bottom, so glass has colour to sample. */
-@utility bg-horizon {
-  background-color: var(--color-surface);
-  background-image: radial-gradient(120% 55% at 50% 108%, var(--color-horizon-glow), transparent 70%);
-  background-attachment: fixed;
-}
-
 /* Steel, after the ship's hull: the material of cards and app components. Gunmetal on dark,
    silver on light. Inside a panel, overlay, well, lines and muted text re-point to steel values,
    so rows, fields and dividers in it need no extra classes. Content, not glass: never both. */
@@ -505,13 +555,55 @@
   --color-line-strong: var(--color-panel-line-strong);
   --color-ink-muted: var(--color-panel-ink-muted);
   --color-ink-faint: var(--color-panel-ink-faint);
-  background-color: var(--color-panel);
-  background-image: linear-gradient(to bottom, var(--color-panel-top), var(--color-panel));
+  background-image:
+    linear-gradient(112deg, transparent 30%, var(--panel-sheen, transparent) 46%, transparent 62%),
+    linear-gradient(to bottom, var(--color-panel-top), var(--color-panel));
   border: 1px solid var(--color-panel-edge);
   box-shadow: var(--elevation-panel);
   @media (forced-colors: active) {
     border-color: CanvasText;
   }
+}
+
+/* Sheer steel, the app's cards: add it next to panel. The steel lets the ground through and fades
+   towards its lower edge, with a silver rim and a faint band of light. Insets and raised parts
+   in it are tints, so the card shows through them too. Frosted from 768px: what is behind it is
+   blurred, so its colour comes through but nothing can be made out. Phones get no blur: a page
+   of blurred cards over a moving sky costs them too much. It only goes where the backdrop is the
+   app's veiled sky (bg-sky-veil-app), which the contrast gate measures.
+   With reduced transparency or more contrast it is the solid panel. */
+@utility panel-sheer {
+  --color-panel: var(--panel-sheer-base, var(--color-panel-sheer));
+  --color-panel-top: var(--panel-sheer-top, var(--color-panel-sheer-top));
+  --color-panel-edge: var(--color-panel-sheer-edge);
+  --color-panel-overlay: var(--color-panel-sheer-overlay);
+  --color-panel-well: var(--color-panel-sheer-well);
+  --color-panel-line: var(--color-panel-sheer-line);
+  --elevation-panel: var(--elevation-panel-sheer);
+  --panel-sheen: var(--color-panel-sheen);
+  @media (width >= 48rem) {
+    -webkit-backdrop-filter: blur(var(--blur-glass));
+    backdrop-filter: blur(var(--blur-glass));
+  }
+  @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    --color-panel: inherit;
+    --color-panel-top: inherit;
+    --color-panel-edge: inherit;
+    --color-panel-overlay: inherit;
+    --color-panel-well: inherit;
+    --color-panel-line: inherit;
+    --elevation-panel: inherit;
+    --panel-sheen: inherit;
+  }
+}
+
+/* The sheer panel the reader is working in (an open step of the app's flow): less see-through,
+   so its text reads over the sky. Add it next to panel panel-sheer. */
+@utility panel-sheer-firm {
+  --panel-sheer-base: var(--color-panel-sheer-firm);
+  --panel-sheer-top: var(--color-panel-sheer-firm-top);
 }
 
 /* Polished plate: bright silver in both themes, with a diagonal sheen. The material of diagram
@@ -614,6 +706,14 @@
   line-height: var(--text-wordmark--line-height);
   letter-spacing: var(--text-wordmark--letter-spacing);
   font-weight: var(--text-wordmark--font-weight);
+}
+
+@utility type-wordmark-lg {
+  font-family: var(--font-wordmark);
+  font-size: var(--text-wordmark-lg);
+  line-height: var(--text-wordmark-lg--line-height);
+  letter-spacing: var(--text-wordmark-lg--letter-spacing);
+  font-weight: var(--text-wordmark-lg--font-weight);
 }
 
 @utility type-heading {

@@ -9,7 +9,7 @@ const days = (secs: number) => `${(secs / 86400).toFixed(1)} days`
 const FIELDS: [keyof PricerInputs, string, (v: number) => string][] = [
   ['spotBpsOfInitial', 'Price today, against the start', (v) => pct(v, 1)],
   ['distToKnockInBps', 'Room above the crash line', (v) => pct(v, 1)],
-  ['volBpsAnnual', 'How much the stock swings (volatility)', (v) => `${pct(v, 0)} a year`],
+  ['volBpsAnnual', 'How much the price swings (volatility)', (v) => `${pct(v, 0)} a year`],
   ['kiBarrierBps', 'Crash line', (v) => `${pct(v, 0)} of the start`],
   ['acBarrierBps', 'Ends early at', (v) => `${pct(v, 0)} of the start`],
   ['couponBpsPerPeriod', 'Weekly income', (v) => pct(v)],
@@ -28,7 +28,7 @@ export default function ModelCard({ s, model }: { s: SeriesView; model?: ModelVi
       <p className="type-body text-ink-muted">
         The price comes from a small AI <Term t="model" /> that runs on the blockchain. It was built for one kind of note:
         a crash line at {pin(3, (v) => pct(v, 0))} of the starting price, ending early at {pin(4, (v) => pct(v, 0))}, and{' '}
-        {pin(5, (v) => pct(v))} income a week. It gives a price while the stock is between{' '}
+        {pin(5, (v) => pct(v))} income a week. It gives a price while the coin or stock is between{' '}
         {range[0] ? `${pct(Number(range[0][0]), 0)} and ${pct(Number(range[0][1]), 0)}` : '…'} of its starting price. Close to a
         line on a check day, it <Term t="refuses" /> instead of guessing.
       </p>

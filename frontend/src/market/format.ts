@@ -1,6 +1,6 @@
 // Pure helpers for the dashboard: formatting, and the Desk's arithmetic as docs/interfaces.md
 // states it, so the numbers on screen are the ones the contracts compute.
-import { type MarketData, Phase, type SeriesView, type TradeKind } from './types.ts'
+import { type MarketData, Phase, type Refusable, type Refusal, type SeriesView, type TradeKind } from './types.ts'
 
 export const WEEK = 604800
 export const UNIT = 1_000_000n // 1 NOTE / WRITER / USDG in base units (6 decimals)
@@ -89,6 +89,13 @@ export function tradeAmounts(kind: TradeKind, amount: bigint, priceBps: number, 
 }
 
 /**
+ * What the Desk is held to: the most a buy may cost (rounded up) or the least a sale must bring
+ * (rounded down). Counted from the amount on screen, the one the reader agreed to.
+ */
+export const tradeLimit = (buying: boolean, shown: bigint, slippageBps: number) =>
+  buying ? ceilDiv(shown * BigInt(10_000 + slippageBps), 10_000n) : (shown * BigInt(10_000 - slippageBps)) / 10_000n
+
+/**
  * How much of a trade adds to the Desk's own position, which quotes don't check
  * (docs/interfaces.md): the part the Desk can't serve from inventory or pair off.
  */
@@ -174,6 +181,14 @@ export const soldOut = (s: SeriesView, earn: boolean) => {
   const [ask, bid] = earn ? [s.noteAsk, s.noteBid] : [s.coverAsk, s.coverBid]
   return !ask.ok && ask.refusal.error === 'CapExceeded' && bid.ok
 }
+
+// The refusals that pass by themselves: shortly before a weekly check, until that check is
+// recorded, near a line ahead of a check (where the value jumps), and without a fresh feed price.
+const PAUSES = ['TooCloseToObservation', 'FixingPending', 'Uncertified', 'FeedStale']
+
+/** Paused: no price right now, and one is on its way without the reader doing anything. */
+export const paused = (q: Refusable<unknown>): q is { ok: false; refusal: Refusal } =>
+  !q.ok && PAUSES.includes(q.refusal.error)
 
 export const observationsLeft = (s: SeriesView) => s.terms.observationCount - s.state.observationsDone
 

@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 /** A closed-by-default steel section for the details a first-time user doesn't need yet. */
 export default function Disclosure({ title, hint, children }: { title: string; hint: string; children: ReactNode }) {
   return (
-    <details className="panel group rounded-lg">
+    <details className="panel panel-sheer group rounded-lg">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-lg p-5 [&::-webkit-details-marker]:hidden">
         <span className="flex flex-col gap-0.5">
           <span className="type-heading text-ink">{title}</span>

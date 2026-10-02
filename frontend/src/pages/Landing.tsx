@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { Link } from 'react-router'
 import HeroArt from '../components/HeroArt.tsx'
+import BuildingBlock from '../components/landing/BuildingBlock.tsx'
 import CheckEveryPrice from '../components/landing/CheckEveryPrice.tsx'
 import Footer from '../components/landing/Footer.tsx'
 import HowItWorks from '../components/landing/HowItWorks.tsx'
@@ -39,7 +40,7 @@ export default function Landing() {
                   <span className="block">that pays.</span>
                 </h1>
                 <p className="mt-5 max-w-md type-body-lg text-ink-muted">
-                  Protect your tokenized stocks from market crashes with a decentralized, model-driven insurance protocol.
+                  Protect your coins and stocks from market crashes with a decentralized, model-driven insurance protocol.
                 </p>
                 <Link
                   ref={heroCta}
@@ -61,6 +62,7 @@ export default function Landing() {
         <div className="bg-sky-veil">
           <HowItWorks />
           <CheckEveryPrice />
+          <BuildingBlock />
           <RisksAndFees />
           <WhatsNext />
         </div>

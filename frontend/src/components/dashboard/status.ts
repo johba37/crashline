@@ -4,6 +4,7 @@ import {
   CheckCircle, FlagCheckered, Gauge, HourglassMedium, Info, MoonStars, Pulse, Queue, ShieldWarning,
   Timer, TrendDown, Vault, X, XCircle, type Icon,
 } from '@phosphor-icons/react'
+import { dateTime, paused } from '../../market/format.ts'
 import type { Refusal, SeriesView } from '../../market/types.ts'
 
 export type Tone = 'go' | 'hold' | 'abort' | 'info' | 'neutral'
@@ -19,24 +20,32 @@ export const autocalled: Status = { tone: 'go', icon: FlagCheckered, label: 'End
 export const settled: Status = { tone: 'neutral', icon: CheckCircle, label: 'Ended' }
 export const confirmed: Status = { tone: 'go', icon: CheckCircle, label: 'Done' }
 
-export function refusalStatus({ error, args }: Refusal): Status {
+/**
+ * A refusal in plain words. Given the note `s`, a pause also names the weekly check it waits for:
+ * the price is back once that check is recorded, and at a new level.
+ */
+export function refusalStatus({ error, args }: Refusal, s?: SeriesView): Status {
+  const on = s && s.state.nextObservation > 0 ? ` on ${dateTime(s.state.nextObservation)}` : ''
   switch (error) {
     case 'FeedStale':
-      return { tone: 'hold', icon: MoonStars, label: 'Market closed', message: 'The stock market is closed. Prices come back when it opens.' }
+      return { tone: 'hold', icon: MoonStars, label: 'No fresh price', message: 'The last price is too old to trade on. For a stock, its market is closed: prices come back when it opens.' }
     case 'FixingPending':
-      return { tone: 'hold', icon: HourglassMedium, label: 'Waiting for the weekly price', message: 'This week’s closing price isn’t recorded yet. Prices come back once it is.' }
+      return { tone: 'hold', icon: HourglassMedium, label: 'Waiting for the weekly price', message: `The weekly check${on} is over, and its price isn’t recorded yet. A new price follows once it is, and it can be very different from the last one. This page then shows it by itself.` }
     case 'TooCloseToObservation':
-      return { tone: 'hold', icon: Timer, label: 'Paused for the weekly check', message: 'Trading pauses shortly before each weekly check.' }
+      return { tone: 'hold', icon: Timer, label: 'Paused for the weekly check', message: `Trading pauses shortly before each weekly check, because the check can move the price a lot. ${on && `The next one is${on}. `}A new price follows once it’s recorded, and this page then shows it by itself.` }
     case 'OutOfRange':
       return { tone: 'hold', icon: ShieldWarning, label: 'Outside what the model knows', message: `This is outside the range the model was tested on (${FIELDS[Number(args[0])] ?? 'one of its inputs'}). It gives no price rather than guess.` }
-    case 'Uncertified':
-      return Number(args[0]) === 0
-        ? { tone: 'hold', icon: ShieldWarning, label: 'Near the starting price', message: 'Too close to the starting price on a check day, where the value can jump. The model gives no price rather than guess.' }
-        : { tone: 'hold', icon: ShieldWarning, label: 'Near the crash line', message: 'Too close to the crash line on a check day, where the value can jump. The model gives no price rather than guess.' }
+    case 'Uncertified': {
+      // Region 0: the starting price on a check day. 1: the crash line on a check day. The others:
+      // the crash line up to five days ahead of a check (docs/k3-vol-input.md).
+      const region = Number(args[0])
+      const where = region === 0 ? 'the starting price on a check day' : region === 1 ? 'the crash line on a check day' : 'the crash line ahead of a weekly check'
+      return { tone: 'hold', icon: ShieldWarning, label: region === 0 ? 'Near the starting price' : 'Near the crash line', message: `Too close to ${where}, where the value can jump. The model gives no price rather than guess. A new price follows once the weekly check${on} is recorded, and this page then shows it by itself.` }
+    }
     case 'NotLive':
       return { tone: 'neutral', icon: Info, label: 'Not open', message: 'This note hasn’t started yet, or it has already ended.' }
     case 'RiskBudgetExceeded':
-      return { tone: 'hold', icon: Gauge, label: 'The Desk is full for now', message: 'The Desk can’t take on more for this stock right now, so it can always pay. Selling what you hold still works.' }
+      return { tone: 'hold', icon: Gauge, label: 'The Desk is full for now', message: 'The Desk can’t take on more for this coin or stock right now, so it can always pay. Selling what you hold still works.' }
     case 'QueuePending':
       return { tone: 'hold', icon: Queue, label: 'The Desk is paying out', message: 'The Desk is paying back the people who fund it first. Buying resumes once that’s done; selling still works.' }
     case 'CapExceeded':
@@ -59,6 +68,8 @@ export function refusalStatus({ error, args }: Refusal): Status {
 /** A series' headline state: why it has no price, else crash line hit or live. */
 export function seriesStatus(s: SeriesView): Status {
   if (!s.mid.ok) return refusalStatus(s.mid.refusal)
+  // The model has a price and the Desk holds its own back: the pause shortly before a weekly check.
+  if (paused(s.noteBid)) return refusalStatus(s.noteBid.refusal)
   return s.state.knockedIn ? knockedIn : quoteLive
 }
 

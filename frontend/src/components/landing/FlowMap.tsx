@@ -6,7 +6,7 @@ import EarnRate from './EarnRate.tsx'
 
 // The two ways into a note as a map on one sheet of glass, with the chosen step's text on the same
 // sheet. Every node and every arrow is a button that explains its step in a sentence or two,
-// worded for any stock. The nodes are flat tints in the lane colour: no gradient, and no glass of
+// worded for any coin or stock. The nodes are flat tints in the lane colour: no gradient, and no glass of
 // their own (glass never sits inside glass). On glass the lane colour is for icons and lines only:
 // text is ink, the one colour that clears the contrast gate on a tint in both themes. No worked example and no figures here: the one
 // example is the panels in HowItWorks.tsx, and the weekly income differs per note, so its rate is
@@ -64,11 +64,11 @@ const DESK: Step = {
 const STEPS: Record<StepId, Record<Lane, Step>> = {
   start: {
     protect: {
-      label: 'You own a stock',
+      label: 'You own a coin or stock',
       sub: 'and fear a crash',
       Icon: TrendDown,
-      title: 'You own a stock and fear a crash',
-      text: 'Protect is crash insurance for a stock you want to keep. It pays by the stock’s price alone: you don’t have to prove you own it.',
+      title: 'You own a coin or stock and fear a crash',
+      text: 'Protect is crash insurance for a coin or stock you want to keep. It pays by the price alone: you don’t have to prove you own it.',
     },
     earn: {
       label: 'You have USDG',
@@ -82,12 +82,12 @@ const STEPS: Record<StepId, Record<Lane, Step>> = {
     protect: {
       label: 'Pay once',
       title: 'You pay once, up front',
-      text: <>You choose the stock, how long the cover lasts and the {CRASH_LINE}, and pay once: nothing more later. The price comes from a public <Term t="model" />, and you see it before you buy.</>,
+      text: <>You choose the coin or stock, how long the cover lasts and the {CRASH_LINE}, and pay once: nothing more later. The price comes from a public <Term t="model" />, and you see it before you buy.</>,
     },
     earn: {
       label: 'Put in USDG',
       title: 'You put in USDG once',
-      text: <>You choose the stock, how long and the {CRASH_LINE}, and put in USDG once. The amount comes from the same public <Term t="model" /> that prices cover, and you see it before you buy.</>,
+      text: <>You choose the coin or stock, how long and the {CRASH_LINE}, and put in USDG once. The amount comes from the same public <Term t="model" /> that prices cover, and you see it before you buy.</>,
     },
   },
   desk: { protect: DESK, earn: DESK },
@@ -95,25 +95,25 @@ const STEPS: Record<StepId, Record<Lane, Step>> = {
     protect: {
       label: 'Weekly checks',
       title: 'Weekly checks decide the payout',
-      text: <>Once a week, the stock’s closing price is recorded. Below the {CRASH_LINE} at a check, your cover is on and pays when the note ends. Back at its <Term t="startingPrice" /> or above, the note <Term t="endsEarly" /> and your cover stops: part of what you paid comes back.</>,
+      text: <>Once a week, the price is recorded. Below the {CRASH_LINE} at a check, your cover is on and pays when the note ends. Back at the <Term t="startingPrice" /> or above, the note <Term t="endsEarly" /> and your cover stops: part of what you paid comes back.</>,
     },
     earn: {
       label: 'Weekly checks',
       title: 'Weekly checks decide the payout',
-      text: <>Once a week, the stock’s closing price is recorded. Back at its <Term t="startingPrice" /> or above at a check, the note <Term t="endsEarly" /> and you are paid out. Below the {CRASH_LINE} at a check, your money is at risk: you take the stock’s fall when the note ends.</>,
+      text: <>Once a week, the price is recorded. Back at the <Term t="startingPrice" /> or above at a check, the note <Term t="endsEarly" /> and you are paid out. Below the {CRASH_LINE} at a check, your money is at risk: you take the fall when the note ends.</>,
     },
   },
   payout: {
     protect: {
       label: 'Your loss is paid',
-      sub: 'if the stock crashes',
+      sub: 'if there is a crash',
       Icon: HandCoins,
       title: 'Cover pays you the fall',
-      text: <>If the stock was below the {CRASH_LINE} at a weekly check and ends below its starting price, cover pays you what the stock lost since the note’s first day. Fixed rules decide it: no model and no person.</>,
+      text: <>If the price was below the {CRASH_LINE} at a weekly check and ends below the starting price, cover pays you the fall since the note’s first day. Fixed rules decide it: no model and no person.</>,
     },
     earn: {
       label: 'Paid back with income',
-      sub: 'unless the stock crashes',
+      sub: 'unless there is a crash',
       Icon: HandCoins,
       title: 'Earn pays you back, with the income',
       text: <>Without a crash you get the whole {POT}, which is more than you put in. In a crash, the fall goes to Protect and you get the rest. Fixed rules decide it: no model and no person.</>,

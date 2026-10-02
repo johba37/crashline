@@ -23,7 +23,7 @@ import { FAN, NET, fanY, futures, net } from './priceArt.ts'
 // unchanged: never recolour it, and never show it below 12px.
 // Prices: the example in HowItWorks.tsx.
 
-const INPUTS = ['Stock price', 'How much it swings', 'Time to next check', 'Checks left', 'Crash line crossed?']
+const INPUTS = ['Price today', 'How much it swings', 'Time to next check', 'Checks left', 'Crash line crossed?']
 const PATHS = futures(16, 17)
 const MODEL = net(INPUTS.length)
 const PLATE_LINK = 'underline underline-offset-4'
@@ -58,7 +58,7 @@ export default function PriceEngine() {
           <svg
             viewBox={`0 0 ${FAN.width} ${FAN.height}`}
             role="img"
-            aria-label={`${PATHS.length} possible futures for a stock’s price over six months. ${PATHS.filter((p) => p.crashed).length} of them fall below the crash line.`}
+            aria-label={`${PATHS.length} possible futures for a price over six months. ${PATHS.filter((p) => p.crashed).length} of them fall below the crash line.`}
             className="mt-4 w-full"
           >
             <line x1="12" x2={FAN.width - 12} y1={fanY(FAN.crash)} y2={fanY(FAN.crash)} stroke="currentColor" strokeDasharray="4 3" />

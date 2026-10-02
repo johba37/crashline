@@ -31,7 +31,7 @@ export default function Footer() {
             <Wordmark />
           </p>
           <p className="mt-3 max-w-sm type-body text-ink-muted">
-            Crash insurance and a weekly income on tokenized stocks, priced in public on Robinhood Chain testnet.
+            Crash insurance and a weekly income on coins and stocks, priced in public on Robinhood Chain testnet.
           </p>
         </div>
         <nav aria-labelledby="footer-project" className="md:col-span-3">

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Address, Hex } from 'viem'
 import { useAccount } from 'wagmi'
 import {
-  addsToDesk, bestCase, crashPayout, date, level, moveTo, noteOnOffer, observationsLeft, pct, roomFor, signedPct, soldOut, tradeAmounts, usd, usdg, wholeUsdg,
+  addsToDesk, bestCase, crashPayout, date, level, moveTo, noteOnOffer, observationsLeft, paused, pct, roomFor, signedPct, soldOut, tradeAmounts, usd, usdg, wholeUsdg,
 } from '../../market/format.ts'
 import { FEE_BPS, FEE_RECEIVER, SLIPPAGE_BPS } from '../../market/settings.ts'
 import type { CollectKind, MarketData, SeriesView, TradeKind, TradeState } from '../../market/types.ts'
@@ -16,7 +16,7 @@ import Term from './Term.tsx'
 
 export type Trade = {
   state: TradeState
-  run: (p: { series: SeriesView; kind: TradeKind | CollectKind; amount: bigint; slippageBps: number; feeBps: number; feeReceiver: Address }) => Promise<void>
+  run: (p: { series: SeriesView; kind: TradeKind | CollectKind; amount: bigint; shown: bigint; slippageBps: number; feeBps: number; feeReceiver: Address }) => Promise<void>
   reset: () => void
 }
 
@@ -43,7 +43,7 @@ function blocker(s: SeriesView, kind: TradeKind, amount: bigint, amountOk: boole
   if (kind === 'sellCover' && amount > noteOnOffer(s)) {
     return { ...refusalStatus({ error: 'CapExceeded', args: [] }), label: 'The Desk can’t buy this much cover back right now', message: `It can take back ${wholeUsdg(noteOnOffer(s))} USDG of it at most. Your cover stays valid either way: keep it until it ends, or try again later.` }
   }
-  if (!quote.ok) return refusalStatus(quote.refusal)
+  if (!quote.ok) return refusalStatus(quote.refusal, s)
   if (kind === 'buy' && amount > noteOnOffer(s)) {
     return { ...refusalStatus({ error: 'CapExceeded', args: [] }), message: `Only ${usdg(noteOnOffer(s), 0)} USDG of this note is on offer. Enter a smaller amount in step 3.` }
   }
@@ -57,7 +57,7 @@ function blocker(s: SeriesView, kind: TradeKind, amount: bigint, amountOk: boole
       label: kind === 'buyCover'
         ? `Right now, at most ${wholeUsdg(room)} USDG of ${s.symbol} can be protected`
         : `Right now, at most ${wholeUsdg(room)} USDG more can go into ${s.symbol}`,
-      message: 'How much is sold on one stock is limited, so that every payout can always be paid. Enter a smaller amount in step 3.',
+      message: 'How much is sold on one coin or stock is limited, so that every payout can always be paid. Enter a smaller amount in step 3.',
     }
   }
   return null
@@ -122,6 +122,9 @@ export default function Order({ s, goal, amount, amountOk, market, trade, placed
     onPlaced({ kind, hash: trade.state.hash })
   }, [kind, onPlaced, trade.state])
   const done = placed !== null || trade.state.step === 'done'
+  // A paused price comes back by itself, so the order stays as it is. Its button rests and says
+  // that it waits; the notice above it says for what.
+  const wait = amountOk && paused(quote) && !done
   const hash = placed ? placed.hash : trade.state.hash
   const [label, busyLabel] = ACTION[kind]
   const sym = s.symbol
@@ -239,9 +242,9 @@ export default function Order({ s, goal, amount, amountOk, market, trade, placed
   const token = goal === 'protect' ? 'cover' : 'NOTE'
 
   const submit = () => {
-    if (stop) return
+    if (stop || !amounts) return
     sent.current = true
-    void trade.run({ series: s, kind, amount, slippageBps: SLIPPAGE_BPS, feeBps: FEE_BPS, feeReceiver: FEE_RECEIVER })
+    void trade.run({ series: s, kind, amount, shown: amounts.total, slippageBps: SLIPPAGE_BPS, feeBps: FEE_BPS, feeReceiver: FEE_RECEIVER })
   }
 
   return (
@@ -286,7 +289,7 @@ export default function Order({ s, goal, amount, amountOk, market, trade, placed
       {trade.state.step === 'waiting' && (
         <Notice status={{ tone: 'hold', icon: Info, label: 'An earlier request is still open in your wallet', message: 'It belongs to the order you changed. Reject it in your wallet, and this order goes on by itself.' }} />
       )}
-      {trade.state.step === 'failed' && trade.state.refusal && <Notice status={refusalStatus(trade.state.refusal)} />}
+      {trade.state.step === 'failed' && trade.state.refusal && <Notice status={refusalStatus(trade.state.refusal, s)} />}
       {done && (
         <Notice status={hash
           ? { ...confirmed, message: `${selling ? 'The USDG is' : 'It’s'} in your wallet. Change a step above to ${selling ? 'sell' : 'buy'} again.` }
@@ -317,7 +320,7 @@ export default function Order({ s, goal, amount, amountOk, market, trade, placed
           aria-busy={busy || undefined}
           className="h-12 rounded-full bg-accent px-6 type-button text-on-accent transition-[background-color,box-shadow] duration-160 ease-out hover:bg-accent-hover hover:shadow-ignition active:bg-accent-pressed disabled:cursor-not-allowed disabled:bg-surface-overlay disabled:text-ink-faint disabled:shadow-none"
         >
-          {busy ? (trade.state.step === 'approving' ? 'Confirm in your wallet…' : trade.state.step === 'waiting' ? 'Waiting for your wallet…' : busyLabel) : label}
+          {busy ? (trade.state.step === 'approving' ? 'Confirm in your wallet…' : trade.state.step === 'waiting' ? 'Waiting for your wallet…' : busyLabel) : wait ? 'Waiting for a price…' : label}
         </button>
       )}
 

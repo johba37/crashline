@@ -20,6 +20,11 @@ export function bandFor(width: number): Band {
     : { swing: 0.65, peak: 0.42, leg: 0.56, next: 1.6, width: 0.13, core: 0.644 }
 }
 
+// A page without a stage (the app): the band comes in at the top left, where its bulge glows, sweeps
+// down to the right edge and winds back. Heights are in units of PAGE_STAGE px.
+export const PAGE_STAGE = 800
+export const PAGE_BAND: Band = { swing: -0.55, peak: -0.6, leg: 2.4, next: 2.4, width: 0.13, core: 0.25 }
+
 // Deterministic PRNG: the same sky on every load.
 export function mulberry32(seed: number) {
   return () => {

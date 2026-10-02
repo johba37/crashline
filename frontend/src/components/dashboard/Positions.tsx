@@ -2,7 +2,7 @@ import { CaretDown, CheckCircle, Coins, FlagCheckered, Info, ShieldCheck, TrendD
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useAccount } from 'wagmi'
-import { UNIT, bestCase, crashPayout, date, level, observationsLeft, pct, usd, usdg } from '../../market/format.ts'
+import { UNIT, bestCase, crashPayout, date, level, observationsLeft, paused, pct, tradeAmounts, usd, usdg } from '../../market/format.ts'
 import { endedAt } from '../../market/positions.ts'
 import { FEE_BPS, FEE_RECEIVER, SLIPPAGE_BPS } from '../../market/settings.ts'
 import type { Position } from '../../market/types.ts'
@@ -59,9 +59,9 @@ function read(p: Position) {
     }
   }
 
-  // What selling it back today brings: the Desk's buying price.
+  // What selling it back today brings: the Desk's buying price, less the fee. The sale is held to this amount.
   const bid = cover ? s.coverBid : s.noteBid
-  const worth = bid.ok ? (amount * BigInt(bid.value)) / 10_000n : null
+  const worth = bid.ok ? tradeAmounts(cover ? 'sellCover' : 'sell', amount, bid.value, FEE_BPS).total : null
   // Each side carries its word and icon from step 2 of the buy flow (Protect, Earn). Cover reads
   // Protected at every stage but an early end; its colour and the sentence below say which stage.
   const status: Status = cover
@@ -81,7 +81,7 @@ function read(p: Position) {
     story = <>You earn {plus(weekly)} for every week. On {end} you get {plus(bestCase(s, amount))}, unless {sym} closes below {line} at a weekly check and stays down.{early}</>
   }
   return {
-    cover, ended, status, when: `Until ${end}`, figure: worth === null ? '—' : `${usdg(worth)} USDG`, figureLabel: 'Worth now', money: worth, quoteOk: bid.ok,
+    cover, ended, status, when: `Until ${end}`, figure: worth === null ? (paused(bid) ? 'Waiting for a price' : '—') : `${usdg(worth)} USDG`, figureLabel: 'Worth now', money: worth, quoteOk: bid.ok,
     story, action: worth === null ? null : `Sell now for ${usdg(worth)} USDG`,
   }
 }
@@ -107,7 +107,7 @@ function PendingRow({ pending: { series: s, side, stalled }, open, onReload }: {
   const card = useBroughtIntoView<HTMLDivElement>(open)
   return (
     <li>
-      <div ref={card} role="status" aria-busy={!stalled} className={`panel rounded-lg ${stalled ? '' : 'position-shimmer'}`}>
+      <div ref={card} role="status" aria-busy={!stalled} className={`panel panel-sheer rounded-lg ${stalled ? '' : 'position-shimmer'}`}>
         <div className="flex items-center gap-4 p-5">
           <TickerBadge symbol={s.symbol} />
           <span className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-6 gap-y-3">
@@ -151,17 +151,20 @@ function Row({ p, now, trade, active, open, onAct }: { p: Position; now: number;
   const r = read(p)
   const busy = active && ['quoting', 'approving', 'trading'].includes(trade.state.step)
   const bid = r.cover ? s.coverBid : s.noteBid
+  // A paused price comes back by itself. Until then the button stays, rests, and says that it
+  // waits; the notice above it says for what.
+  const wait = !r.ended && paused(bid)
 
   const act = () => {
     onAct()
     // A note that has ended is collected from the note itself; one that still runs is sold back to the Desk.
     const kind = r.ended ? (r.cover ? 'collectCover' : 'collect') : r.cover ? 'sellCover' : 'sell'
-    void trade.run({ series: s, kind, amount, slippageBps: SLIPPAGE_BPS, feeBps: FEE_BPS, feeReceiver: FEE_RECEIVER })
+    void trade.run({ series: s, kind, amount, shown: r.money ?? 0n, slippageBps: SLIPPAGE_BPS, feeBps: FEE_BPS, feeReceiver: FEE_RECEIVER })
   }
 
   return (
     <li>
-      <details ref={details} open={open} className="panel group rounded-lg">
+      <details ref={details} open={open} className="panel panel-sheer group rounded-lg">
         <summary className="flex cursor-pointer list-none items-center gap-4 rounded-lg p-5 [&::-webkit-details-marker]:hidden">
           <TickerBadge symbol={s.symbol} />
           <span className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-6 gap-y-3">
@@ -186,12 +189,18 @@ function Row({ p, now, trade, active, open, onAct }: { p: Position; now: number;
         <div className="flex flex-col gap-5 border-t border-line p-5">
           <p className="type-body text-ink">{r.story}</p>
           <PositionGraph s={s} side={side} path={p.path} now={now} />
-          {!r.ended && !bid.ok && <Notice status={refusalStatus(bid.refusal)} />}
-          {active && trade.state.step === 'failed' && trade.state.refusal && <Notice status={refusalStatus(trade.state.refusal)} />}
+          {!r.ended && !bid.ok && (
+            <Notice status={refusalStatus(bid.refusal, s)}>
+              {wait && <p className="type-body text-ink">{r.cover ? 'Your cover stays valid' : 'Your NOTE keeps earning'} in the meantime. Only selling it back has to wait.</p>}
+            </Notice>
+          )}
+          {active && trade.state.step === 'failed' && trade.state.refusal && <Notice status={refusalStatus(trade.state.refusal, s)} />}
           {active && trade.state.step === 'done' && (
             <Notice status={trade.state.hash ? confirmed : { ...confirmed, label: 'Practice run done', message: `This is the prototype, so nothing was ${r.ended ? 'collected' : 'sold'} and your wallet wasn’t asked for anything.` }} />
           )}
-          {r.action && (!isConnected ? (
+          {wait ? (
+            <button type="button" disabled className={BUTTON}>Waiting for a price to sell…</button>
+          ) : r.action && (!isConnected ? (
             <ConnectButton.Custom>
               {({ openConnectModal }) => (
                 <button type="button" onClick={openConnectModal} className={BUTTON}>Connect your wallet to {r.ended ? 'collect' : 'sell'}</button>
@@ -202,7 +211,7 @@ function Row({ p, now, trade, active, open, onAct }: { p: Position; now: number;
               {busy ? (trade.state.step === 'approving' ? 'Confirm in your wallet…' : r.ended ? 'Collecting…' : 'Selling…') : r.action}
             </button>
           ))}
-          {!r.ended && r.action && (
+          {!r.ended && (r.action || wait) && (
             <p className="type-label text-ink-muted">Selling is optional: you can also keep it until it ends.</p>
           )}
         </div>
@@ -258,7 +267,7 @@ export default function Positions({
       <>
         {closed}
         <Notice status={{ tone: 'neutral', icon: Info, label: 'You don’t hold anything yet', message: 'Once you buy cover or a NOTE, it shows up here.' }}>
-          <button type="button" onClick={onBuy} className="self-start type-label text-ink underline">Protect a stock or earn from it</button>
+          <button type="button" onClick={onBuy} className="self-start type-label text-ink underline">Protect a coin or stock, or earn from it</button>
         </Notice>
       </>
     )

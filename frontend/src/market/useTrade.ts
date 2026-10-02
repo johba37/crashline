@@ -12,9 +12,9 @@ import { chain, config } from '../wagmi'
 import { deskAbi, noteSeriesAbi } from './abi'
 import type { Deployment } from './deployments'
 import { decodeRefusal } from './errors'
+import { tradeLimit } from './format'
 import type { CollectKind, SeriesView, TradeKind, TradeState } from './types'
 
-const BPS = 10_000n
 // Writes name the chain, so a wallet that is still on another network fails instead of sending there.
 const chainId = chain.id
 
@@ -35,7 +35,8 @@ export type TradeParams = {
   series: SeriesView
   kind: TradeKind | CollectKind
   amount: bigint // NOTE or WRITER base units
-  slippageBps: number // the three below are the Desk's: collecting has no price and no fee
+  shown: bigint // the cost or the proceeds on screen, in USDG base units: what the order is held to
+  slippageBps: number // these four are the Desk's: collecting has no price and no fee
   feeBps: number
   feeReceiver: Address
 }
@@ -138,10 +139,14 @@ export function useTrade(deployment: Deployment | null): {
           chainId,
         })
         if (left()) return
-        const slippage = BigInt(p.slippageBps)
-        const limit = isBuy
-          ? (quoted * (BPS + slippage) + BPS - 1n) / BPS // maxCost, rounded up
-          : (quoted * (BPS - slippage)) / BPS // minProceeds, rounded down
+        // maxCost or minProceeds, counted from the amount on screen and not from the price read
+        // just now: the screen can be a read behind, and a weekly check in between moves the
+        // price a lot. Past the limit the order stops here, before the wallet is asked.
+        const limit = tradeLimit(isBuy, p.shown, p.slippageBps)
+        if (isBuy ? quoted > limit : quoted < limit) {
+          set({ step: 'failed', refusal: { error: 'Slippage', args: [] } })
+          return
+        }
 
         // Buys pay USDG; sells hand in the leg they sell.
         const token = kind === 'sell' ? series.note : kind === 'sellCover' ? series.writer : usdg

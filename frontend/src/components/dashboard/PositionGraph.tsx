@@ -69,24 +69,30 @@ export default function PositionGraph({ s, side, path, now }: {
   const checks = Array.from({ length: s.terms.observationCount }, (_, k) => s.terms.strikeTime + (k + 1) * s.terms.observationInterval)
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="relative" style={{ height: HEIGHT }}>
+    // On a ground of its own, darker than the card and with a rim: one picture, apart from the text around it.
+    // On a phone it reaches into the card’s padding, so the plot keeps its width.
+    <div className="-mx-3 grid grid-cols-[max-content_minmax(0,1fr)] gap-y-2 rounded-md bg-plot p-3 shadow-[inset_0_0_0_1px_var(--color-line)] sm:mx-0 sm:p-4">
+      {/* The price column is as wide as its longest price, so the graph starts as close to the left edge as it ends at the right one. */}
+      <div aria-hidden="true" className="invisible h-0 pr-3 type-data whitespace-nowrap">
+        {labels.map((l) => <span key={l.key} className="block">{usd(l.price)}</span>)}
+      </div>
+      <div className="relative col-start-2" style={{ height: HEIGHT }}>
         <div
           role="img"
           aria-label={`${s.symbol} since ${date(s.terms.strikeTime)}: started at ${usd(start)}${last ? `, ${ended ? 'ended at' : 'now'} ${usd(last.price)}` : ''}. Crash line at ${usd(crash)}, ${hit ? 'crossed' : 'not crossed'}.`}
           className="absolute inset-0"
         >
           {/* Below the crash line: where the cover pays, or where the money is at risk. */}
-          <div aria-hidden="true" className="absolute right-0 bottom-0 left-24 rounded-b-md bg-accent-soft" style={{ top: yCrash }} />
+          <div aria-hidden="true" className="absolute inset-x-0 bottom-0 rounded-b-md bg-accent-soft" style={{ top: yCrash }} />
           {/* The price axis. */}
-          <span aria-hidden="true" className="absolute top-0 bottom-0 left-24 w-px bg-line-strong" />
+          <span aria-hidden="true" className="absolute inset-y-0 left-0 w-px bg-line-strong" />
           {labels.map((l, i) => (
-            <span key={l.key} className="absolute right-[calc(100%-5.25rem)] -translate-y-1/2 type-data whitespace-nowrap text-ink" style={{ top: (down[i] + up[i]) / 2 }}>
+            <span key={l.key} className="absolute right-full mr-3 -translate-y-1/2 type-data whitespace-nowrap text-ink" style={{ top: (down[i] + up[i]) / 2 }}>
               {usd(l.price)}
             </span>
           ))}
 
-          <div className="absolute inset-y-0 right-0 left-24">
+          <div className="absolute inset-0">
             <span aria-hidden="true" className="absolute inset-x-0 border-t border-dashed border-line-strong" style={{ top: yStart }} />
             <span aria-hidden="true" className="absolute inset-x-0 border-t-2 border-accent" style={{ top: yCrash }} />
             {last && (
@@ -122,7 +128,7 @@ export default function PositionGraph({ s, side, path, now }: {
           </span>
         )}
         {/* A note that has ended says what did happen at the line, one that runs what does or would. */}
-        <p className="absolute right-2 bottom-2 left-27 type-label text-ink">
+        <p className="absolute right-2 bottom-2 left-3 type-label text-ink">
           {ended && !hit ? `${s.symbol} never closed below this line at a weekly check.` : (
             <>
               {hit ? `${s.symbol} closed below this line` : 'Below this line at a weekly check'}:{' '}
@@ -133,7 +139,7 @@ export default function PositionGraph({ s, side, path, now }: {
       </div>
 
       {/* The time axis: the note's start to its end date, one mark per weekly check. */}
-      <div className="ml-24">
+      <div className="col-start-2">
         <div aria-hidden="true" className="relative h-3 border-t border-line-strong">
           {checks.map((time) => (
             <span key={time} className={`absolute top-0 h-1.5 w-px ${time <= now ? 'bg-ink' : 'bg-line-strong'}`} style={{ left: `${x(time) * 100}%` }} />

@@ -12,15 +12,15 @@ import Section from './Section.tsx'
 const NEXT = [
   {
     title: 'The live network',
-    text: 'After an outside review, everything moves to Robinhood Chain’s main network: real stock prices, small limits at first.',
+    text: 'After an outside review, everything moves to Robinhood Chain’s main network: real prices, small limits at first.',
   },
   {
-    title: 'Adding a stock',
-    text: 'A new stock needs only a price feed and a place at the Desk, not a new model.',
+    title: 'Adding a coin or stock',
+    text: 'A new one needs only a price feed and a place at the Desk, not a new model.',
   },
   {
     title: 'A note that never ends',
-    text: 'No end date: one Earn and one Protect token per stock, paying out a little at every weekly check.',
+    text: 'No end date: one Earn and one Protect token per coin or stock, paying out a little at every weekly check.',
     link: { href: GITHUB.perpetualNote, label: 'Read the perpetual note design' },
   },
 ]

@@ -21,7 +21,7 @@ import TickerBadge from '../components/dashboard/TickerBadge.tsx'
 import { refusalStatus, seriesStatus } from '../components/dashboard/status.ts'
 import EarnRate from '../components/landing/EarnRate.tsx'
 import InfoTip from '../components/Tooltip.tsx'
-import { UNIT, bestCase, date, fromFeed, parseAmount, roomFor, soldOut, span, toUnits, tradeAmounts, trigger, usd, usdg, wholeUsdg } from '../market/format.ts'
+import { UNIT, bestCase, date, fromFeed, parseAmount, paused, roomFor, soldOut, span, toUnits, tradeAmounts, trigger, usd, usdg, wholeUsdg } from '../market/format.ts'
 import { FEE_BPS } from '../market/settings.ts'
 import type { SeriesView } from '../market/types.ts'
 import { useMarket } from '../market/useMarket.ts'
@@ -30,9 +30,10 @@ import { usePracticeTrade } from '../market/usePracticeTrade.ts'
 import { type LateTrade, useTrade } from '../market/useTrade.ts'
 import { API_URL } from '../wagmi.ts'
 import Logo from '../components/Logo.tsx'
+import Starfield from '../components/Starfield.tsx'
 import Wordmark from '../components/Wordmark.tsx'
 
-const NAMES: Record<string, string> = { TSLA: 'Tesla', NVDA: 'Nvidia', AAPL: 'Apple' }
+const NAMES: Record<string, string> = { TSLA: 'Tesla', NVDA: 'Nvidia', AAPL: 'Apple', ETH: 'Ethereum' }
 
 /** What a trade did, in the order form's words: "bought cover for 1,000.00 USDG of TSLA". */
 const did = ({ kind, amount, series }: LateTrade) => {
@@ -123,11 +124,16 @@ export default function AppPage() {
   const goal: Goal | undefined = stock && (goalParam === 'protect' || goalParam === 'earn') ? goalParam : undefined
   // The levels: notes on this stock with a price for the chosen side, from the deepest crash line up.
   // A sold-out note has no such price but stays a choice: whoever holds it sells it back in step 6.
-  const stops = notes
-    .filter((s) => ((goal === 'earn' ? s.noteAsk : s.coverAsk).ok || soldOut(s, goal === 'earn')) && s.spot !== null)
-    .sort((a, b) => (trigger(a).move ?? 0) - (trigger(b).move ?? 0))
+  // So does the picked note while its price is paused (around a weekly check, or without a fresh
+  // feed price): the order she put together stays open and step 6 says what it waits for.
+  const ask = (s: SeriesView) => (goal === 'earn' ? s.noteAsk : s.coverAsk)
   // The note is chosen in two steps, how long (?time=) and then the level (?series=), and neither has a default.
   const picked = notes.find((s) => s.address === params.get('series'))
+  const stops = notes
+    .filter((s) => (ask(s).ok || soldOut(s, goal === 'earn') || (s === picked && paused(ask(s)))) && s.spot !== null)
+    .sort((a, b) => (trigger(a).move ?? 0) - (trigger(b).move ?? 0))
+  // With nothing to choose from, step 4 says why: the Desk's answer for the first note, which also knows its own pause before a weekly check.
+  const firstAsk = notes[0] && ask(notes[0])
   const chosen = picked && stops.includes(picked) ? picked : undefined
   const detail = picked ?? chosen ?? notes[0]
   const spot = notes.find((s) => s.spot)?.spot
@@ -141,7 +147,7 @@ export default function AppPage() {
   const levels = stops.filter((s) => left(s) === chosenSpan)
   // A note in money, for the amount entered: what the cover costs (Protect), or the most it can earn (Earn).
   const money = (s: SeriesView) => {
-    const price = goal === 'earn' ? s.noteAsk : s.coverAsk
+    const price = ask(s)
     if (!price.ok) return null
     const cost = tradeAmounts(goal === 'earn' ? 'buy' : 'buyCover', amount, price.value, FEE_BPS).total
     return goal === 'earn' ? bestCase(s, amount) - cost : cost
@@ -162,6 +168,9 @@ export default function AppPage() {
   // The usual pattern, said only while the choices on screen follow it. A sold-out length has no figure to compare.
   const spanMoney = spans.map(best).filter((m) => m !== null)
   const longerIsMore = spanMoney.every((m, i) => i === 0 || m >= spanMoney[i - 1])
+  // A length without a figure is sold out, unless it is the picked note waiting for its price.
+  const onHold = chosen !== undefined && paused(ask(chosen))
+  const soldOutSpans = spans.filter((label) => best(label) === null && !(onHold && label === chosenSpan)).length
   // Cover on one stock is limited (the Desk's risk budget and its free USDG), which prices don't check: say so where the amount is entered.
   // No note is picked yet, so the amount is held against the note with the most room (none: no limit to name).
   const rooms = market ? notes.filter((s) => s.coverAsk.ok).map((s) => roomFor(s, 'buyCover', market)) : []
@@ -170,12 +179,17 @@ export default function AppPage() {
   const ready = !!goal && entered !== null // steps 1 to 3 are answered
 
   return (
-    <div className="min-h-dvh bg-horizon text-ink">
-      <header className="sticky top-[max(0.75rem,env(safe-area-inset-top))] z-(--z-nav) px-4 sm:px-6">
-        <nav className="glass-strong mx-auto mt-3 flex h-14 max-w-3xl items-center justify-between gap-4 rounded-full pr-2 pl-5">
+    <div className="relative isolate min-h-dvh text-ink">
+      {/* The landing page's night sky, without a hero: as tall as the page and scrolling with it, under a
+          ground that dims it more than the landing's (bg-sky-veil-app; solid in the light theme). */}
+      <Starfield className="pointer-events-none absolute inset-0 -z-10 overflow-hidden bg-surface" />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-sky-veil-app" />
+      {/* The capsule is as wide as the landing page's (max-w-app with the landing's side padding), not as the column below. */}
+      <header className="sticky top-[max(0.75rem,env(safe-area-inset-top))] z-(--z-nav) px-4 sm:px-6 lg:px-8">
+        <nav className="glass-strong mx-auto mt-3 flex h-14 max-w-app items-center justify-between gap-4 rounded-full pr-2 pl-5">
           <Link to="/" className="inline-flex items-center gap-2 text-ink">
             <Logo className="h-6 w-auto" />
-            <Wordmark />
+            <Wordmark large />
           </Link>
           <div className="hidden shrink-0 md:block">{tabs}</div>
           <div className="flex min-w-0 items-center">
@@ -196,11 +210,11 @@ export default function AppPage() {
           <div className="ml-auto">{testSwitch}</div>
         </div>
         <div className="mb-2 flex flex-col gap-2">
-          <h1 className="type-title text-ink">{view === 'positions' ? 'My positions' : 'Protect a stock, or earn from it'}</h1>
+          <h1 className="type-title text-ink">{view === 'positions' ? 'My positions' : 'Protect a coin or stock, or earn from it'}</h1>
           <p className="type-body-lg text-ink-muted">
             {view === 'positions'
               ? 'What you hold, what it’s worth today, and what happens next. Open one to see its price so far and what you can do.'
-              : 'Worried that a stock you hold could crash? Insure it here: you pay once, and you get paid if it crashes. Or take the other side and earn a weekly income. You see what you pay and what you can get back before you buy anything.'}
+              : 'Worried that a coin or stock you hold could crash? Insure it here: you pay once, and you get paid if it crashes. Or take the other side and earn a weekly income. You see what you pay and what you can get back before you buy anything.'}
           </p>
         </div>
 
@@ -232,9 +246,9 @@ export default function AppPage() {
 
         {view === 'buy' && market && stocks.length > 0 && (
           <>
-            <Step n={1} title="Pick a stock" state={stock ? 'done' : 'current'}>
+            <Step n={1} title="Pick a coin or stock" state={stock ? 'done' : 'current'}>
               <ChoiceCards
-                label="Stock"
+                label="Coin or stock"
                 value={stock}
                 onChange={(v) => set({ stock: v })}
                 choices={stocks.map((sym) => {
@@ -243,11 +257,11 @@ export default function AppPage() {
                 })}
               />
               {stocks.length === 1 && (
-                <p className="type-label text-ink-muted">Only {NAMES[stocks[0]] ?? stocks[0]} is set up on the test network for now. More stocks can be added.</p>
+                <p className="type-label text-ink-muted">Only {NAMES[stocks[0]] ?? stocks[0]} is set up on the test network for now. More coins and stocks can be added.</p>
               )}
             </Step>
 
-            <Step n={2} title="What do you want to do?" state={!stock ? 'upcoming' : goal ? 'done' : 'current'} hint="First pick a stock.">
+            <Step n={2} title="What do you want to do?" state={!stock ? 'upcoming' : goal ? 'done' : 'current'} hint="First pick a coin or stock.">
               <ChoiceCards
                 label="What you want to do"
                 value={goal}
@@ -301,7 +315,7 @@ export default function AppPage() {
                       ? `Right now, at most ${wholeUsdg(room)} USDG of ${stock} can be protected. Enter a smaller amount.`
                       : undefined}
                   helper={goal === 'protect'
-                    ? `${spot && entered !== null ? `That’s about ${(toUnits(amount) / fromFeed(spot)).toLocaleString(undefined, { maximumFractionDigits: 2 })} ${stock} shares at today’s ${usd(spot)}. ` : spot ? `One ${stock} share is ${usd(spot)} today. ` : ''}The cover pays out in USDG. Your shares stay where they are.`
+                    ? `${spot && entered !== null ? `That’s about ${(toUnits(amount) / fromFeed(spot)).toLocaleString(undefined, { maximumSignificantDigits: 3 })} ${stock} at today’s ${usd(spot)}. ` : spot ? `One ${stock} is ${usd(spot)} today. ` : ''}The cover pays out in USDG. Your ${stock} stays where it is.`
                     : `You get it back when the note ends, plus the weekly income, unless ${stock} crashes.`}
                 />
               )}
@@ -315,8 +329,8 @@ export default function AppPage() {
               {goal && ready && picked && !stops.includes(picked) && (
                 <Notice status={{ ...seriesStatus(picked), label: 'The one you picked is paused right now', message: 'It has no price at the moment. The ones below can be bought now.' }} />
               )}
-              {goal && ready && stops.length === 0 && notes[0] && (
-                <Notice status={notes[0].mid.ok ? refusalStatus({ error: 'NotLive', args: [] }) : refusalStatus(notes[0].mid.refusal)} />
+              {goal && ready && stops.length === 0 && firstAsk && (
+                <Notice status={refusalStatus(firstAsk.ok ? { error: 'NotLive', args: [] } : firstAsk.refusal, notes[0])} />
               )}
               {goal && ready && stops.length > 0 && (
                 <>
@@ -331,18 +345,18 @@ export default function AppPage() {
                       return {
                         value: label,
                         title: label,
-                        aside: m === null ? 'Sold out' : `${goal === 'earn' ? 'Earn up to' : several(label) ? 'From' : 'Costs'} ${usdg(m)} USDG`,
+                        aside: m === null ? (soldOut(s, goal === 'earn') ? 'Sold out' : 'No price right now') : `${goal === 'earn' ? 'Earn up to' : several(label) ? 'From' : 'Costs'} ${usdg(m)} USDG`,
                         body: `Until ${date(s.state.maturity)}${s.state.knockedIn ? (goal === 'protect' ? ', already switched on' : ', already in a crash') : ''}`,
                       }
                     })}
                   />
                   <p className="type-label text-ink-muted">
                     {spanMoney.length === 0
-                      ? `Every ${stock} note is sold out right now.`
+                      ? soldOutSpans === spans.length ? `Every ${stock} note is sold out right now.` : 'The one you picked has no price right now: the last step says why, and when it’s back.'
                       : goal === 'protect'
                         ? `The cost is what you pay now, once, to protect ${usdg(amount, 0)} USDG of ${stock}. ${longerIsMore ? 'Longer cover costs more, because there’s more time for a crash.' : `It also depends on how far ${stock} has to fall, which is the next step.`}`
                         : `That’s the most your ${usdg(amount, 0)} USDG can earn by the end date. ${longerIsMore ? 'A longer note pays more weeks of income.' : `It also depends on how far ${stock} can fall, which is the next step.`}`}{' '}
-                    {spanMoney.length < spans.length && `Sold out means there’s none left to buy. Pick it only if you hold some and want to sell it back. `}
+                    {soldOutSpans > 0 && `Sold out means there’s none left to buy. Pick it only if you hold some and want to sell it back. `}
                     {goal === 'protect' && spans.some(several) && `“From” is the cheapest choice in the next step. `}
                     {spans.length === 1 && `Only one end date is open for ${stock} right now. `}
                     It can <Term t="endsEarly">end early</Term> if {stock} goes up: the last step shows when.
@@ -388,7 +402,7 @@ export default function AppPage() {
                 <Disclosure title="This note’s calendar" hint={`The ${stock} note that started ${date(detail.terms.strikeTime)}: its prices in dollars and its weekly checks`}>
                   <Calendar s={detail} now={market.now} />
                 </Disclosure>
-                <Disclosure title="Everything that’s open" hint={`Every note on every stock, with what ${usdg(detailAmount, 0)} USDG costs, including the ones paused right now`}>
+                <Disclosure title="Everything that’s open" hint={`Every note on every coin and stock, with what ${usdg(detailAmount, 0)} USDG costs, including the ones paused right now`}>
                   <MarketList series={all} selected={detail.address} amount={detailAmount} />
                 </Disclosure>
               </div>

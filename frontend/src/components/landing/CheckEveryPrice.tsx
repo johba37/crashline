@@ -22,7 +22,7 @@ const CHECKS = [
   },
   {
     title: 'Where it may answer',
-    text: 'Only where its accuracy was measured: the stock between 50% and 120% of its starting price, for calm to very jumpy stocks.',
+    text: 'Only where its accuracy was measured: the price between 50% and 120% of the starting price, for calm to very jumpy coins and stocks.',
   },
   {
     title: 'When it refuses',
@@ -63,8 +63,8 @@ export default function CheckEveryPrice() {
           <h3 className="type-heading text-ink">How far off it can be</h3>
           <p className="mt-4 type-readout text-ink">0.38%</p>
           <p className="mt-2 type-body text-ink-muted">
-            of the stock value a note covers, at most, compared with the simulation: 3.80 USDG on 1,000 USDG of
-            stock. On average it is 0.03% off.
+            of the value a note covers, at most, compared with the simulation: 3.80 USDG on 1,000 USDG covered. On
+            average it is 0.03% off.
           </p>
           {/* Caption plate (spec patterns.captionPlate). */}
           <div className="mt-6">
@@ -72,7 +72,7 @@ export default function CheckEveryPrice() {
             <div className="my-3 max-w-md border-t border-line" />
             <p className="type-caption text-info">
               This shows how well the model copies the simulation, not whether the simulation is right about real
-              stocks.
+              prices.
             </p>
           </div>
         </div>

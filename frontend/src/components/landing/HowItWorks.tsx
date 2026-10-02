@@ -3,7 +3,7 @@ import EarnRate from './EarnRate.tsx'
 import FlowMap from './FlowMap.tsx'
 import Section from './Section.tsx'
 
-// The page speaks about any stock; one note is the worked example, and only here: TSLA,
+// The page speaks about any coin or stock; one note is the worked example, and only here: TSLA,
 // 26 weekly checks, the end one week after the last (27 weeks, "six months"), crash line 60%, ends
 // early at 100%, weekly income 0.25% (25 bps), for 1,000 USDG of the stock. The income is this
 // note's own: other notes will pay other rates, so outside the example the rate is a range over
@@ -89,7 +89,7 @@ export default function HowItWorks() {
           <span className="whitespace-nowrap">
             <ShieldCheck size={20} weight="duotone" aria-hidden="true" className="inline align-[-0.15em] text-protect" /> Protect
           </span>{' '}
-          your stock: pay once, and if it crashes, you are paid what it lost.{' '}
+          your coin or stock: pay once, and if it crashes, you are paid what it lost.{' '}
           <span className="whitespace-nowrap">
             <Coins size={20} weight="duotone" aria-hidden="true" className="inline align-[-0.15em] text-earn" /> Earn
           </span>{' '}

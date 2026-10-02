@@ -36,7 +36,7 @@ export default function NavBar({ revealAfter }: { revealAfter: RefObject<HTMLEle
     <header
       data-visible={visible || undefined}
       inert={!visible}
-      className="fixed inset-x-0 top-[max(0.75rem,env(safe-area-inset-top))] z-(--z-nav) -translate-y-4 px-4 opacity-0 transition-[translate,opacity] duration-160 ease-in sm:px-6 data-visible:translate-y-0 data-visible:opacity-100 data-visible:duration-(--duration-spring-smooth) data-visible:ease-spring-smooth"
+      className="fixed inset-x-0 top-[max(0.75rem,env(safe-area-inset-top))] z-(--z-nav) -translate-y-4 px-4 opacity-0 transition-[translate,opacity] duration-160 ease-in sm:px-6 lg:px-8 data-visible:translate-y-0 data-visible:opacity-100 data-visible:duration-(--duration-spring-smooth) data-visible:ease-spring-smooth"
     >
       <nav
         aria-label="Main"
@@ -45,7 +45,7 @@ export default function NavBar({ revealAfter }: { revealAfter: RefObject<HTMLEle
         <a href="#top" className="inline-flex items-center gap-2 text-ink">
           <Logo className="h-6 w-auto" />
           <span className="translate-y-px">
-            <Wordmark />
+            <Wordmark large />
           </span>
         </a>
         <ul className="ml-auto hidden items-center gap-1 md:flex">
