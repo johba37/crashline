@@ -1,0 +1,105 @@
+/* The sky's two loops, both compositor-only (transform and opacity), so nothing repaints:
+   the Milky Way drifts very slowly behind the stars, and a few stars twinkle.
+   Reduced motion leaves both at rest. The sky is part of the page and scrolls with it. */
+
+@layer components {
+/* The landing hero ends by fading into the ground below it (--page-veil): in the dark theme the
+   veil that dims the sky, in the light theme the silver page. Eased rather than linear, so the
+   fade has no visible start or end band. */
+.sky-fade {
+  background: linear-gradient(to bottom, transparent,
+    color-mix(in oklab, var(--page-veil) 8%, transparent) 25%,
+    color-mix(in oklab, var(--page-veil) 25%, transparent) 45%,
+    color-mix(in oklab, var(--page-veil) 55%, transparent) 65%,
+    color-mix(in oklab, var(--page-veil) 85%, transparent) 85%,
+    var(--page-veil));
+}
+
+/* The stage (the hero) in detail: it reaches --sky-handover past the hero's bottom edge and fades
+   out over that stretch, into the page's sky underneath. */
+.starfield-stage {
+  position: absolute;
+  inset: 0 0 auto;
+  height: calc(var(--stage-h, 100lvh) + var(--sky-handover));
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - var(--sky-handover)), transparent);
+  mask-image: linear-gradient(to bottom, black calc(100% - var(--sky-handover)), transparent);
+}
+/* The rest of the page: repeating star tiles that fade in where the stage fades out, and twinkles. */
+.starfield-rest {
+  position: absolute;
+  inset: var(--stage-h, 100lvh) 0 0;
+}
+.starfield-tiles {
+  position: absolute;
+  inset: 0;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black var(--sky-handover));
+  mask-image: linear-gradient(to bottom, transparent, black var(--sky-handover));
+}
+/* In the light theme the page's ground is solid, so the sky below the stage is never seen. */
+:root[data-theme="light"] .starfield-rest {
+  display: none;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .starfield-rest {
+    display: none;
+  }
+}
+
+/* --sky-margin larger than the box on every side; the drift stays inside that margin. */
+.starfield-sky {
+  position: absolute;
+  left: calc(-1 * var(--sky-margin));
+  top: calc(-1 * var(--sky-margin));
+  width: calc(100% + 2 * var(--sky-margin));
+  height: calc(100% + 2 * var(--sky-margin));
+  animation: starfield-sky 60s var(--ease-in-out) infinite;
+}
+
+.star-twinkle {
+  position: absolute;
+  left: var(--x-sm);
+  top: var(--y-sm);
+  width: var(--size);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 calc(var(--size) * 2) color-mix(in oklab, currentColor 60%, transparent);
+  opacity: var(--alpha);
+  animation: star-twinkle var(--duration) var(--ease-in-out) var(--delay) infinite both;
+}
+@media (min-width: 1024px) {
+  .star-twinkle {
+    left: var(--x-lg);
+    top: var(--y-lg);
+  }
+}
+/* The 4-point flare of 70s space illustration, as on the canvas's brightest stars. */
+.star-flare::before,
+.star-flare::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+}
+.star-flare::before {
+  width: calc(var(--size) * 7);
+  height: 1px;
+  background: linear-gradient(to right, transparent, currentColor, transparent);
+}
+.star-flare::after {
+  width: 1px;
+  height: calc(var(--size) * 7);
+  background: linear-gradient(to bottom, transparent, currentColor, transparent);
+}
+}
+
+/* Along the band (down-left, then back), 0.8 and 0.4 of the margin. */
+@keyframes starfield-sky {
+  50% { translate: calc(var(--sky-margin) * -0.8) calc(var(--sky-margin) * 0.4); }
+}
+/* Rest bright for half the cycle, then dim and shrink, and come back. */
+@keyframes star-twinkle {
+  0%, 50%, 100% { opacity: var(--alpha); scale: 1; }
+  75% { opacity: calc(var(--alpha) * 0.15); scale: 0.5; }
+}

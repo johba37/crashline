@@ -1,0 +1,94 @@
+/* Landing hero art: the ship glides in, shards burst from the impact point, and the shield
+   shimmers from 500ms, then every 5s. Every animation ends in the resting frame;
+   reduced motion jumps straight there.
+   In the components layer so Tailwind utilities on the same element (lg:absolute etc.) win. */
+
+@layer components {
+.hero-art {
+  position: relative;
+  container-type: inline-size;
+  /* Where the shield meets the shard wall, as a fraction of the art box. */
+  --impact-x: 88%;
+  --impact-y: 66.5%;
+  /* The shield as an ellipse fitted to its outer shell: centre, size and tilt, % of the art box. */
+  --shield-x: 51.6%;
+  --shield-y: 59.9%;
+  --shield-w: 88.5%;
+  --shield-h: 30.7%;
+  --shield-angle: 27.8deg;
+  animation: hero-glide var(--duration-spring-glide) var(--ease-spring-glide) both;
+}
+@media (min-width: 768px) {
+  .hero-art {
+    --impact-x: 85%;
+    --impact-y: 72%;
+    --shield-x: 55.7%;
+    --shield-y: 50.8%;
+    --shield-w: 61.3%;
+    --shield-h: 78%;
+    --shield-angle: 15.9deg;
+  }
+}
+
+.hero-sheen {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  -webkit-mask: var(--mask-mobile) center / 100% 100% no-repeat;
+  mask: var(--mask-mobile) center / 100% 100% no-repeat;
+}
+@media (min-width: 768px) {
+  .hero-sheen {
+    -webkit-mask-image: var(--mask-desktop);
+    mask-image: var(--mask-desktop);
+  }
+}
+/* Inside .hero-sheen, so it shares the art mask and the screen blend. The oval fades out at its
+   edge and is brighter on the rim than over the hull, like light catching curved glass. */
+.hero-shield {
+  position: absolute;
+  left: calc(var(--shield-x) - var(--shield-w) / 2);
+  top: calc(var(--shield-y) - var(--shield-h) / 2);
+  width: var(--shield-w);
+  height: var(--shield-h);
+  rotate: var(--shield-angle);
+  -webkit-mask: radial-gradient(closest-side, rgb(0 0 0 / 0.4) 55%, black 85%, transparent);
+  mask: radial-gradient(closest-side, rgb(0 0 0 / 0.4) 55%, black 85%, transparent);
+}
+/* Sweeps along the shield in the first 1.5s of every 5s, the first time 500ms after load. */
+.hero-shield-band {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 35%;
+  background: linear-gradient(100deg, transparent, var(--color-glass-highlight), transparent);
+  transform: translateX(-100%);
+  animation: hero-shimmer 5s var(--ease-in-out) 500ms infinite both;
+}
+
+.hero-shard {
+  position: absolute;
+  left: var(--impact-x);
+  top: var(--impact-y);
+  width: calc(var(--size) * 1cqw);
+  aspect-ratio: 1;
+  transform: translate(calc(var(--dx) * 1cqw), calc(var(--dy) * 1cqw)) rotate(var(--rotate));
+  animation: hero-shard 900ms var(--ease-out) var(--delay) both;
+}
+}
+
+@keyframes hero-glide {
+  from { transform: translateX(-3%); }
+}
+@keyframes hero-shimmer {
+  from { transform: translateX(-100%); }
+  30%, to { transform: translateX(300%); }
+}
+@keyframes hero-shard {
+  from {
+    transform: translate(0, 0) rotate(0deg) scale(0.3);
+    opacity: 0;
+  }
+}

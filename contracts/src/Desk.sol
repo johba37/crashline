@@ -119,7 +119,7 @@ contract Desk is IDeskCover, IDeskQueue, ERC4626, Ownable, ReentrancyGuard {
     mapping(address owner => uint256) public claimableAssets;
 
     constructor(IERC20 usdg, ISeriesFactory factory_, INoteQuoter quoter_, address owner_, uint32 minSecs)
-        ERC20("Surrogate Pricer Desk", "spDESK")
+        ERC20("Crashline Desk", "clDESK")
         ERC4626(usdg)
         Ownable(owner_)
     {

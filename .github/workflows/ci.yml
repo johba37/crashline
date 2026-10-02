@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  contracts:
+    name: Solidity (forge test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: foundry-rs/foundry-toolchain@v1
+      - name: forge test
+        working-directory: contracts
+        run: forge test -vv
+
+  stylus-model:
+    name: Stylus model (golden vectors)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the pinned Rust toolchain (rust-toolchain.toml)
+        run: rustup toolchain install 1.91.0 --profile minimal --target wasm32-unknown-unknown
+      - name: cargo test (default model, model/k2)
+        working-directory: stylus/pricer-model
+        run: cargo test --locked
+      - name: cargo test (model/k1-r1)
+        working-directory: stylus/pricer-model
+        env:
+          PRICER_MODEL_DIR: ../../model/k1-r1
+        run: cargo test --locked
+      - name: cargo test (synthetic model)
+        working-directory: stylus/pricer-model
+        env:
+          PRICER_MODEL_DIR: ../../model/synthetic
+        run: cargo test --locked

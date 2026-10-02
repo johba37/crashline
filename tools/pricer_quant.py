@@ -1,4 +1,4 @@
-"""Integer reference for the Surrogate Pricer student (featureSpecVersion 1).
+"""Integer reference for the Crashline student (featureSpecVersion 1).
 
 This module is the bit-exact definition of what the Stylus contract computes.
 Anything the contract does must be reproducible here with plain integers, and

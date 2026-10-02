@@ -1,5 +1,5 @@
 [Unit]
-Description=Surrogate Pricer: reset the dev node to a fresh chain with the default scenario
+Description=Crashline: reset the dev node to a fresh chain with the default scenario
 Documentation=file://@ROOT@/docs/backend.md
 After=sp-devnode.service sp-backend.service
 

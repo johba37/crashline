@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI):
     SERVICE.stop()
 
 
-app = FastAPI(title="Surrogate Pricer backend", lifespan=lifespan)
+app = FastAPI(title="Crashline backend", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 app.include_router(api_catalog.router)
 app.include_router(api_accounts.router)

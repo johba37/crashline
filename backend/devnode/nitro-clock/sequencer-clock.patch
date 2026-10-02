@@ -4,7 +4,7 @@ index 0000000..f6245a2
 --- /dev/null
 +++ b/execution/gethexec/devclock.go
 @@ -0,0 +1,42 @@
-+// DEV ONLY (SurrogatePricer dev clock patch, not part of upstream Nitro).
++// DEV ONLY (Crashline dev clock patch, not part of upstream Nitro).
 +//
 +// Lets a local --dev node stamp blocks in the future so time-based contracts
 +// (weekly observations, maturities) can be exercised in a test run. The
@@ -55,7 +55,7 @@ index 85e6050..3bf8580 100644
  	}
  
 -	timestamp := time.Now().Unix()
-+	timestamp := time.Now().Unix() + devClockOffset() // DEV ONLY: SurrogatePricer dev clock patch, see devclock.go
++	timestamp := time.Now().Unix() + devClockOffset() // DEV ONLY: Crashline dev clock patch, see devclock.go
  	s.L1BlockAndTimeMutex.Lock()
  	l1Block := s.l1BlockNumber.Load()
  	l1Timestamp := s.l1Timestamp
