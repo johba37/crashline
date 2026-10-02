@@ -10,6 +10,8 @@
 #   contracts/script/curator.sh deposit 500            # 4. USDG into the Desk, in whole USDG (any wallet)
 #   contracts/script/curator.sh push <feed> 212.50     # daily: a price in USD; quotes stop 26 h after the last
 #   contracts/script/curator.sh fixing <series>        # after each observation: record its fixing
+#   contracts/script/curator.sh keep                   # hourly: real prices, due fixings, a successor for each ended series
+#   contracts/script/curator.sh delist <series>        # no more buys of it at the Desk; sells stay (the Desk's owner)
 #
 # WALLET holds cast's wallet flags, for every command but status:
 #   WALLET="--account curator --password-file $HOME/.curator-pass"   # a keystore: `cast wallet import curator --interactive`
@@ -23,13 +25,23 @@
 # where it stopped (the strike is read back from the feed's first round).
 # `fixing` takes the last round at or before the observation (at most 96 h old), else the
 # first round after it (FixingsRecorder's rule).
+# `keep` is one round over the Desk's active listings: each of their feeds gets the price of
+# its real feed (SOURCES, by the name in the feed's description) as a new round, each
+# observation that has passed its fixing, and each series that has ended a successor: the
+# same terms, struck at the time the old one ended (a fixing that is recorded already),
+# listed as the old one is. It does what the wallet may: a feed takes prices from its owner
+# only and the Desk lists for its owner only, while anyone records fixings and creates
+# series. What it couldn't do it says, and then exits 1. From cron:
+#   0 * * * * WALLET="--account curator --password-file $HOME/.curator-pass" <repo>/contracts/script/curator.sh keep >>$HOME/curator-keep.log 2>&1
 #
 # Env: RPC (https://rpc.testnet.chain.robinhood.com), DEPLOYMENTS (<repo>/deployments/46630.json);
 #      stage: INITIAL_USD (250), PATH_BPS ("9400 8800 5500 7200 8100 8600 9100 8300 8700 9000"),
 #             SPOT_BPS (8500), NEXT_OBS (unix time; default LEAD_SECS, 3 days, from now),
 #             KI (6000), AC (10000), COUPON (25), COUNT (26), INTERVAL (604800: the Desk lists weekly series only);
 #      list:  VOL (5500), VOL_BAND (200), BID_BPS (20), ASK_BPS (30), CAP (100000 NOTE),
-#             RISK_BUDGET_BPS (2000).
+#             RISK_BUDGET_BPS (2000);
+#      keep:  SOURCE_RPC (https://rpc.mainnet.chain.robinhood.com), SOURCES ("NAME=feed ..": the
+#             Chainlink feeds of RHTSLA, RHNVDA, ETH and BTC on Robinhood Chain mainnet).
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)" # contracts/
@@ -39,10 +51,14 @@ CAST="${CAST:-$(command -v cast || echo "$HOME/.foundry/bin/cast")}"
 RPC="${RPC:-https://rpc.testnet.chain.robinhood.com}"
 DEPLOYMENTS="${DEPLOYMENTS:-$ROOT/deployments/46630.json}"
 WALLET="${WALLET:-}"
+SOURCE_RPC="${SOURCE_RPC:-https://rpc.mainnet.chain.robinhood.com}"
+SOURCES="${SOURCES:-RHTSLA=0x4A1166a659A55625345e9515b32adECea5547C38 RHNVDA=0x379EC4f7C378F34a1B47E4F3cbeBCbAC3E8E9F15 ETH=0x78F3556b67E17Df817D51Ef5a990cDaF09E8d3A9 BTC=0xa2c5184bF03d373Dc9dE4876eb4Bce595B460251}"
 
 TERMS_T="(address,uint40,uint32,uint8,uint16,uint16,uint16)"
 STATE_T="((uint8,uint96,uint8,bool,bool,uint40,uint40,uint128))"
 ROUND_T="(uint80,int256,uint256,uint256,uint80)"
+LISTING_T="((bool,address,uint16,uint128,uint128))"
+ZERO=0x0000000000000000000000000000000000000000
 MAX_FEED_STALENESS=93600 # NoteQuoter: 26 h
 MAX_FIX_AGE=345600       # FixingsRecorder: 96 h
 
@@ -78,6 +94,11 @@ rounds() { # rounds <feed>: how many it has
 }
 round() { call "$1" "getRoundData(uint80)$ROUND_T" "$(round_id "$2")" | fields | xargs | awk '{print $2, $4}'; } # answer updatedAt
 feed_of() { call "$1" "terms()($TERMS_T)" | fields | xargs | awk '{print $1}'; }
+series_of() { # series_of <terms>: the factory's series with these terms, the zero address if none
+  local factory
+  factory=$(addr seriesFactory)
+  call "$factory" "seriesOf(bytes32)(address)" "$(call "$factory" "seriesId($TERMS_T)(bytes32)" "$1")"
+}
 
 cmd_feed() {
   local name=${1:?feed NAME, e.g. RHTSLA} feed
@@ -138,10 +159,10 @@ cmd_stage() {
   local factory terms
   factory=$(addr seriesFactory)
   terms="($feed,$strike,$interval,$count,${KI:-6000},${AC:-10000},${COUPON:-25})"
-  series=$(call "$factory" "seriesOf(bytes32)(address)" "$(call "$factory" "seriesId($TERMS_T)(bytes32)" "$terms")")
-  if same "$series" 0x0000000000000000000000000000000000000000; then
+  series=$(series_of "$terms")
+  if same "$series" "$ZERO"; then
     send "$factory" "createSeries($TERMS_T)" "$terms"
-    series=$(call "$factory" "seriesOf(bytes32)(address)" "$(call "$factory" "seriesId($TERMS_T)(bytes32)" "$terms")")
+    series=$(series_of "$terms")
   fi
   recorder=$(call "$factory" "recorderOf(address)(address)" "$feed")
   for i in $(seq 0 "$done_"); do
@@ -164,6 +185,15 @@ cmd_list() {
   send "$desk" "listSeries(address,address,uint16,uint128)" "$series" "$(addr surrogatePricer)" "${VOL:-5500}" "$(units "${CAP:-100000}" 6)"
   send "$desk" "setSpread(address,uint16,uint16,uint16)" "$series" "${BID_BPS:-20}" "${ASK_BPS:-30}" "${VOL_BAND:-200}"
   send "$desk" "setRiskBudget(address,uint16)" "$feed" "${RISK_BUDGET_BPS:-2000}"
+  listing_line "$series"
+}
+
+cmd_delist() {
+  local series=${1:?delist SERIES} desk who
+  who=$(me)
+  desk=$(addr desk)
+  same "$(call "$desk" "owner()(address)")" "$who" || fail "the wallet $who is not the Desk's owner (the curator)"
+  send "$desk" "delistSeries(address)" "$series"
   listing_line "$series"
 }
 
@@ -217,6 +247,97 @@ cmd_fixing() {
   series_line "$series"
 }
 
+FAILED=0
+step() { # step <function> [args..]: in a shell of its own, so that a failure ends this step only
+  local rc
+  set +e
+  (
+    set -e
+    "$@"
+  )
+  rc=$?
+  set -e
+  [ "$rc" -eq 0 ] || FAILED=$((FAILED + 1))
+}
+
+keep_price() { # keep_price <feed> <wallet>: the real feed's price as a new round
+  local feed=$1 name pair src="" owner price
+  name=$(call "$feed" "description()(string)" | tr -d '"')
+  name=${name%% / *} # "RHTSLA / USD (staged)"
+  for pair in $SOURCES; do
+    case $pair in "$name="*) src=${pair#*=} ;; esac
+  done
+  [ -n "$src" ] || fail "feed $feed: no real feed for $name in SOURCES"
+  owner=$(call "$feed" "owner()(address)")
+  same "$owner" "$2" || fail "feed $feed ($name): no price pushed, only its owner $owner can"
+  price=$("$CAST" call --rpc-url "$SOURCE_RPC" "$src" "latestRoundData()$ROUND_T" | fields | xargs | awk '{print $2}')
+  [ "$price" -gt 0 ] || fail "feed $feed ($name): the real feed $src answers $price"
+  send "$feed" "pushRound(int256)" "$price"
+  echo "$name: $(feed_line "$feed")"
+}
+
+keep_fixings() { # keep_fixings <series>: the fixings of its observations that have passed
+  local pending
+  pending=$(call "$1" "pendingObservation()((bool,uint40))" | fields | xargs)
+  case $pending in true*) cmd_fixing "$1" ;; esac
+}
+
+keep_series() { # keep_series <series> <wallet>: its due fixings and, once it has ended, its successor
+  local s=$1 out phase done_ autocalled maturity
+  keep_fixings "$s"
+  out=$(call "$s" "state()$STATE_T" | fields | xargs)
+  read -r phase _ done_ _ autocalled _ maturity _ <<<"$out"
+  [ "$phase" = 2 ] || return 0
+
+  local feed strike interval count ki ac coupon ended terms next
+  out=$(call "$s" "terms()($TERMS_T)" | fields | xargs)
+  read -r feed strike interval count ki ac coupon <<<"$out"
+  ended=$maturity
+  if [ "$autocalled" = true ]; then ended=$((strike + done_ * interval)); fi
+  terms="($feed,$ended,$interval,$count,$ki,$ac,$coupon)"
+  next=$(series_of "$terms")
+  if same "$next" "$ZERO"; then
+    send "$(addr seriesFactory)" "createSeries($TERMS_T)" "$terms"
+    next=$(series_of "$terms")
+    echo "series $s ended at $(utc "$ended"): its successor is $next"
+  fi
+  keep_fixings "$next" # the strike, where the old series ended on the fallback and left it unrecorded
+
+  local desk owner pricer vol cap bid ask band
+  desk=$(addr desk)
+  out=$(call "$desk" "listing(address)$LISTING_T" "$next" | fields | xargs)
+  read -r _ pricer _ <<<"$out"
+  same "$pricer" "$ZERO" || return 0 # listed already, or delisted since
+  owner=$(call "$desk" "owner()(address)")
+  same "$owner" "$2" || fail "series $next, the successor of $s, is not listed: only the Desk's owner $owner can"
+  out=$(call "$desk" "listing(address)$LISTING_T" "$s" | fields | xargs)
+  read -r _ pricer vol cap _ <<<"$out"
+  out=$(call "$desk" "spread(address)((uint16,uint16,uint16))" "$s" | fields | xargs)
+  read -r bid ask band <<<"$out"
+  send "$desk" "listSeries(address,address,uint16,uint128)" "$next" "$pricer" "$vol" "$cap"
+  send "$desk" "setSpread(address,uint16,uint16,uint16)" "$next" "$bid" "$ask" "$band"
+  series_line "$next"
+  listing_line "$next"
+}
+
+cmd_keep() {
+  local desk who all s out feed feeds="" listed=""
+  desk=$(addr desk)
+  who=$(me)
+  echo "keep at $(utc "$(now)"), wallet $who"
+  all=$(call "$desk" "listedSeries()(address[])" | fields)
+  for s in $all; do
+    out=$(call "$desk" "listing(address)$LISTING_T" "$s" | fields | xargs)
+    case $out in true*) ;; *) continue ;; esac
+    listed="$listed $s"
+    feed=$(feed_of "$s")
+    case " $feeds " in *" $feed "*) ;; *) feeds="$feeds $feed" ;; esac
+  done
+  for feed in $feeds; do step keep_price "$feed" "$who"; done
+  for s in $listed; do step keep_series "$s" "$who"; done
+  [ "$FAILED" -eq 0 ] || fail "keep: $FAILED of its steps failed, see above"
+}
+
 feed_line() { # feed_line <feed>
   local n answer updated t
   n=$(rounds "$1")
@@ -248,8 +369,8 @@ series_line() { # series_line <series>
 listing_line() { # listing_line <series>
   local desk active pricer vol cap sold bid ask band
   desk=$(addr desk)
-  read -r active pricer vol cap sold < <(call "$desk" "listing(address)((bool,address,uint16,uint128,uint128))" "$1" | fields | xargs)
-  if same "$pricer" 0x0000000000000000000000000000000000000000; then
+  read -r active pricer vol cap sold < <(call "$desk" "listing(address)$LISTING_T" "$1" | fields | xargs)
+  if same "$pricer" "$ZERO"; then
     echo "  not listed"
     return
   fi
@@ -283,6 +404,6 @@ cmd_status() {
 cmd=${1:-}
 [ $# -gt 0 ] && shift
 case $cmd in
-status | feed | stage | list | deposit | push | fixing) "cmd_$cmd" "$@" ;;
-*) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//' ;;
+status | feed | stage | list | delist | deposit | push | fixing | keep) "cmd_$cmd" "$@" ;;
+*) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//' ;;
 esac
