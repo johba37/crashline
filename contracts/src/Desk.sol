@@ -14,9 +14,17 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IDeskCover} from "./interfaces/IDeskCover.sol";
 import {IDeskQueue} from "./interfaces/IDeskQueue.sol";
 import {INoteQuoter} from "./interfaces/INoteQuoter.sol";
-import {ISurrogatePricer} from "./interfaces/ISurrogatePricer.sol";
+import {
+    ISurrogatePricer,
+    FIELD_VOL,
+    FIELD_KI_BARRIER,
+    FIELD_AC_BARRIER,
+    FIELD_COUPON,
+    FIELD_OBSERVATIONS_REMAINING
+} from "./interfaces/ISurrogatePricer.sol";
 import {ISeriesFactory} from "./interfaces/ISeriesFactory.sol";
 import {INoteSeries, SeriesTerms, SeriesState, Phase} from "./interfaces/INoteSeries.sol";
+import {AutocallPayout} from "./AutocallPayout.sol";
 
 /// L3: the market for both legs of a series and the pricer's only in-path use
 /// (IDesk, IDeskCover). An ERC-4626 vault on USDG: LPs deposit USDG; the Desk
@@ -52,9 +60,39 @@ contract Desk is IDeskCover, IDeskQueue, ERC4626, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    uint256 internal constant BPS = 10_000;
-    uint256 internal constant UNIT = 1e6; // base units per NOTE
-    uint256 internal constant UNIT_PER_BPS = UNIT / BPS;
+    /// A queued redemption; `shares` is the unfilled rest (0 once filled or cancelled).
+    struct Request {
+        address owner;
+        uint256 shares;
+    }
+
+    /// Which leg the trader buys or sells.
+    enum Side {
+        BuyNote,
+        SellNote,
+        BuyCover,
+        SellCover
+    }
+
+    /// One trade's parameters and quote, kept in memory (the events are wide).
+    struct Trade {
+        address series;
+        uint256 legAmount; // NOTE or WRITER
+        uint16 feeBps;
+        address feeReceiver;
+        address to;
+        Side side;
+        uint16 priceBps; // of the traded leg, spread included
+        bytes32 weightsHash;
+        uint256 fee;
+        uint256 growth; // part of legAmount that becomes a new position of the Desk
+        uint256 amount; // cost of a buy, proceeds of a sell
+    }
+
+    // The payout rule's units, under short local names.
+    uint256 internal constant BPS = AutocallPayout.BPS;
+    uint256 internal constant UNIT = AutocallPayout.UNIT; // base units per NOTE
+    uint256 internal constant UNIT_PER_BPS = AutocallPayout.UNIT_PER_BPS;
 
     uint16 public constant MAX_FEE_BPS = 200;
     uint16 public constant MAX_COVER_FEE_BPS = 1_000; // of the premium (MAX_FEE_BPS is of notional)
@@ -68,28 +106,17 @@ contract Desk is IDeskCover, IDeskQueue, ERC4626, Ownable, ReentrancyGuard {
     INoteQuoter public immutable quoter;
     uint32 public minSecsToObservation;
 
-    mapping(address => Listing) internal _listings; // soldNotional is not stored: see listing()
+    mapping(address => Listing) internal _listings; // soldNotional is never written: listing() computes it
     mapping(address => Spread) internal _spreads;
     mapping(address feed => uint16) public riskBudgetBps;
     address[] internal _listed;
     EnumerableSet.AddressSet internal _held;
-
-    /// A queued redemption; `shares` is the unfilled rest (0 once filled or cancelled).
-    struct Request {
-        address owner;
-        uint256 shares;
-    }
 
     Request[] internal _queue;
     uint256 internal _queueHead;
     uint256 public queuedShares;
     uint256 public reservedAssets;
     mapping(address owner => uint256) public claimableAssets;
-
-    event MinSecsToObservationSet(uint32 secs);
-
-    error HeldSeriesLimit();
-    error WrongAsset();
 
     constructor(IERC20 usdg, ISeriesFactory factory_, INoteQuoter quoter_, address owner_, uint32 minSecs)
         ERC20("Crashline Desk", "clDESK")
@@ -105,11 +132,12 @@ contract Desk is IDeskCover, IDeskQueue, ERC4626, Ownable, ReentrancyGuard {
 
     // --- views ------------------------------------------------------------------
 
-    /// `soldNotional` is the WRITER the Desk holds now, which `capNotional` limits.
+    /// `soldNotional` is not stored: it is read here from the Desk's WRITER balance,
+    /// the WRITER the Desk holds now, which `capNotional` limits.
     function listing(address series) external view returns (Listing memory l) {
         l = _listings[series];
         if (address(l.pricer) != address(0)) {
-            // capped for the frozen uint128 field; a balance above it can't be reached with USDG
+            // clamped to the field's uint128; a larger balance can't be reached with USDG
             // forge-lint: disable-next-line(unsafe-typecast)
             l.soldNotional = uint128(Math.min(_balance(INoteSeries(series).writer()), type(uint128).max));
         }
@@ -120,7 +148,7 @@ contract Desk is IDeskCover, IDeskQueue, ERC4626, Ownable, ReentrancyGuard {
         return _listed;
     }
 
-    /// Series whose NOTE or WRITER the Desk holds (valued in totalAssets).
+    /// @inheritdoc IDeskCover
     function heldSeries() external view returns (address[] memory) {
         return _held.values();
     }
@@ -181,7 +209,7 @@ contract Desk is IDeskCover, IDeskQueue, ERC4626, Ownable, ReentrancyGuard {
         nonReentrant
         returns (uint256 cost)
     {
-        return _buy(_trade(series, noteAmount, feeBps, feeReceiver, to, Side.BuyNote), maxCost);
+        return _buy(_prepare(series, noteAmount, feeBps, feeReceiver, to, Side.BuyNote), maxCost);
     }
 
     function sell(
@@ -192,7 +220,7 @@ contract Desk is IDeskCover, IDeskQueue, ERC4626, Ownable, ReentrancyGuard {
         address feeReceiver,
         address to
     ) external nonReentrant returns (uint256 proceeds) {
-        return _sell(_trade(series, noteAmount, feeBps, feeReceiver, to, Side.SellNote), minProceeds);
+        return _sell(_prepare(series, noteAmount, feeBps, feeReceiver, to, Side.SellNote), minProceeds);
     }
 
     function buyCover(
@@ -203,7 +231,7 @@ contract Desk is IDeskCover, IDeskQueue, ERC4626, Ownable, ReentrancyGuard {
         address feeReceiver,
         address to
     ) external nonReentrant returns (uint256 cost) {
-        return _buy(_trade(series, writerAmount, feeBps, feeReceiver, to, Side.BuyCover), maxCost);
+        return _buy(_prepare(series, writerAmount, feeBps, feeReceiver, to, Side.BuyCover), maxCost);
     }
 
     function sellCover(
@@ -214,15 +242,16 @@ contract Desk is IDeskCover, IDeskQueue, ERC4626, Ownable, ReentrancyGuard {
         address feeReceiver,
         address to
     ) external nonReentrant returns (uint256 proceeds) {
-        return _sell(_trade(series, writerAmount, feeBps, feeReceiver, to, Side.SellCover), minProceeds);
+        return _sell(_prepare(series, writerAmount, feeBps, feeReceiver, to, Side.SellCover), minProceeds);
     }
 
     /// Permissionless: after settlement, turn the Desk's NOTE and WRITER into USDG.
     function collect(address series) external nonReentrant returns (uint256 collateralOut) {
         if (!factory.isSeries(series)) revert NotFactorySeries(series);
-        uint256 n = IERC20(INoteSeries(series).note()).balanceOf(address(this));
-        uint256 w = IERC20(INoteSeries(series).writer()).balanceOf(address(this));
-        if (n != 0 || w != 0) collateralOut = INoteSeries(series).redeem(n, w, address(this));
+        INoteSeries s = INoteSeries(series);
+        uint256 n = _balance(s.note());
+        uint256 w = _balance(s.writer());
+        if (n != 0 || w != 0) collateralOut = s.redeem(n, w, address(this));
         _held.remove(series);
         emit Collected(series, collateralOut);
     }
@@ -282,10 +311,10 @@ contract Desk is IDeskCover, IDeskQueue, ERC4626, Ownable, ReentrancyGuard {
         if (!factory.isSeries(series)) revert NotFactorySeries(series);
         SeriesTerms memory t = INoteSeries(series).terms();
         _checkVolBand(pricer, volBpsAnnual, _spreads[series].volBandBps);
-        _checkRange(pricer, 3, t.kiBarrierBps);
-        _checkRange(pricer, 4, t.acBarrierBps);
-        _checkRange(pricer, 5, t.couponBpsPerPeriod);
-        _checkRange(pricer, 8, t.observationCount);
+        _checkRange(pricer, FIELD_KI_BARRIER, t.kiBarrierBps);
+        _checkRange(pricer, FIELD_AC_BARRIER, t.acBarrierBps);
+        _checkRange(pricer, FIELD_COUPON, t.couponBpsPerPeriod);
+        _checkRange(pricer, FIELD_OBSERVATIONS_REMAINING, t.observationCount);
 
         Listing storage l = _listings[series];
         if (address(l.pricer) == address(0)) _listed.push(series);
@@ -391,30 +420,7 @@ contract Desk is IDeskCover, IDeskQueue, ERC4626, Ownable, ReentrancyGuard {
 
     // --- internals ------------------------------------------------------------------
 
-    /// Which leg the trader buys or sells.
-    enum Side {
-        BuyNote,
-        SellNote,
-        BuyCover,
-        SellCover
-    }
-
-    /// One trade's parameters and quote, kept in memory (the events are wide).
-    struct Trade {
-        address series;
-        uint256 legAmount; // NOTE or WRITER
-        uint16 feeBps;
-        address feeReceiver;
-        address to;
-        Side side;
-        uint16 priceBps; // of the traded leg, spread included
-        bytes32 weightsHash;
-        uint256 fee;
-        uint256 growth; // part of legAmount that becomes a new position of the Desk
-        uint256 amount; // cost of a buy, proceeds of a sell
-    }
-
-    function _trade(address series, uint256 legAmount, uint16 feeBps, address feeReceiver, address to, Side side)
+    function _prepare(address series, uint256 legAmount, uint16 feeBps, address feeReceiver, address to, Side side)
         internal
         view
         returns (Trade memory t)
@@ -442,7 +448,7 @@ contract Desk is IDeskCover, IDeskQueue, ERC4626, Ownable, ReentrancyGuard {
             s.mint(t.growth, address(this)); // collateral = the previewMint approved above
             _hold(t.series);
         }
-        IERC20(t.side == Side.BuyNote ? s.note() : s.writer()).safeTransfer(t.to, t.legAmount);
+        IERC20(_isCover(t.side) ? s.writer() : s.note()).safeTransfer(t.to, t.legAmount);
         _payFee(t.feeReceiver, t.fee);
         if (t.growth != 0) _checkRisk(t.series);
         _checkReserve();
@@ -457,7 +463,7 @@ contract Desk is IDeskCover, IDeskQueue, ERC4626, Ownable, ReentrancyGuard {
         if (proceeds < minProceeds) revert Slippage(proceeds, minProceeds);
         if (t.growth != 0) _queueFirst();
 
-        IERC20(t.side == Side.SellNote ? s.note() : s.writer()).safeTransferFrom(msg.sender, address(this), t.legAmount);
+        IERC20(_isCover(t.side) ? s.writer() : s.note()).safeTransferFrom(msg.sender, address(this), t.legAmount);
         uint256 pairs = t.legAmount - t.growth;
         // forge-lint: disable-next-line(unused-return)
         if (pairs != 0) s.redeemPair(pairs, address(this)); // USDG lands in idle
@@ -489,6 +495,20 @@ contract Desk is IDeskCover, IDeskQueue, ERC4626, Ownable, ReentrancyGuard {
         }
     }
 
+    function _isBuy(Side side) internal pure returns (bool) {
+        return side == Side.BuyNote || side == Side.BuyCover;
+    }
+
+    function _isCover(Side side) internal pure returns (bool) {
+        return side == Side.BuyCover || side == Side.SellCover;
+    }
+
+    /// The Desk sells NOTE, outright (BuyNote) or by buying cover back (SellCover):
+    /// it ends up with WRITER and prices off the NOTE ask.
+    function _deskSellsNote(Side side) internal pure returns (bool) {
+        return side == Side.BuyNote || side == Side.SellCover;
+    }
+
     function _quoteCost(address series, uint256 legAmount, uint16 feeBps, Side side)
         internal
         view
@@ -517,17 +537,17 @@ contract Desk is IDeskCover, IDeskQueue, ERC4626, Ownable, ReentrancyGuard {
         returns (uint16 priceBps, bytes32 weightsHash, uint256 fee, uint256 growth)
     {
         if (legAmount == 0) revert INoteSeries.ZeroAmount();
-        bool isCover = side == Side.BuyCover || side == Side.SellCover;
-        if (feeBps > (isCover ? MAX_COVER_FEE_BPS : MAX_FEE_BPS)) revert FeeTooHigh(feeBps);
+        if (feeBps > (_isCover(side) ? MAX_COVER_FEE_BPS : MAX_FEE_BPS)) revert FeeTooHigh(feeBps);
         Listing memory l = _listings[series];
-        bool isBuy = side == Side.BuyNote || side == Side.BuyCover;
-        if (isBuy ? !l.active : address(l.pricer) == address(0)) revert NotListed(series);
+        if (_isBuy(side) ? !l.active : address(l.pricer) == address(0)) revert NotListed(series);
         (priceBps, weightsHash) = _sidePrice(series, l, side);
         uint40 next = INoteSeries(series).state().nextObservation;
         if (uint256(next) < block.timestamp + minSecsToObservation) revert TooCloseToObservation(next);
         // the integrator fee is a share of the notional for NOTE, of the premium for cover
         uint256 feeBase = legAmount;
-        if (isCover) feeBase = Math.mulDiv(legAmount, priceBps, BPS, isBuy ? Math.Rounding.Ceil : Math.Rounding.Floor);
+        if (_isCover(side)) {
+            feeBase = Math.mulDiv(legAmount, priceBps, BPS, _isBuy(side) ? Math.Rounding.Ceil : Math.Rounding.Floor);
+        }
         fee = Math.mulDiv(feeBase, feeBps, BPS, Math.Rounding.Ceil);
         growth = _growth(series, legAmount, side, l.capNotional);
     }
@@ -553,13 +573,13 @@ contract Desk is IDeskCover, IDeskQueue, ERC4626, Ownable, ReentrancyGuard {
         }
         uint256 maxBps = INoteSeries(series).maxPayoutPerNote() / UNIT_PER_BPS;
         uint256 note;
-        if (side == Side.BuyNote || side == Side.SellCover) {
+        if (_deskSellsNote(side)) {
             note = Math.min(hi + sp.askBps, maxBps);
         } else {
             lo = Math.min(lo, maxBps);
             note = lo > sp.bidBps ? lo - sp.bidBps : 0;
         }
-        priceBps = SafeCast.toUint16(side == Side.BuyNote || side == Side.SellNote ? note : maxBps - note);
+        priceBps = SafeCast.toUint16(_isCover(side) ? maxBps - note : note);
     }
 
     /// The part of a trade the Desk can't serve from, or pair with, what it
@@ -567,7 +587,7 @@ contract Desk is IDeskCover, IDeskQueue, ERC4626, Ownable, ReentrancyGuard {
     /// buys cover back (limited by the listing's cap), NOTE otherwise.
     function _growth(address series, uint256 legAmount, Side side, uint256 cap) internal view returns (uint256 growth) {
         INoteSeries s = INoteSeries(series);
-        bool growsWriter = side == Side.BuyNote || side == Side.SellCover;
+        bool growsWriter = _deskSellsNote(side);
         growth = legAmount - Math.min(legAmount, _balance(growsWriter ? s.note() : s.writer()));
         if (growth == 0 || !growsWriter) return growth;
         uint256 held = _balance(s.writer());
@@ -600,9 +620,9 @@ contract Desk is IDeskCover, IDeskQueue, ERC4626, Ownable, ReentrancyGuard {
 
     /// The listing's vol and both ends of its band must be vols the model is certified for.
     function _checkVolBand(ISurrogatePricer pricer, uint256 vol, uint256 band) internal view {
-        if (band > vol || vol + band > type(uint16).max) revert ModelMismatch(2);
-        _checkRange(pricer, 2, vol - band);
-        _checkRange(pricer, 2, vol + band);
+        if (band > vol || vol + band > type(uint16).max) revert ModelMismatch(FIELD_VOL);
+        _checkRange(pricer, FIELD_VOL, vol - band);
+        _checkRange(pricer, FIELD_VOL, vol + band);
     }
 
     function _checkRange(ISurrogatePricer pricer, uint8 field, uint256 value) internal view {
@@ -626,13 +646,13 @@ contract Desk is IDeskCover, IDeskQueue, ERC4626, Ownable, ReentrancyGuard {
 
     /// USDG the vault can use: its balance minus what is set aside for filled redemptions.
     function _idle() internal view returns (uint256) {
-        uint256 balance = IERC20(asset()).balanceOf(address(this));
+        uint256 balance = _balance(asset());
         return balance > reservedAssets ? balance - reservedAssets : 0;
     }
 
     /// A trade paid out: it must not have dipped into the USDG set aside for claims.
     function _checkReserve() internal view {
-        if (IERC20(asset()).balanceOf(address(this)) < reservedAssets) revert ReservedForClaims();
+        if (_balance(asset()) < reservedAssets) revert ReservedForClaims();
     }
 
     /// Before a trade adds to a position: queued redemptions are paid first, or the trade fails.

@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {Base} from "./Base.t.sol";
-import {MockUSDG} from "../src/MockUSDG.sol";
+import {MockUSDG} from "../src/mocks/MockUSDG.sol";
 import {NoteSeries} from "../src/NoteSeries.sol";
 import {SeriesFactory} from "../src/SeriesFactory.sol";
 import {INoteSeries, SeriesState, SeriesTerms, Phase} from "../src/interfaces/INoteSeries.sol";

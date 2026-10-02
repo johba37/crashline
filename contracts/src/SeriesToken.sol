@@ -20,9 +20,6 @@ contract SeriesToken is ERC20, ISeriesToken {
     string private _name;
     string private _symbol;
 
-    error AlreadyInitialized();
-    error OnlyFactory();
-
     constructor() ERC20("", "") {
         factory = msg.sender;
         series = address(this); // the implementation itself is never initialized

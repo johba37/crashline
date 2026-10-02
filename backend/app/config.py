@@ -51,6 +51,12 @@ def save(cfg: dict, path: Path | None = None) -> None:
     os.replace(tmp, p)
 
 
+def archive_rpc_url() -> str | None:
+    """An RPC that keeps every block's state, asked when the node's own is pruned (the
+    testnet's public RPC keeps under an hour). From the env, not config.json: it may carry a key."""
+    return os.environ.get("ARCHIVE_RPC_URL") or None
+
+
 def demo_key(cfg: dict) -> str | None:
     """The demo signer's key, from the env var the config names; on the dev node
     it falls back to Nitro's public dev key."""

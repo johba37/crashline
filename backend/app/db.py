@@ -63,14 +63,12 @@ TABLES = ("blocks", "series", "trades", "events", "rounds", "samples", "nav_samp
 
 
 class DB:
-    def __init__(self, path: Path | str, schema: str = SCHEMA, tables: tuple[str, ...] = TABLES):
+    def __init__(self, path: Path | str):
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.schema = schema
-        self.tables = tables
         self._local = threading.local()
         c = self.conn()
-        c.executescript(schema)
+        c.executescript(SCHEMA)
         c.commit()
 
     def conn(self) -> sqlite3.Connection:
@@ -94,7 +92,7 @@ class DB:
     def wipe(self) -> None:
         c = self.conn()
         c.execute("BEGIN IMMEDIATE")
-        for t in self.tables:
+        for t in TABLES:
             c.execute(f"DELETE FROM {t}")
         c.execute("DELETE FROM meta")
         c.execute("COMMIT")

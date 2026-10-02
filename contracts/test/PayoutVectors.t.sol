@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Base} from "./Base.t.sol";
-import {MockChainlinkFeed} from "../src/MockChainlinkFeed.sol";
+import {MockChainlinkFeed} from "../src/mocks/MockChainlinkFeed.sol";
 import {NoteSeries} from "../src/NoteSeries.sol";
 import {FixingsRecorder} from "../src/FixingsRecorder.sol";
 import {AutocallPayout} from "../src/AutocallPayout.sol";

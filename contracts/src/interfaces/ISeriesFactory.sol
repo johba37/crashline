@@ -18,6 +18,7 @@ interface ISeriesFactory {
     error BadBarriers(); // not 0 < ki <= ac <= 20_000
     error BadCoupon(); // coupon > 10_000
     error BadFeed(); // feed decimals != 8
+    error BadCollateral(); // collateral decimals != 6 (constructor)
 
     function collateral() external view returns (address); // USDG, immutable
 

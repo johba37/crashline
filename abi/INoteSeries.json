@@ -614,6 +614,11 @@
   },
   {
     "type": "error",
+    "name": "AlreadyInitialized",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "AlreadySettled",
     "inputs": []
   },
@@ -625,6 +630,11 @@
   {
     "type": "error",
     "name": "NotStruck",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "OnlyFactory",
     "inputs": []
   },
   {

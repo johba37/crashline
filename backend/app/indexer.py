@@ -35,10 +35,10 @@ import json
 import logging
 import os
 import threading
-import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable
+from typing import Callable
+from urllib.parse import urlsplit
 
 from . import config as cfgmod
 from .chain import REGISTRY, Chain, RpcError
@@ -77,6 +77,15 @@ def fingerprint(cfg: dict) -> str:
                       | {"desk": cfg["addresses"]["desk"]}, sort_keys=True)
 
 
+def redact(text: str, cfg: dict) -> str:
+    """`text` without the RPC URLs' paths: /health reports the last error, and a path may be an API key."""
+    for url in (cfg.get("rpcUrl"), cfgmod.archive_rpc_url()):
+        path = urlsplit(url or "").path
+        if len(path) > 1:
+            text = text.replace(path, "/...")
+    return text
+
+
 def db_path_for(cfg: dict) -> Path:
     return Path(os.environ["BACKEND_DB"]) if os.environ.get("BACKEND_DB") else cfgmod.db_path(cfg)
 
@@ -85,7 +94,6 @@ def db_path_for(cfg: dict) -> Path:
 class Indexer:
     config_path: Path = cfgmod.CONFIG_PATH
     hooks: list[Callable] = field(default_factory=list)
-    reset_hooks: list[Callable] = field(default_factory=list)
     chunk: int = 5_000
 
     def __post_init__(self):
@@ -105,7 +113,15 @@ class Indexer:
         with self._lock:
             self.cfg_mtime = self.config_path.stat().st_mtime
             cfg = cfgmod.load(self.config_path)
-            chain = Chain(cfg["rpcUrl"])
+            chain = Chain(cfg["rpcUrl"], archive_url=cfgmod.archive_rpc_url())
+            if chain.archive is not None:
+                try:  # a wrong archive would answer with another chain's state
+                    if chain.archive.chain_id != cfg["chainId"]:
+                        raise ValueError(f"it is chain {chain.archive.chain_id}")
+                    log.info("archive RPC: %s", urlsplit(chain.archive.rpc_url).hostname)
+                except Exception as e:
+                    log.error("ARCHIVE_RPC_URL not used: %s", redact(str(e), cfg))
+                    chain.archive = None
             db = DB(db_path_for(cfg))
             fp = fingerprint(cfg)
             if db.get_meta("fingerprint") != fp or db.get_meta("schema") != SCHEMA_VERSION:
@@ -115,17 +131,19 @@ class Indexer:
                 db.set_meta("fingerprint", fp, c)
                 db.set_meta("schema", SCHEMA_VERSION, c)
                 db.set_meta("last_block", cfg["deploymentBlock"] - 1, c)
-                for h in self.reset_hooks:
-                    h(self, db)
             self.cfg, self.chain, self.db = cfg, chain, db
             self.last = int(db.get_meta("last_block"))
-            self.series = {r["address"]: dict(r) for r in db.query("SELECT * FROM series")}
-            self.recorders = {r["address"]: r["feed"] for r in
-                              db.query("SELECT address, feed FROM events WHERE name = 'RecorderDeployed'")}
+            self._load_known()
             row = db.one("SELECT number, hash, time FROM blocks WHERE number = ?", (self.last,))
             head = dict(row) if row else None
             self.caught_up.clear()
             self.snap = Snapshot(cfg, chain, db, head, "starting")
+
+    def _load_known(self) -> None:
+        """The series and recorders indexed so far, from the db."""
+        self.series = {r["address"]: dict(r) for r in self.db.query("SELECT * FROM series")}
+        self.recorders = {r["address"]: r["feed"] for r in
+                          self.db.query("SELECT address, feed FROM events WHERE name = 'RecorderDeployed'")}
 
     def deployment_ok(self) -> bool:
         cfg = self.cfg
@@ -176,7 +194,7 @@ class Indexer:
                 busy = self.poll_once()
                 self.error = None
             except Exception as e:  # keep going: the node may be restarting
-                self.error = f"{type(e).__name__}: {e}"
+                self.error = redact(f"{type(e).__name__}: {e}", self.cfg)
                 log.warning("poll failed: %s", self.error)
                 self._set_status("error")
             if not busy:
@@ -250,9 +268,7 @@ class Indexer:
         self.db.set_meta("last_block", anc, c)
         c.execute("COMMIT")
         self.last = anc
-        self.series = {r["address"]: dict(r) for r in self.db.query("SELECT * FROM series")}
-        self.recorders = {r["address"]: r["feed"] for r in
-                          self.db.query("SELECT address, feed FROM events WHERE name = 'RecorderDeployed'")}
+        self._load_known()
         row = self.db.one("SELECT number, hash, time FROM blocks WHERE number = ?", (anc,))
         self._set_status("ok", dict(row) if row else None)
         self.rollbacks += 1
@@ -289,7 +305,7 @@ class Indexer:
             c.execute("COMMIT")
         except Exception:
             c.execute("ROLLBACK")
-            self.series = {r["address"]: dict(r) for r in self.db.query("SELECT * FROM series")}
+            self._load_known()
             raise
         self._set_status("ok", infos[to])
         return touched
@@ -388,7 +404,3 @@ class Indexer:
     # --- helpers for the routes ---------------------------------------------------------
     def wait_caught_up(self, timeout: float = 30) -> bool:
         return self.caught_up.wait(timeout)
-
-
-def event_args(row) -> dict[str, Any]:
-    return json.loads(row["args"])

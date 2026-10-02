@@ -5,7 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {DeskFixture} from "./DeskFixture.t.sol";
 import {MockPricer} from "./mocks/MockPricer.sol";
-import {MockChainlinkFeed} from "../src/MockChainlinkFeed.sol";
+import {MockChainlinkFeed} from "../src/mocks/MockChainlinkFeed.sol";
 import {FixingsRecorder} from "../src/FixingsRecorder.sol";
 import {NoteSeries} from "../src/NoteSeries.sol";
 import {IDesk} from "../src/interfaces/IDesk.sol";

@@ -46,9 +46,6 @@ contract NoteSeries is INoteSeries, ReentrancyGuard {
     uint40 internal _fallbackDelay; // recorder.MAX_ROLL() + FALLBACK_GRACE
     AutocallPayout.Progress internal _progress;
 
-    error AlreadyInitialized();
-    error OnlyFactory();
-
     constructor() {
         factory = msg.sender;
         id = bytes32(uint256(1)); // the implementation itself is never initialized

@@ -9,7 +9,7 @@ import {SeriesToken} from "../src/SeriesToken.sol";
 import {FixingsRecorder} from "../src/FixingsRecorder.sol";
 import {ISeriesFactory} from "../src/interfaces/ISeriesFactory.sol";
 import {ISeriesToken} from "../src/interfaces/ISeriesToken.sol";
-import {SeriesTerms} from "../src/interfaces/INoteSeries.sol";
+import {INoteSeries, SeriesTerms} from "../src/interfaces/INoteSeries.sol";
 
 contract SixDecimalFeed {
     function decimals() external pure returns (uint8) {
@@ -182,7 +182,7 @@ contract SeriesFactoryTest is Base {
 
     function test_revert_BadCollateral() public {
         address bad = address(new EighteenDecimalToken());
-        vm.expectRevert(SeriesFactory.BadCollateral.selector);
+        vm.expectRevert(ISeriesFactory.BadCollateral.selector);
         new SeriesFactory(bad);
     }
 
@@ -192,17 +192,17 @@ contract SeriesFactoryTest is Base {
         NoteSeries s = _create(_terms(T0 + 1 days));
         SeriesTerms memory t = _terms(T0 + 1 days);
 
-        vm.expectRevert(NoteSeries.OnlyFactory.selector);
+        vm.expectRevert(INoteSeries.OnlyFactory.selector);
         s.initialize(bytes32(uint256(7)), t, alice, alice, alice, address(usdg));
         vm.prank(address(factory));
-        vm.expectRevert(NoteSeries.AlreadyInitialized.selector);
+        vm.expectRevert(INoteSeries.AlreadyInitialized.selector);
         s.initialize(bytes32(uint256(7)), t, alice, alice, alice, address(usdg));
 
         SeriesToken n = _note(s);
-        vm.expectRevert(SeriesToken.OnlyFactory.selector);
+        vm.expectRevert(ISeriesToken.OnlyFactory.selector);
         n.initialize(alice, true, 6, "x", "x");
         vm.prank(address(factory));
-        vm.expectRevert(SeriesToken.AlreadyInitialized.selector);
+        vm.expectRevert(ISeriesToken.AlreadyInitialized.selector);
         n.initialize(alice, true, 6, "x", "x");
     }
 
@@ -210,10 +210,10 @@ contract SeriesFactoryTest is Base {
         NoteSeries impl = NoteSeries(factory.seriesImplementation());
         SeriesToken timpl = SeriesToken(factory.tokenImplementation());
         vm.prank(address(factory));
-        vm.expectRevert(NoteSeries.AlreadyInitialized.selector);
+        vm.expectRevert(INoteSeries.AlreadyInitialized.selector);
         impl.initialize(bytes32(uint256(7)), _terms(T0), alice, alice, alice, address(usdg));
         vm.prank(address(factory));
-        vm.expectRevert(SeriesToken.AlreadyInitialized.selector);
+        vm.expectRevert(ISeriesToken.AlreadyInitialized.selector);
         timpl.initialize(alice, true, 6, "x", "x");
     }
 
@@ -221,12 +221,12 @@ contract SeriesFactoryTest is Base {
     /// so it can't mint or burn and isn't a series anywhere.
     function test_foreign_clone_is_rejected() public {
         address rogue = Clones.clone(factory.seriesImplementation());
-        vm.expectRevert(NoteSeries.OnlyFactory.selector);
+        vm.expectRevert(INoteSeries.OnlyFactory.selector);
         NoteSeries(rogue).initialize(bytes32(uint256(7)), _terms(T0), alice, alice, alice, address(usdg));
         assertFalse(factory.isSeries(rogue));
 
         address rogueToken = Clones.clone(factory.tokenImplementation());
-        vm.expectRevert(SeriesToken.OnlyFactory.selector);
+        vm.expectRevert(ISeriesToken.OnlyFactory.selector);
         SeriesToken(rogueToken).initialize(address(this), true, 6, "x", "x");
     }
 

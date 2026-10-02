@@ -13,10 +13,6 @@ from .views import Ctx, s, series_objects, trades
 router = APIRouter()
 
 
-def ctx() -> Ctx:
-    return Ctx(SERVICE.snap())
-
-
 @router.get("/health")
 def health():
     snap = SERVICE.indexer.snap
@@ -32,7 +28,7 @@ def health():
 
 @router.get("/config")
 def get_config():
-    c = ctx()
+    c = Ctx.now()
     a = c.cfg["addresses"]
     pricer = c.chain.at("pricer", a["surrogatePricer"])
     (fee, cover_fee, backstop, min_secs, min_req, batch, weights, fsv) = c.calls([
@@ -59,13 +55,13 @@ def get_config():
 
 @router.get("/series")
 def list_series():
-    c = ctx()
+    c = Ctx.now()
     return c.out({"series": series_objects(c, c.series_rows())})
 
 
 @router.get("/series/{address}")
 def get_series(address: str):
-    c = ctx()
+    c = Ctx.now()
     row = c.series_row(addr(address))
     return c.out(series_objects(c, [row], full=True)[0])
 
@@ -73,7 +69,7 @@ def get_series(address: str):
 @router.get("/trades")
 def get_trades(series: str | None = None, account: str | None = None,
                limit: int = Query(50, ge=1, le=500), before: int | None = Query(None, ge=0)):
-    c = ctx()
+    c = Ctx.now()
     return c.out({"trades": trades(c, addr(series, "series") if series else None,
                                    addr(account, "account") if account else None, limit, before)})
 
@@ -82,7 +78,7 @@ def get_trades(series: str | None = None, account: str | None = None,
 def get_events(series: str | None = None, account: str | None = None, name: str | None = None,
                limit: int = Query(100, ge=1, le=1000), before: int | None = Query(None, ge=0)):
     """Non-trade events with their decoded args (mint, redeemPair, redeem, fixings, listings, queue, ...)."""
-    c = ctx()
+    c = Ctx.now()
     where, params = ["block <= ?"], [c.block]
     if series:
         where.append("series = ?")

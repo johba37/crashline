@@ -10,12 +10,12 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from .accounting import UNIT, UNIT_PER_BPS
 from .chain import Revert
 from .indexer import Snapshot
-from .service import ApiError
+from .service import SERVICE, ApiError
 
-UNIT = 10**6  # base units per NOTE / USDG
-UNIT_PER_BPS = 100
+ZERO = "0x" + "00" * 20
 PHASES = ("Pending", "Live", "Settled")
 # quoteBuy reverts that say the Desk can't price the series now; others (CapExceeded) only limit size
 PRICING_ERRORS = {"NotListed", "FixingPending", "FeedStale", "TooCloseToObservation", "OutOfRange",
@@ -38,6 +38,11 @@ class Ctx:
         self.quoter = self.chain.at("quoter", a["noteQuoter"])
         self.usdg = self.chain.at("usdg", a["usdg"])
         self._feed_names = {v.lower(): k for k, v in a.get("feeds", {}).items()}
+
+    @classmethod
+    def now(cls) -> "Ctx":
+        """At the indexer's head (503 while it has none)."""
+        return cls(SERVICE.snap())
 
     def out(self, d: dict) -> dict:
         return {**d, "block": self.block, "time": self.time}
@@ -68,6 +73,11 @@ class Ctx:
         if r is None:
             raise ApiError(404, "UnknownSeries", {"address": address})
         return dict(r)
+
+
+def max_bps(r: dict) -> int:
+    """maxPayoutPerNote of a series row, in bps of notional."""
+    return 10_000 + r["coupon"] * (r["count"] + 1)
 
 
 def quotable_of(res: Any, state: dict) -> dict:
@@ -123,7 +133,7 @@ def series_objects(ctx: Ctx, rows: list[dict], full: bool = False) -> list[dict]
             if isinstance(v, Revert):
                 raise ApiError(502, "ChainReadFailed", {"series": r["address"], "error": v.name})
         quotable = quotable_of(qb, st)
-        listed = lst["pricer"] != "0x" + "00" * 20
+        listed = lst["pricer"] != ZERO
         o = {
             "address": r["address"], "note": r["note"], "writer": r["writer"], "recorder": r["recorder"],
             "feed": r["feed"], "feedName": ctx.feed_name(r["feed"]), "id": r["id"],
@@ -201,9 +211,6 @@ def trades(ctx: Ctx, series: str | None = None, account: str | None = None, limi
     rows = ctx.db.query(f"SELECT * FROM trades WHERE {' AND '.join(where)} ORDER BY block DESC, log_index DESC "
                         "LIMIT ?", (*params, limit))
     return [trade_json(r) for r in rows]
-
-
-ZERO = "0x" + "00" * 20
 
 
 def mark_inputs(ctx: Ctx, rows: list[dict]) -> dict[str, dict]:

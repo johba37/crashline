@@ -37,7 +37,7 @@ from .chain import Revert
 from .indexer import Snapshot, fingerprint
 from .replay import Terms, quote_points
 from .service import SERVICE, addr, model_exports
-from .views import ZERO, Ctx, fixings, s, share_price
+from .views import ZERO, Ctx, fixings, max_bps, s, share_price
 
 log = logging.getLogger("history")
 router = APIRouter()
@@ -45,10 +45,6 @@ router = APIRouter()
 
 def ctx_at(snap: Snapshot, block: int, time: int) -> Ctx:
     return Ctx(Snapshot(snap.cfg, snap.chain, snap.db, {"number": block, "time": time, "hash": None}, snap.status))
-
-
-def max_bps(r: dict) -> int:
-    return 10_000 + r["coupon"] * (r["count"] + 1)
 
 
 def chain_points(c: Ctx, rows: list[dict]) -> list[dict]:
@@ -124,7 +120,6 @@ class History:
         self._staleness: dict[str, int] = {}
         self._empty: set[tuple[str, int]] = set()  # past slots without a block: they stay empty
         self._empty_for = ""
-        self.backfills = 0
 
     # --- live sampling (indexer hook) ------------------------------------------------------
     def hook(self, indexer, frm: int, to: int, touched: dict) -> None:
@@ -177,7 +172,6 @@ class History:
                 if snap is None or snap.head is None or snap.status != "ok":
                     continue
                 self.backfill(snap)
-                self.backfills += 1
             except Exception as e:
                 log.exception("backfill failed: %s", e)
 
@@ -298,7 +292,7 @@ def _thin(points: list[dict], origin: int, step: int, keep) -> list[dict]:
 @router.get("/series/{address}/history")
 def series_history(address: str, frm: int | None = Query(None, alias="from", ge=0), to: int | None = Query(None, ge=0),
                    step: int = Query(3600, ge=1)):
-    c = Ctx(SERVICE.snap())
+    c = Ctx.now()
     r = c.series_row(addr(address))
     frm = r["strike_time"] if frm is None else frm
     to = c.time if to is None else to
@@ -329,7 +323,7 @@ def series_history(address: str, frm: int | None = Query(None, alias="from", ge=
 @router.get("/vault/history")
 def vault_history(frm: int | None = Query(None, alias="from", ge=0), to: int | None = Query(None, ge=0),
                   step: int = Query(3600, ge=1)):
-    c = Ctx(SERVICE.snap())
+    c = Ctx.now()
     frm = c.cfg.get("deployedAt", 0) if frm is None else frm
     to = c.time if to is None else to
     rows = c.db.query("SELECT * FROM nav_samples WHERE time >= ? AND time <= ? AND block <= ? ORDER BY block",

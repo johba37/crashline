@@ -44,13 +44,15 @@ def pytest_collection_modifyitems(config, items):
     if not node_up():
         skip = pytest.mark.skip(reason=f"dev node not up at {RPC} (backend/devnode/up.sh)")
         for item in items:
-            item.add_marker(skip)
+            if not item.get_closest_marker("offline"):
+                item.add_marker(skip)
     # destructive tests (they replace the chain) after everything else
     items.sort(key=lambda i: 1 if i.get_closest_marker("destructive") else 0)
 
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "destructive: replaces the dev node's chain (runs last)")
+    config.addinivalue_line("markers", "offline: needs no node (runs when the dev node is down too)")
 
 
 @pytest.fixture(scope="session")

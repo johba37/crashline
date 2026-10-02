@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Surrogate Pricer: the pitch, 2:00</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #10131a; color: #f3f0e8; overflow: hidden;
+    font-family: "Liberation Sans", Arial, Helvetica, "DejaVu Sans", sans-serif; }
+  text { font-family: "Liberation Sans", Arial, Helvetica, "DejaVu Sans", sans-serif; }
+  text.mono { font-family: "Liberation Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace; }
+  #stage { position: fixed; inset: 0; }
+  .scene { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0;
+    transition: opacity .5s ease; pointer-events: none; }
+  .scene.cur { opacity: 1; }
+  .st { opacity: 0; transition: opacity .5s ease; }
+  .st.on { opacity: 1; }
+  .st.on.dim { opacity: .5; }
+  html.still * { transition: none !important; }
+  body.idle { cursor: none; }
+
+  #cap { position: fixed; left: 50%; bottom: 3vh; transform: translateX(-50%); width: min(1200px, 92vw);
+    background: rgba(10, 12, 17, .92); border: 1px solid #3c4558; border-radius: 12px;
+    padding: 14px 20px; font-size: 22px; line-height: 1.4; color: #f3f0e8; display: none; }
+  body.script #cap { display: block; }
+  #cap small { color: #e0c07a; letter-spacing: .12em; font-size: 13px; margin-right: 12px; }
+
+  #help { position: fixed; right: 20px; top: 16px; background: rgba(10, 12, 17, .94);
+    border: 1px solid #3c4558; border-radius: 12px; padding: 14px 18px; font-size: 15px;
+    line-height: 1.7; color: #c9cfdb; opacity: 0; transition: opacity .4s; pointer-events: none; }
+  #help.on { opacity: 1; }
+  #help b { color: #f3f0e8; display: inline-block; min-width: 86px; }
+  html.still #help, html.still #cap { display: none; }
+
+  /* presenter window: index.html?notes */
+  html.notes body { overflow: auto; }
+  html.notes #stage, html.notes #cap, html.notes #help { display: none; }
+  #notes { display: none; padding: 22px 26px 40px; max-width: 860px; margin: 0 auto; }
+  html.notes #notes { display: block; }
+  #notes .bar { display: flex; align-items: baseline; gap: 18px; position: sticky; top: 0;
+    background: #10131a; padding: 6px 0 14px; border-bottom: 1px solid #3c4558; }
+  #clock { font-size: 44px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  #target { color: #a3adbe; font-size: 18px; font-variant-numeric: tabular-nums; }
+  #clock.late { color: #d95926; }
+  #state { margin-left: auto; color: #e0c07a; font-size: 14px; letter-spacing: .12em; text-transform: uppercase; }
+  #notes h2 { margin: 26px 0 8px; font-size: 14px; letter-spacing: .12em; text-transform: uppercase;
+    color: #a3adbe; font-weight: 700; display: flex; justify-content: space-between; }
+  #notes p { margin: 0; padding: 9px 12px; border-radius: 8px; font-size: 21px; line-height: 1.4;
+    color: #a3adbe; border-left: 4px solid transparent; }
+  #notes p.now { color: #f3f0e8; background: #1a202b; border-left-color: #e0c07a; }
+  #notes p.done { opacity: .45; }
+  #notes .keys { margin-top: 30px; color: #a3adbe; font-size: 14px; line-height: 1.7; }
+</style>
+</head>
+<body>
+<div id="stage">
+<svg class="scene" data-n="1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Hook">
+<rect width="1600" height="900" fill="#10131a"/>
+<g class="st" data-s="0" data-off="2">
+<text x="72.0" y="390.0" font-size="230" fill="#f3f0e8" font-weight="700" letter-spacing="-6">$149B</text>
+<text x="80.0" y="468.0" font-size="46" fill="#c9cfdb">of structured notes sold in the US in 2024</text>
+</g>
+<g class="st" data-s="1" data-off="2">
+<rect x="80.0" y="548.0" width="120.0" height="5.0" rx="2" fill="#e0c07a"/>
+<text x="80.0" y="640.0" font-size="54" fill="#f3f0e8" font-weight="700" letter-spacing="-1">The bank that sells the note also sets its price.</text>
+<text x="80.0" y="700.0" font-size="36" fill="#c9cfdb">Studies find a markup of 1 to 3% built in.</text>
+</g>
+<g class="st" data-s="0" data-off="2">
+<text x="80.0" y="852.0" font-size="20" fill="#a3adbe">Sources: SRP via GenTwo (US issuance, 2024) · J. Risk Financial Manag. 16(9):401 (markups)</text>
+</g>
+<g class="st" data-s="2">
+<text x="800.0" y="400.0" font-size="124" fill="#f3f0e8" text-anchor="middle" font-weight="700" letter-spacing="-3">Surrogate Pricer</text>
+<rect x="740.0" y="440.0" width="120.0" height="5.0" rx="2" fill="#e0c07a"/>
+<text x="800.0" y="530.0" font-size="46" fill="#f3f0e8" text-anchor="middle">The fair price, computed on-chain, inside the trade.</text>
+<text x="800.0" y="612.0" font-size="28" fill="#a3adbe" text-anchor="middle">A neural network on Stylus  ·  stock tokens on Robinhood Chain  ·  settled in USDG</text>
+</g>
+</svg>
+<svg class="scene" data-n="2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet" role="img" aria-label="The note">
+<rect width="1600" height="900" fill="#10131a"/>
+<text x="80.0" y="86.0" font-size="22" fill="#e0c07a" font-weight="700" letter-spacing="3">THE NOTE</text>
+<text x="80.0" y="152.0" font-size="52" fill="#f3f0e8" font-weight="700" letter-spacing="-1">A note that pays a coupon, unless the stock crashes.</text>
+<line x1="80.0" y1="330.6" x2="860.0" y2="330.6" stroke="#c9cfdb" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
+<text x="860.0" y="316.6" font-size="24" fill="#c9cfdb" text-anchor="end">starting price</text>
+<line x1="80.0" y1="666.1" x2="860.0" y2="666.1" stroke="#c9cfdb" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="8 7" opacity="0.7"/>
+<text x="860.0" y="652.1" font-size="24" fill="#c9cfdb" text-anchor="end">60% of the start</text>
+<line x1="80.0" y1="768.0" x2="80.0" y2="784.0" stroke="#a3adbe" stroke-width="2" stroke-linecap="round"/>
+<line x1="108.9" y1="768.0" x2="108.9" y2="778.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="137.8" y1="768.0" x2="137.8" y2="778.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="166.7" y1="768.0" x2="166.7" y2="778.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="195.6" y1="768.0" x2="195.6" y2="778.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="224.4" y1="768.0" x2="224.4" y2="778.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="253.3" y1="768.0" x2="253.3" y2="778.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="282.2" y1="768.0" x2="282.2" y2="778.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="311.1" y1="768.0" x2="311.1" y2="778.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="340.0" y1="768.0" x2="340.0" y2="778.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="368.9" y1="768.0" x2="368.9" y2="778.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="397.8" y1="768.0" x2="397.8" y2="778.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="426.7" y1="768.0" x2="426.7" y2="778.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="455.6" y1="768.0" x2="455.6" y2="778.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="484.4" y1="768.0" x2="484.4" y2="778.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="513.3" y1="768.0" x2="513.3" y2="778.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="542.2" y1="768.0" x2="542.2" y2="778.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="571.1" y1="768.0" x2="571.1" y2="778.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="600.0" y1="768.0" x2="600.0" y2="778.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="628.9" y1="768.0" x2="628.9" y2="778.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="657.8" y1="768.0" x2="657.8" y2="778.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="686.7" y1="768.0" x2="686.7" y2="778.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="715.6" y1="768.0" x2="715.6" y2="778.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="744.4" y1="768.0" x2="744.4" y2="778.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="773.3" y1="768.0" x2="773.3" y2="778.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="802.2" y1="768.0" x2="802.2" y2="778.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="831.1" y1="768.0" x2="831.1" y2="778.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="860.0" y1="768.0" x2="860.0" y2="784.0" stroke="#a3adbe" stroke-width="2" stroke-linecap="round"/>
+<text x="80.0" y="824.0" font-size="24" fill="#a3adbe">start</text>
+<text x="470.0" y="824.0" font-size="24" fill="#a3adbe" text-anchor="middle">26 weekly checks</text>
+<text x="860.0" y="824.0" font-size="24" fill="#a3adbe" text-anchor="end">end</text>
+<g class="st" data-s="1" data-dim="2">
+<polyline points="80.0,330.6 108.9,389.4 137.8,439.7 166.7,464.8 195.6,431.3 224.4,381.0 253.3,322.3" fill="none" stroke="#3987e5" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="253.3" cy="322.3" r="7" fill="#3987e5" stroke="#10131a" stroke-width="2"/>
+<text x="269.3" y="308.3" font-size="24" fill="#f3f0e8">ends early</text>
+</g>
+<g class="st" data-s="1">
+<rect x="910.0" y="215.0" width="610.0" height="185.0" rx="16" fill="#1a202b" stroke="#3c4558" stroke-width="1.5"/>
+<rect x="910.0" y="215.0" width="8.0" height="185.0" rx="4" fill="#3987e5"/>
+<text x="942.0" y="271.0" font-size="28" fill="#f3f0e8" font-weight="700">Back at the starting price</text>
+<text x="942.0" y="319.0" font-size="26" fill="#c9cfdb">The note ends early.</text>
+<text x="942.0" y="359.0" font-size="26" fill="#c9cfdb">$1 back, plus 0.25% per week so far.</text>
+</g>
+<g class="st" data-s="2" data-dim="3">
+<polyline points="80.0,330.6 108.9,347.4 137.8,364.2 166.7,381.0 195.6,372.6 224.4,397.7 253.3,414.5 282.2,406.1 311.1,431.3 340.0,422.9 368.9,431.3 397.8,448.1 426.7,481.6 455.6,506.8 484.4,464.8 513.3,431.3 542.2,389.4 571.1,422.9 600.0,456.5 628.9,498.4 657.8,531.9 686.7,490.0 715.6,439.7 744.4,397.7 773.3,414.5 802.2,431.3 831.1,406.1 860.0,397.7" fill="none" stroke="#199e70" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="860.0" cy="397.7" r="7" fill="#199e70" stroke="#10131a" stroke-width="2"/>
+<text x="846.0" y="375.7" font-size="24" fill="#f3f0e8" text-anchor="end">stays above 60%</text>
+</g>
+<g class="st" data-s="2">
+<rect x="910.0" y="420.0" width="610.0" height="185.0" rx="16" fill="#1a202b" stroke="#3c4558" stroke-width="1.5"/>
+<rect x="910.0" y="420.0" width="8.0" height="185.0" rx="4" fill="#199e70"/>
+<text x="942.0" y="476.0" font-size="28" fill="#f3f0e8" font-weight="700">Never below 60% on a check</text>
+<text x="942.0" y="524.0" font-size="26" fill="#c9cfdb">The note runs to the end.</text>
+<text x="942.0" y="564.0" font-size="26" fill="#c9cfdb">$1 back, plus every coupon: $1.0675.</text>
+</g>
+<g class="st" data-s="3">
+<polyline points="80.0,330.6 108.9,372.6 137.8,422.9 166.7,481.6 195.6,548.7 224.4,615.8 253.3,682.9 282.2,649.4 311.1,599.0 340.0,548.7 368.9,498.4 397.8,506.8 426.7,540.3 455.6,565.5 484.4,531.9 513.3,490.0 542.2,515.2 571.1,557.1 600.0,590.6 628.9,565.5 657.8,540.3 686.7,523.5 715.6,548.7 744.4,506.8 773.3,490.0 802.2,531.9 831.1,523.5 860.0,515.2" fill="none" stroke="#d95926" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="253.3" cy="682.9" r="7" fill="#d95926" stroke="#10131a" stroke-width="2"/>
+<text x="269.3" y="718.9" font-size="24" fill="#f3f0e8">below 60% on a check</text>
+<circle cx="860.0" cy="515.2" r="7" fill="#d95926" stroke="#10131a" stroke-width="2"/>
+<text x="846.0" y="581.2" font-size="24" fill="#f3f0e8" text-anchor="end">ends at 78%</text>
+</g>
+<g class="st" data-s="3">
+<rect x="910.0" y="625.0" width="610.0" height="185.0" rx="16" fill="#1a202b" stroke="#3c4558" stroke-width="1.5"/>
+<rect x="910.0" y="625.0" width="8.0" height="185.0" rx="4" fill="#d95926"/>
+<text x="942.0" y="681.0" font-size="28" fill="#f3f0e8" font-weight="700">Below 60%, and finishes down</text>
+<text x="942.0" y="729.0" font-size="26" fill="#c9cfdb">Paid the ending price, plus coupons.</text>
+<text x="942.0" y="769.0" font-size="26" fill="#c9cfdb">Ending at 78% pays $0.8475.</text>
+</g>
+</svg>
+<svg class="scene" data-n="3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Two tokens">
+<rect width="1600" height="900" fill="#10131a"/>
+<text x="80.0" y="86.0" font-size="22" fill="#e0c07a" font-weight="700" letter-spacing="3">TWO TOKENS</text>
+<text x="80.0" y="152.0" font-size="52" fill="#f3f0e8" font-weight="700" letter-spacing="-1">The cash is locked up front. Two tokens split it.</text>
+<text x="80.0" y="250.0" font-size="30" fill="#c9cfdb">$1.0675 of USDG is locked per note, and split between</text>
+<rect x="830.0" y="212.0" width="130.0" height="54.0" rx="12" fill="#e0c07a"/><text x="895.0" y="248.4" font-size="26" fill="#1a140c" text-anchor="middle" font-weight="700">NOTE</text>
+<text x="984.0" y="250.0" font-size="30" fill="#c9cfdb">and</text>
+<rect x="1056.0" y="212.0" width="150.0" height="54.0" rx="12" fill="#d95926"/><text x="1131.0" y="248.4" font-size="26" fill="#1a140c" text-anchor="middle" font-weight="700">COVER</text>
+<g class="st" data-s="1">
+<text x="80.0" y="350.0" font-size="32" fill="#f3f0e8" font-weight="700">You hold $10,000 of stock tokens and buy cover on all of it for $757.</text>
+<text x="112.0" y="428.0" font-size="24" fill="#a3adbe">What the stock does</text>
+<text x="900.0" y="428.0" font-size="24" fill="#a3adbe" text-anchor="end">Stock is worth</text>
+<text x="1180.0" y="428.0" font-size="24" fill="#a3adbe" text-anchor="end">COVER pays</text>
+<text x="1520.0" y="428.0" font-size="24" fill="#a3adbe" text-anchor="end">Together, before the premium</text>
+<line x1="80.0" y1="448.0" x2="1520.0" y2="448.0" stroke="#3c4558" stroke-width="1.5" stroke-linecap="round"/>
+<rect x="80.0" y="466.0" width="8.0" height="46.0" rx="4" fill="#3987e5"/>
+<text x="112.0" y="500.0" font-size="28" fill="#f3f0e8">Back at the start by week 6</text>
+<text x="900.0" y="500.0" font-size="28" fill="#c9cfdb" text-anchor="end">$10,100</text>
+<text x="1180.0" y="500.0" font-size="28" fill="#f3f0e8" text-anchor="end">$525</text>
+<text x="1520.0" y="500.0" font-size="28" fill="#f3f0e8" text-anchor="end">$10,625</text>
+<line x1="80.0" y1="526.0" x2="1520.0" y2="526.0" stroke="#3c4558" stroke-width="1" stroke-linecap="round"/>
+<rect x="80.0" y="538.0" width="8.0" height="46.0" rx="4" fill="#199e70"/>
+<text x="112.0" y="572.0" font-size="28" fill="#f3f0e8">Dips to 78%, never below 60% on a check</text>
+<text x="900.0" y="572.0" font-size="28" fill="#c9cfdb" text-anchor="end">$7,800</text>
+<text x="1180.0" y="572.0" font-size="28" fill="#f3f0e8" text-anchor="end">$0</text>
+<text x="1520.0" y="572.0" font-size="28" fill="#f3f0e8" text-anchor="end">$7,800</text>
+<line x1="80.0" y1="598.0" x2="1520.0" y2="598.0" stroke="#3c4558" stroke-width="1" stroke-linecap="round"/>
+</g>
+<g class="st" data-s="2">
+<rect x="80.0" y="610.0" width="8.0" height="46.0" rx="4" fill="#d95926"/>
+<text x="112.0" y="644.0" font-size="28" fill="#f3f0e8" font-weight="700">Below 60% on a check, ends at 78%</text>
+<text x="900.0" y="644.0" font-size="28" fill="#c9cfdb" text-anchor="end">$7,800</text>
+<text x="1180.0" y="644.0" font-size="28" fill="#f3f0e8" text-anchor="end" font-weight="700">$2,200</text>
+<text x="1520.0" y="644.0" font-size="28" fill="#f3f0e8" text-anchor="end" font-weight="700">$10,000</text>
+<line x1="80.0" y1="670.0" x2="1520.0" y2="670.0" stroke="#3c4558" stroke-width="1" stroke-linecap="round"/>
+<rect x="80.0" y="682.0" width="8.0" height="46.0" rx="4" fill="#d95926"/>
+<text x="112.0" y="716.0" font-size="28" fill="#f3f0e8" font-weight="700">Below 60% on a check, ends at 50%</text>
+<text x="900.0" y="716.0" font-size="28" fill="#c9cfdb" text-anchor="end">$5,000</text>
+<text x="1180.0" y="716.0" font-size="28" fill="#f3f0e8" text-anchor="end" font-weight="700">$5,000</text>
+<text x="1520.0" y="716.0" font-size="28" fill="#f3f0e8" text-anchor="end" font-weight="700">$10,000</text>
+<line x1="80.0" y1="742.0" x2="1520.0" y2="742.0" stroke="#3c4558" stroke-width="1" stroke-linecap="round"/>
+</g>
+<g class="st" data-s="3">
+<text x="80.0" y="800.0" font-size="28" fill="#c9cfdb">The other side: a cash holder keeps NOTE, earns 0.25% a week, and takes that loss.</text>
+<text x="80.0" y="844.0" font-size="28" fill="#f3f0e8" font-weight="700">Fully funded on both sides. No margin calls, no liquidations.</text>
+</g>
+</svg>
+<svg class="scene" data-n="4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Why a neural network">
+<rect width="1600" height="900" fill="#10131a"/>
+<text x="80.0" y="86.0" font-size="22" fill="#e0c07a" font-weight="700" letter-spacing="3">WHY A NEURAL NETWORK</text>
+<text x="80.0" y="152.0" font-size="52" fill="#f3f0e8" font-weight="700" letter-spacing="-1">No formula, so a small neural network prices it.</text>
+<g class="st" data-s="0" data-dim="2">
+<text x="80.0" y="244.0" font-size="24" fill="#a3adbe">One date</text>
+<text x="80.0" y="298.0" font-size="40" fill="#f3f0e8" font-weight="700">A formula.</text>
+<text x="80.0" y="664.0" font-size="26" fill="#c9cfdb">A plain option: only the</text>
+<text x="80.0" y="702.0" font-size="26" fill="#c9cfdb">final price matters.</text>
+<line x1="80.0" y1="560.0" x2="480.0" y2="560.0" stroke="#3c4558" stroke-width="1.5" stroke-linecap="round"/>
+<polyline points="100.0,360.0 270.0,520.0 470.0,520.0" fill="none" stroke="#c9cfdb" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="270.0" y1="520.0" x2="270.0" y2="560.0" stroke="#a3adbe" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="5 6"/>
+<text x="480.0" y="594.0" font-size="24" fill="#a3adbe" text-anchor="end">price on the final day</text>
+</g>
+<g class="st" data-s="1" data-dim="3">
+<line x1="500.0" y1="445.0" x2="546.0" y2="445.0" stroke="#a3adbe" stroke-width="3" stroke-linecap="round"/><polygon points="552,445 536,436 536,454" fill="#a3adbe"/>
+<text x="590.0" y="244.0" font-size="24" fill="#a3adbe">26 dates, and an early exit</text>
+<text x="590.0" y="298.0" font-size="40" fill="#f3f0e8" font-weight="700">A simulation.</text>
+<text x="590.0" y="664.0" font-size="26" fill="#c9cfdb">262,144 random price paths.</text>
+<text x="590.0" y="702.0" font-size="26" fill="#c9cfdb">Too heavy to run on a chain.</text>
+<line x1="640.0" y1="340.0" x2="640.0" y2="560.0" stroke="#3c4558" stroke-width="1" stroke-linecap="round" stroke-dasharray="3 7"/>
+<line x1="690.0" y1="340.0" x2="690.0" y2="560.0" stroke="#3c4558" stroke-width="1" stroke-linecap="round" stroke-dasharray="3 7"/>
+<line x1="740.0" y1="340.0" x2="740.0" y2="560.0" stroke="#3c4558" stroke-width="1" stroke-linecap="round" stroke-dasharray="3 7"/>
+<line x1="790.0" y1="340.0" x2="790.0" y2="560.0" stroke="#3c4558" stroke-width="1" stroke-linecap="round" stroke-dasharray="3 7"/>
+<line x1="840.0" y1="340.0" x2="840.0" y2="560.0" stroke="#3c4558" stroke-width="1" stroke-linecap="round" stroke-dasharray="3 7"/>
+<line x1="890.0" y1="340.0" x2="890.0" y2="560.0" stroke="#3c4558" stroke-width="1" stroke-linecap="round" stroke-dasharray="3 7"/>
+<line x1="940.0" y1="340.0" x2="940.0" y2="560.0" stroke="#3c4558" stroke-width="1" stroke-linecap="round" stroke-dasharray="3 7"/>
+<line x1="990.0" y1="340.0" x2="990.0" y2="560.0" stroke="#3c4558" stroke-width="1" stroke-linecap="round" stroke-dasharray="3 7"/>
+<polyline points="590.0,445.0 600.0,443.0 610.0,447.0 620.0,445.2 630.0,442.7 640.0,435.3 650.0,433.6 660.0,442.5 670.0,445.9 680.0,454.2 690.0,456.1 700.0,459.3 710.0,460.8 720.0,447.5 730.0,454.3 740.0,458.3 750.0,462.3 760.0,448.8 770.0,434.9 780.0,427.7 790.0,424.0 800.0,426.4 810.0,426.1 820.0,430.2 830.0,425.1 840.0,427.6 850.0,430.7 860.0,425.4 870.0,439.2 880.0,443.6 890.0,453.2 900.0,448.2 910.0,442.3 920.0,439.6 930.0,438.7 940.0,443.8 950.0,445.8 960.0,442.2 970.0,434.5 980.0,430.4 990.0,440.1" fill="none" stroke="#c9cfdb" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"/>
+<polyline points="590.0,445.0 600.0,438.5 610.0,440.5 620.0,443.9 630.0,432.0 640.0,432.4 650.0,442.8 660.0,426.7 670.0,424.1 680.0,423.3 690.0,416.8 700.0,420.7 710.0,420.2 720.0,408.5 730.0,415.1 740.0,420.5 750.0,428.1 760.0,439.6 770.0,442.5 780.0,443.4 790.0,433.0 800.0,438.0 810.0,433.1 820.0,429.5 830.0,419.3 840.0,411.6 850.0,407.3 860.0,417.7 870.0,401.4 880.0,389.7 890.0,391.7 900.0,403.2 910.0,407.8 920.0,392.6 930.0,372.5 940.0,375.3 950.0,369.5 960.0,360.5 970.0,368.3 980.0,377.1 990.0,378.4" fill="none" stroke="#c9cfdb" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"/>
+<polyline points="590.0,445.0 600.0,447.0 610.0,450.4 620.0,463.2 630.0,468.1 640.0,472.3 650.0,476.7 660.0,464.1 670.0,474.4 680.0,482.0 690.0,486.3 700.0,470.5 710.0,465.4 720.0,472.1 730.0,457.6 740.0,456.2 750.0,464.3 760.0,453.8 770.0,466.7 780.0,471.1 790.0,469.9 800.0,472.5 810.0,477.7 820.0,478.7 830.0,487.9 840.0,482.6 850.0,479.3 860.0,487.6 870.0,487.8 880.0,480.8 890.0,488.3 900.0,500.1 910.0,496.5 920.0,485.5 930.0,484.4 940.0,483.2 950.0,480.8 960.0,492.0 970.0,483.8 980.0,493.9 990.0,483.8" fill="none" stroke="#c9cfdb" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"/>
+<polyline points="590.0,445.0 600.0,438.7 610.0,443.8 620.0,452.8 630.0,459.7 640.0,462.4 650.0,463.6 660.0,464.8 670.0,469.4 680.0,468.0 690.0,470.2 700.0,474.8 710.0,474.8 720.0,480.9 730.0,485.4 740.0,501.5 750.0,504.1 760.0,500.7 770.0,497.7 780.0,497.6 790.0,505.0 800.0,502.3 810.0,505.4 820.0,520.1 830.0,499.6 840.0,490.6 850.0,492.5 860.0,495.7 870.0,497.6 880.0,494.2 890.0,499.4 900.0,501.7 910.0,497.5 920.0,516.9 930.0,519.8 940.0,515.3 950.0,514.5 960.0,512.7 970.0,512.2 980.0,490.4 990.0,486.5" fill="none" stroke="#c9cfdb" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"/>
+<polyline points="590.0,445.0 600.0,453.1 610.0,443.7 620.0,443.2 630.0,450.8 640.0,457.7 650.0,469.6 660.0,456.0 670.0,453.2 680.0,450.4 690.0,455.4 700.0,464.1 710.0,442.7 720.0,451.4 730.0,439.8 740.0,445.3 750.0,433.3 760.0,434.7 770.0,444.3 780.0,443.1 790.0,444.6 800.0,451.0 810.0,452.1 820.0,451.4 830.0,463.7 840.0,472.1 850.0,469.7 860.0,491.7 870.0,482.5 880.0,489.8 890.0,487.7 900.0,488.8 910.0,494.4 920.0,496.2 930.0,501.3 940.0,489.1 950.0,477.0 960.0,481.9 970.0,474.2 980.0,466.0 990.0,454.3" fill="none" stroke="#c9cfdb" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"/>
+<polyline points="590.0,445.0 600.0,455.1 610.0,461.1 620.0,472.9 630.0,465.4 640.0,465.4 650.0,456.3 660.0,462.4 670.0,475.1 680.0,468.0 690.0,480.5 700.0,488.4 710.0,487.0 720.0,471.2 730.0,482.4 740.0,481.7 750.0,476.8 760.0,480.0 770.0,483.3 780.0,495.3 790.0,487.1 800.0,496.2 810.0,508.1 820.0,519.7 830.0,518.3 840.0,512.4 850.0,520.5 860.0,521.4 870.0,522.4 880.0,533.8 890.0,531.7 900.0,513.3 910.0,510.2 920.0,495.4 930.0,501.9 940.0,504.5 950.0,499.6 960.0,499.5 970.0,506.2 980.0,506.8 990.0,517.4" fill="none" stroke="#c9cfdb" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"/>
+<polyline points="590.0,445.0 600.0,444.5 610.0,452.8 620.0,464.8 630.0,477.6 640.0,472.3 650.0,479.3 660.0,464.3 670.0,455.6 680.0,439.9 690.0,448.5 700.0,438.6 710.0,438.5 720.0,437.0 730.0,436.8 740.0,432.0 750.0,433.9 760.0,448.2 770.0,448.6 780.0,452.8 790.0,460.8 800.0,459.2 810.0,449.2 820.0,444.7 830.0,453.3 840.0,440.1 850.0,435.4 860.0,443.4 870.0,449.8 880.0,449.8 890.0,456.3 900.0,457.6 910.0,448.2 920.0,435.7 930.0,430.5 940.0,437.9 950.0,433.4 960.0,426.2 970.0,420.0 980.0,407.8 990.0,406.8" fill="none" stroke="#c9cfdb" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"/>
+<polyline points="590.0,445.0 600.0,435.6 610.0,438.5 620.0,419.6 630.0,422.2 640.0,417.1 650.0,401.5 660.0,407.3 670.0,405.1 680.0,387.3 690.0,380.3 700.0,382.6 710.0,379.0 720.0,385.2 730.0,391.2 740.0,396.5 750.0,399.1 760.0,409.8 770.0,415.1 780.0,418.7 790.0,402.0 800.0,409.2 810.0,419.7 820.0,417.3 830.0,413.5 840.0,429.0 850.0,415.0 860.0,418.7 870.0,438.1 880.0,430.7 890.0,436.2 900.0,451.3 910.0,450.3 920.0,454.8 930.0,462.1 940.0,454.8 950.0,454.1 960.0,456.4 970.0,463.0 980.0,462.8 990.0,461.2" fill="none" stroke="#c9cfdb" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"/>
+<polyline points="590.0,445.0 600.0,436.9 610.0,434.0 620.0,441.1 630.0,441.9 640.0,435.1 650.0,428.4 660.0,449.7 670.0,458.8 680.0,463.9 690.0,443.2 700.0,448.2 710.0,452.0 720.0,465.5 730.0,468.9 740.0,468.4 750.0,472.6 760.0,457.0 770.0,465.3 780.0,467.9 790.0,462.2 800.0,472.8 810.0,487.3 820.0,476.1 830.0,470.8 840.0,473.1 850.0,474.6 860.0,471.4 870.0,463.6 880.0,480.6 890.0,488.9 900.0,479.3 910.0,468.5 920.0,482.2 930.0,490.1 940.0,504.6 950.0,511.1 960.0,504.2 970.0,506.2 980.0,489.0 990.0,483.0" fill="none" stroke="#c9cfdb" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"/>
+<polyline points="590.0,445.0 600.0,444.5 610.0,448.7 620.0,442.9 630.0,441.9 640.0,445.6 650.0,448.6 660.0,453.7 670.0,455.4 680.0,452.8 690.0,459.1 700.0,459.5 710.0,452.9 720.0,447.9 730.0,447.9 740.0,447.0 750.0,448.2 760.0,448.2 770.0,449.6 780.0,448.6 790.0,438.5 800.0,441.9 810.0,450.3 820.0,453.8 830.0,452.3 840.0,455.8 850.0,448.1 860.0,432.9 870.0,433.4 880.0,426.0 890.0,431.9 900.0,423.2 910.0,402.2 920.0,393.9 930.0,406.5 940.0,403.4 950.0,392.5 960.0,386.4 970.0,390.5 980.0,394.5 990.0,395.9" fill="none" stroke="#c9cfdb" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"/>
+<polyline points="590.0,445.0 600.0,456.9 610.0,462.5 620.0,462.4 630.0,467.1 640.0,480.4 650.0,488.1 660.0,496.3 670.0,487.7 680.0,486.5 690.0,492.3 700.0,489.9 710.0,498.5 720.0,503.3 730.0,510.5 740.0,508.8 750.0,529.2 760.0,539.1 770.0,537.4 780.0,538.1 790.0,554.0 800.0,551.3 810.0,554.0 820.0,554.0 830.0,554.0 840.0,544.7 850.0,546.2 860.0,549.0 870.0,554.0 880.0,554.0 890.0,554.0 900.0,554.0 910.0,554.0 920.0,554.0 930.0,554.0 940.0,552.1 950.0,554.0 960.0,545.6 970.0,540.5 980.0,540.6 990.0,528.9" fill="none" stroke="#c9cfdb" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"/>
+<polyline points="590.0,445.0 600.0,441.5 610.0,425.4 620.0,420.0 630.0,424.5 640.0,429.1 650.0,428.6 660.0,426.8 670.0,415.4 680.0,430.1 690.0,434.2 700.0,442.9 710.0,435.9 720.0,434.4 730.0,419.8 740.0,426.1 750.0,433.6 760.0,418.4 770.0,418.0 780.0,423.0 790.0,408.9 800.0,394.3 810.0,385.8 820.0,380.7 830.0,369.5 840.0,369.8 850.0,371.8 860.0,376.8 870.0,382.5 880.0,394.5 890.0,403.8 900.0,393.3 910.0,389.3 920.0,380.8 930.0,372.2 940.0,371.5 950.0,371.6 960.0,375.5 970.0,362.8 980.0,352.9 990.0,352.7" fill="none" stroke="#c9cfdb" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"/>
+<polyline points="590.0,445.0 600.0,443.4 610.0,440.9 620.0,440.4 630.0,434.3 640.0,439.9 650.0,442.8 660.0,442.1 670.0,436.7 680.0,435.3 690.0,413.5 700.0,405.7 710.0,406.0 720.0,393.9 730.0,395.5 740.0,396.7 750.0,385.7 760.0,383.7 770.0,381.2 780.0,384.9 790.0,389.8 800.0,389.5 810.0,382.7 820.0,381.5 830.0,381.0 840.0,386.9 850.0,389.2 860.0,383.4 870.0,372.6 880.0,369.6 890.0,363.7 900.0,354.8 910.0,353.9 920.0,349.9 930.0,350.8 940.0,355.0 950.0,351.7 960.0,370.3 970.0,367.7 980.0,376.5 990.0,377.5" fill="none" stroke="#c9cfdb" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"/>
+<polyline points="590.0,445.0 600.0,453.9 610.0,434.9 620.0,428.9 630.0,430.9 640.0,435.7 650.0,454.4 660.0,457.0 670.0,467.2 680.0,473.3 690.0,480.9 700.0,485.0 710.0,483.8 720.0,487.8 730.0,479.2 740.0,488.7 750.0,480.5 760.0,482.5 770.0,499.5 780.0,497.7 790.0,497.8 800.0,507.2 810.0,507.4 820.0,500.9 830.0,503.0 840.0,507.6 850.0,513.3 860.0,507.1 870.0,521.1 880.0,534.5 890.0,534.6 900.0,536.8 910.0,533.3 920.0,544.7 930.0,539.0 940.0,544.4 950.0,540.6 960.0,535.0 970.0,540.8 980.0,551.4 990.0,551.4" fill="none" stroke="#c9cfdb" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"/>
+<polyline points="590.0,445.0 600.0,439.6 610.0,446.1 620.0,445.7 630.0,448.2 640.0,460.3 650.0,469.4 660.0,465.2 670.0,483.5 680.0,483.5 690.0,489.8 700.0,484.6 710.0,484.3 720.0,470.3 730.0,484.6 740.0,495.5 750.0,485.8 760.0,473.7 770.0,460.8 780.0,470.2 790.0,466.5 800.0,466.0 810.0,463.5 820.0,462.5 830.0,453.8 840.0,454.0 850.0,442.5 860.0,442.0 870.0,444.4 880.0,448.2 890.0,446.3 900.0,439.1 910.0,440.4 920.0,436.5 930.0,449.0 940.0,455.2 950.0,454.2 960.0,450.5 970.0,444.8 980.0,437.3 990.0,434.5" fill="none" stroke="#c9cfdb" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"/>
+<polyline points="590.0,445.0 600.0,447.4 610.0,451.5 620.0,456.0 630.0,472.8 640.0,467.2 650.0,467.3 660.0,489.6 670.0,474.7 680.0,470.5 690.0,471.9 700.0,473.1 710.0,476.4 720.0,474.5 730.0,477.4 740.0,477.8 750.0,484.0 760.0,468.9 770.0,461.8 780.0,461.8 790.0,453.5 800.0,445.2 810.0,450.2 820.0,445.0 830.0,450.1 840.0,456.0 850.0,458.5 860.0,462.5 870.0,461.7 880.0,450.4 890.0,450.2 900.0,453.8 910.0,449.6 920.0,448.8 930.0,454.8 940.0,447.8 950.0,452.9 960.0,467.8 970.0,463.3 980.0,464.5 990.0,463.3" fill="none" stroke="#c9cfdb" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"/>
+<polyline points="590.0,445.0 600.0,457.3 610.0,459.9 620.0,467.0 630.0,461.5 640.0,461.4 650.0,461.3 660.0,447.1 670.0,458.6 680.0,465.8 690.0,451.8 700.0,457.8 710.0,456.7 720.0,460.3 730.0,463.3 740.0,451.3 750.0,449.6 760.0,461.5 770.0,456.9 780.0,448.7 790.0,437.8 800.0,428.1 810.0,430.8 820.0,444.3 830.0,447.7 840.0,449.7 850.0,467.6 860.0,463.4 870.0,458.0 880.0,462.3 890.0,466.6 900.0,458.5 910.0,449.2 920.0,451.5 930.0,453.5 940.0,443.0 950.0,441.4 960.0,437.1 970.0,440.7 980.0,439.8 990.0,439.1" fill="none" stroke="#c9cfdb" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"/>
+<polyline points="590.0,445.0 600.0,442.2 610.0,450.6 620.0,461.7 630.0,458.8 640.0,465.6 650.0,459.5 660.0,460.1 670.0,466.1 680.0,478.2 690.0,475.1 700.0,474.5 710.0,476.1 720.0,464.1 730.0,464.2 740.0,458.8 750.0,461.8 760.0,452.8 770.0,437.0 780.0,437.3 790.0,439.3 800.0,435.0 810.0,442.1 820.0,439.9 830.0,435.0 840.0,438.9 850.0,426.3 860.0,420.9 870.0,420.7 880.0,427.5 890.0,426.2 900.0,428.7 910.0,423.4 920.0,425.9 930.0,439.2 940.0,433.7 950.0,452.6 960.0,447.5 970.0,447.6 980.0,449.0 990.0,457.2" fill="none" stroke="#c9cfdb" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"/>
+<polyline points="590.0,445.0 600.0,435.1 610.0,418.3 620.0,423.1 630.0,429.5 640.0,434.5 650.0,455.5 660.0,457.2 670.0,459.2 680.0,466.6 690.0,469.6 700.0,482.9 710.0,473.0 720.0,470.0 730.0,442.4 740.0,448.9 750.0,446.0 760.0,453.4 770.0,470.6 780.0,470.5 790.0,468.5 800.0,464.5 810.0,457.8 820.0,452.8 830.0,457.9 840.0,458.2 850.0,458.7 860.0,457.3 870.0,464.6 880.0,468.6 890.0,467.4 900.0,472.8 910.0,471.6 920.0,462.3 930.0,474.0 940.0,477.7 950.0,470.0 960.0,478.7 970.0,481.4 980.0,468.9 990.0,481.8" fill="none" stroke="#c9cfdb" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"/>
+<polyline points="590.0,445.0 600.0,447.7 610.0,454.8 620.0,456.4 630.0,455.2 640.0,442.8 650.0,450.6 660.0,450.8 670.0,448.5 680.0,451.3 690.0,452.0 700.0,457.4 710.0,454.4 720.0,454.1 730.0,437.0 740.0,433.6 750.0,439.0 760.0,449.7 770.0,446.8 780.0,445.8 790.0,458.5 800.0,455.9 810.0,461.8 820.0,475.2 830.0,475.5 840.0,485.3 850.0,479.6 860.0,481.3 870.0,480.7 880.0,481.6 890.0,490.6 900.0,509.7 910.0,504.4 920.0,499.8 930.0,503.8 940.0,495.4 950.0,499.3 960.0,503.9 970.0,501.7 980.0,505.9 990.0,493.5" fill="none" stroke="#c9cfdb" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"/>
+<polyline points="590.0,445.0 600.0,451.1 610.0,438.7 620.0,433.1 630.0,428.7 640.0,425.5 650.0,432.4 660.0,433.0 670.0,429.8 680.0,434.2 690.0,446.8 700.0,446.9 710.0,449.8 720.0,459.7 730.0,461.9 740.0,451.6 750.0,471.5 760.0,489.2 770.0,473.3 780.0,473.0 790.0,476.3 800.0,484.1 810.0,489.4 820.0,487.2 830.0,478.8 840.0,479.6 850.0,487.9 860.0,479.2 870.0,471.0 880.0,470.8 890.0,455.3 900.0,453.2 910.0,449.7 920.0,453.3 930.0,447.7 940.0,440.6 950.0,437.5 960.0,437.1 970.0,431.8 980.0,431.8 990.0,437.9" fill="none" stroke="#c9cfdb" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"/>
+<polyline points="590.0,445.0 600.0,454.5 610.0,468.1 620.0,461.9 630.0,458.5 640.0,438.6 650.0,453.8 660.0,448.0 670.0,447.8 680.0,451.9 690.0,441.1 700.0,444.8 710.0,444.6 720.0,430.0 730.0,432.3 740.0,441.9 750.0,426.9 760.0,433.4 770.0,435.0 780.0,438.8 790.0,442.4 800.0,452.8 810.0,451.0 820.0,458.0 830.0,454.7 840.0,460.6 850.0,454.0 860.0,453.2 870.0,467.0 880.0,470.6 890.0,469.3 900.0,460.2 910.0,453.8 920.0,455.4 930.0,462.9 940.0,466.3 950.0,470.5 960.0,470.2 970.0,481.0 980.0,477.9 990.0,473.5" fill="none" stroke="#c9cfdb" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"/>
+</g>
+<g class="st" data-s="2">
+<line x1="1004.0" y1="445.0" x2="1050.0" y2="445.0" stroke="#a3adbe" stroke-width="3" stroke-linecap="round"/><polygon points="1056,445 1040,436 1040,454" fill="#a3adbe"/>
+<text x="1100.0" y="244.0" font-size="24" fill="#a3adbe">Trained on the simulation</text>
+<text x="1100.0" y="298.0" font-size="40" fill="#f3f0e8" font-weight="700">A neural network.</text>
+<text x="1100.0" y="664.0" font-size="26" fill="#c9cfdb">7,465 parameters, integer math.</text>
+<text x="1100.0" y="702.0" font-size="26" fill="#c9cfdb">The whole model is 23.9 KB.</text>
+<line x1="1130.0" y1="385.0" x2="1198.0" y2="355.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="385.0" x2="1198.0" y2="385.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="385.0" x2="1198.0" y2="415.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="385.0" x2="1198.0" y2="445.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="385.0" x2="1198.0" y2="475.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="385.0" x2="1198.0" y2="505.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="385.0" x2="1198.0" y2="535.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="415.0" x2="1198.0" y2="355.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="415.0" x2="1198.0" y2="385.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="415.0" x2="1198.0" y2="415.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="415.0" x2="1198.0" y2="445.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="415.0" x2="1198.0" y2="475.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="415.0" x2="1198.0" y2="505.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="415.0" x2="1198.0" y2="535.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="445.0" x2="1198.0" y2="355.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="445.0" x2="1198.0" y2="385.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="445.0" x2="1198.0" y2="415.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="445.0" x2="1198.0" y2="445.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="445.0" x2="1198.0" y2="475.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="445.0" x2="1198.0" y2="505.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="445.0" x2="1198.0" y2="535.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="475.0" x2="1198.0" y2="355.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="475.0" x2="1198.0" y2="385.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="475.0" x2="1198.0" y2="415.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="475.0" x2="1198.0" y2="445.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="475.0" x2="1198.0" y2="475.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="475.0" x2="1198.0" y2="505.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="475.0" x2="1198.0" y2="535.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="505.0" x2="1198.0" y2="355.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="505.0" x2="1198.0" y2="385.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="505.0" x2="1198.0" y2="415.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="505.0" x2="1198.0" y2="445.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="505.0" x2="1198.0" y2="475.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="505.0" x2="1198.0" y2="505.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1130.0" y1="505.0" x2="1198.0" y2="535.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="355.0" x2="1266.0" y2="370.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="355.0" x2="1266.0" y2="400.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="355.0" x2="1266.0" y2="430.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="355.0" x2="1266.0" y2="460.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="355.0" x2="1266.0" y2="490.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="355.0" x2="1266.0" y2="520.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="385.0" x2="1266.0" y2="370.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="385.0" x2="1266.0" y2="400.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="385.0" x2="1266.0" y2="430.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="385.0" x2="1266.0" y2="460.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="385.0" x2="1266.0" y2="490.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="385.0" x2="1266.0" y2="520.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="415.0" x2="1266.0" y2="370.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="415.0" x2="1266.0" y2="400.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="415.0" x2="1266.0" y2="430.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="415.0" x2="1266.0" y2="460.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="415.0" x2="1266.0" y2="490.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="415.0" x2="1266.0" y2="520.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="445.0" x2="1266.0" y2="370.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="445.0" x2="1266.0" y2="400.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="445.0" x2="1266.0" y2="430.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="445.0" x2="1266.0" y2="460.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="445.0" x2="1266.0" y2="490.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="445.0" x2="1266.0" y2="520.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="475.0" x2="1266.0" y2="370.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="475.0" x2="1266.0" y2="400.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="475.0" x2="1266.0" y2="430.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="475.0" x2="1266.0" y2="460.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="475.0" x2="1266.0" y2="490.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="475.0" x2="1266.0" y2="520.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="505.0" x2="1266.0" y2="370.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="505.0" x2="1266.0" y2="400.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="505.0" x2="1266.0" y2="430.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="505.0" x2="1266.0" y2="460.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="505.0" x2="1266.0" y2="490.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="505.0" x2="1266.0" y2="520.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="535.0" x2="1266.0" y2="370.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="535.0" x2="1266.0" y2="400.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="535.0" x2="1266.0" y2="430.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="535.0" x2="1266.0" y2="460.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="535.0" x2="1266.0" y2="490.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1198.0" y1="535.0" x2="1266.0" y2="520.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="370.0" x2="1334.0" y2="385.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="370.0" x2="1334.0" y2="415.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="370.0" x2="1334.0" y2="445.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="370.0" x2="1334.0" y2="475.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="370.0" x2="1334.0" y2="505.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="400.0" x2="1334.0" y2="385.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="400.0" x2="1334.0" y2="415.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="400.0" x2="1334.0" y2="445.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="400.0" x2="1334.0" y2="475.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="400.0" x2="1334.0" y2="505.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="430.0" x2="1334.0" y2="385.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="430.0" x2="1334.0" y2="415.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="430.0" x2="1334.0" y2="445.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="430.0" x2="1334.0" y2="475.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="430.0" x2="1334.0" y2="505.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="460.0" x2="1334.0" y2="385.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="460.0" x2="1334.0" y2="415.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="460.0" x2="1334.0" y2="445.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="460.0" x2="1334.0" y2="475.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="460.0" x2="1334.0" y2="505.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="490.0" x2="1334.0" y2="385.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="490.0" x2="1334.0" y2="415.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="490.0" x2="1334.0" y2="445.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="490.0" x2="1334.0" y2="475.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="490.0" x2="1334.0" y2="505.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="520.0" x2="1334.0" y2="385.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="520.0" x2="1334.0" y2="415.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="520.0" x2="1334.0" y2="445.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="520.0" x2="1334.0" y2="475.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1266.0" y1="520.0" x2="1334.0" y2="505.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1334.0" y1="385.0" x2="1402.0" y2="385.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1334.0" y1="385.0" x2="1402.0" y2="415.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1334.0" y1="385.0" x2="1402.0" y2="445.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1334.0" y1="385.0" x2="1402.0" y2="475.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1334.0" y1="385.0" x2="1402.0" y2="505.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1334.0" y1="415.0" x2="1402.0" y2="385.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1334.0" y1="415.0" x2="1402.0" y2="415.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1334.0" y1="415.0" x2="1402.0" y2="445.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1334.0" y1="415.0" x2="1402.0" y2="475.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1334.0" y1="415.0" x2="1402.0" y2="505.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1334.0" y1="445.0" x2="1402.0" y2="385.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1334.0" y1="445.0" x2="1402.0" y2="415.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1334.0" y1="445.0" x2="1402.0" y2="445.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1334.0" y1="445.0" x2="1402.0" y2="475.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1334.0" y1="445.0" x2="1402.0" y2="505.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1334.0" y1="475.0" x2="1402.0" y2="385.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1334.0" y1="475.0" x2="1402.0" y2="415.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1334.0" y1="475.0" x2="1402.0" y2="445.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1334.0" y1="475.0" x2="1402.0" y2="475.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1334.0" y1="475.0" x2="1402.0" y2="505.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1334.0" y1="505.0" x2="1402.0" y2="385.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1334.0" y1="505.0" x2="1402.0" y2="415.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1334.0" y1="505.0" x2="1402.0" y2="445.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1334.0" y1="505.0" x2="1402.0" y2="475.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1334.0" y1="505.0" x2="1402.0" y2="505.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1402.0" y1="385.0" x2="1470.0" y2="445.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1402.0" y1="415.0" x2="1470.0" y2="445.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1402.0" y1="445.0" x2="1470.0" y2="445.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1402.0" y1="475.0" x2="1470.0" y2="445.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<line x1="1402.0" y1="505.0" x2="1470.0" y2="445.0" stroke="#a3adbe" stroke-width="1" stroke-linecap="round" opacity="0.35"/>
+<circle cx="1130.0" cy="385.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1130.0" cy="415.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1130.0" cy="445.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1130.0" cy="475.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1130.0" cy="505.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1198.0" cy="355.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1198.0" cy="385.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1198.0" cy="415.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1198.0" cy="445.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1198.0" cy="475.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1198.0" cy="505.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1198.0" cy="535.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1266.0" cy="370.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1266.0" cy="400.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1266.0" cy="430.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1266.0" cy="460.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1266.0" cy="490.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1266.0" cy="520.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1334.0" cy="385.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1334.0" cy="415.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1334.0" cy="445.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1334.0" cy="475.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1334.0" cy="505.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1402.0" cy="385.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1402.0" cy="415.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1402.0" cy="445.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1402.0" cy="475.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1402.0" cy="505.0" r="7" fill="#232a38" stroke="#c9cfdb" stroke-width="2"/>
+<circle cx="1470.0" cy="445.0" r="10" fill="#e0c07a"/>
+<text x="1490.0" y="454.0" font-size="24" fill="#f3f0e8">price</text>
+</g>
+<g class="st" data-s="3">
+<rect x="1074.0" y="196.0" width="478.0" height="540.0" rx="18" fill="none" stroke="#e0c07a" stroke-width="2.5"/>
+<rect x="1300.0" y="180.0" width="230.0" height="34.0" rx="8" fill="#10131a"/>
+<text x="1415.0" y="206.0" font-size="24" fill="#e0c07a" text-anchor="middle" font-weight="700">Stylus contract</text>
+<text x="80.0" y="796.0" font-size="34" fill="#f3f0e8" font-weight="700">It runs inside the trade transaction.</text>
+<text x="80.0" y="842.0" font-size="28" fill="#c9cfdb">The weights are public: anyone can re-run the simulation and check a quote.</text>
+</g>
+</svg>
+<svg class="scene" data-n="5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Proof">
+<rect width="1600" height="900" fill="#10131a"/>
+<text x="80.0" y="86.0" font-size="22" fill="#e0c07a" font-weight="700" letter-spacing="3">PROOF</text>
+<text x="80.0" y="152.0" font-size="52" fill="#f3f0e8" font-weight="700" letter-spacing="-1">It matches the simulation, or it refuses.</text>
+<rect x="80.0" y="200.0" width="760.0" height="630.0" rx="16" fill="#1a202b" stroke="#3c4558" stroke-width="1.5"/>
+<g class="st" data-s="0">
+<text x="116.0" y="256.0" font-size="26" fill="#c9cfdb">A real trade on our dev node: $10,000 of notes</text>
+</g>
+<g class="st" data-s="1">
+<text x="116.0" y="322.0" font-size="24" fill="#a3adbe">On-chain model</text>
+<text x="116.0" y="396.0" font-size="68" fill="#f3f0e8" font-weight="700" letter-spacing="-1">$10,343</text>
+<text x="460.0" y="322.0" font-size="24" fill="#a3adbe">Simulation, 262,144 paths</text>
+<text x="460.0" y="396.0" font-size="68" fill="#c9cfdb" font-weight="700" letter-spacing="-1">$10,338.20</text>
+<text x="116.0" y="454.0" font-size="26" fill="#f3f0e8">Gap: $4.80, or 0.05%. All six trades in the run: within $8.40.</text>
+</g>
+<g class="st" data-s="2">
+<line x1="116.0" y1="500.0" x2="804.0" y2="500.0" stroke="#3c4558" stroke-width="1.5" stroke-linecap="round"/>
+<text x="116.0" y="556.0" font-size="30" fill="#f3f0e8" font-weight="700">130,752 held-out test points</text>
+<text x="116.0" y="596.0" font-size="24" fill="#a3adbe">Gap to the simulation, in dollars per $10,000 of notes</text>
+<line x1="120.0" y1="700.0" x2="780.0" y2="700.0" stroke="#3c4558" stroke-width="2" stroke-linecap="round"/>
+<line x1="120.0" y1="692.0" x2="120.0" y2="708.0" stroke="#a3adbe" stroke-width="2" stroke-linecap="round"/>
+<line x1="780.0" y1="678.0" x2="780.0" y2="722.0" stroke="#f3f0e8" stroke-width="3" stroke-linecap="round"/>
+<text x="120.0" y="752.0" font-size="24" fill="#a3adbe" text-anchor="middle">0</text>
+<text x="780.0" y="752.0" font-size="24" fill="#f3f0e8" text-anchor="end" font-weight="700">limit $50</text>
+<circle cx="155.0" cy="700.0" r="9" fill="#e0c07a" stroke="#1a202b" stroke-width="2"/>
+<text x="169.0" y="752.0" font-size="24" fill="#f3f0e8">average $2.65</text>
+<circle cx="306.1" cy="700.0" r="9" fill="#e0c07a" stroke="#1a202b" stroke-width="2"/>
+<text x="306.1" y="672.0" font-size="24" fill="#f3f0e8" text-anchor="middle">99% within $14.10</text>
+<circle cx="620.3" cy="700.0" r="9" fill="#e0c07a" stroke="#1a202b" stroke-width="2"/>
+<text x="620.3" y="672.0" font-size="24" fill="#f3f0e8" text-anchor="middle">worst $37.90</text>
+<text x="116.0" y="800.0" font-size="24" fill="#a3adbe">The limit was fixed before the test.</text>
+</g>
+<g class="st" data-s="3">
+<rect x="880.0" y="200.0" width="640.0" height="305.0" rx="16" fill="#1a202b" stroke="#3c4558" stroke-width="1.5"/>
+<text x="916.0" y="258.0" font-size="32" fill="#f3f0e8" font-weight="700">It refuses instead of guessing.</text>
+<rect x="916.0" y="286.0" width="372.0" height="52.0" rx="8" fill="#10131a" stroke="#3c4558" stroke-width="1.5"/>
+<text x="934.0" y="321.0" font-size="26" fill="#e0c07a" class="mono">revert Uncertified(1)</text>
+<text x="916.0" y="388.0" font-size="26" fill="#c9cfdb">On a check day, right at the 60% line, the</text>
+<text x="916.0" y="426.0" font-size="26" fill="#c9cfdb">fair price jumps. There, no trade happens.</text>
+</g>
+<g class="st" data-s="4">
+<rect x="880.0" y="525.0" width="640.0" height="305.0" rx="16" fill="#1a202b" stroke="#3c4558" stroke-width="1.5"/>
+<text x="916.0" y="583.0" font-size="32" fill="#f3f0e8" font-weight="700">Payouts never call the model.</text>
+<rect x="916.0" y="612.0" width="196.0" height="52.0" rx="12" fill="#232a38"/><text x="1014.0" y="646.6" font-size="24" fill="#f3f0e8" text-anchor="middle" font-weight="700">weekly prices</text>
+<line x1="1126.0" y1="638.0" x2="1164.0" y2="638.0" stroke="#a3adbe" stroke-width="3" stroke-linecap="round"/><polygon points="1170,638 1154,629 1154,647" fill="#a3adbe"/>
+<rect x="1184.0" y="612.0" width="150.0" height="52.0" rx="12" fill="#232a38"/><text x="1259.0" y="646.6" font-size="24" fill="#f3f0e8" text-anchor="middle" font-weight="700">arithmetic</text>
+<line x1="1348.0" y1="638.0" x2="1386.0" y2="638.0" stroke="#a3adbe" stroke-width="3" stroke-linecap="round"/><polygon points="1392,638 1376,629 1376,647" fill="#a3adbe"/>
+<text x="1408.0" y="647.0" font-size="26" fill="#e0c07a" font-weight="700">USDG</text>
+<text x="916.0" y="722.0" font-size="26" fill="#c9cfdb">The model only quotes trades you are</text>
+<text x="916.0" y="760.0" font-size="26" fill="#c9cfdb">free to decline.</text>
+</g>
+</svg>
+<svg class="scene" data-n="6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Close">
+<rect width="1600" height="900" fill="#10131a"/>
+<g class="st" data-s="0">
+<rect x="80.0" y="134.0" width="8.0" height="46.0" rx="4" fill="#d95926"/><text x="112.0" y="170.0" font-size="46" fill="#f3f0e8" font-weight="700" letter-spacing="-0.5">Crash cover for stock-token holders.</text>
+<rect x="80.0" y="214.0" width="8.0" height="46.0" rx="4" fill="#e0c07a"/><text x="112.0" y="250.0" font-size="46" fill="#f3f0e8" font-weight="700" letter-spacing="-0.5">A coupon for cash.</text>
+<rect x="80.0" y="294.0" width="8.0" height="46.0" rx="4" fill="#3987e5"/><text x="112.0" y="330.0" font-size="46" fill="#f3f0e8" font-weight="700" letter-spacing="-0.5">A price anyone can check.</text>
+</g>
+<g class="st" data-s="1">
+<text x="80.0" y="560.0" font-size="124" fill="#f3f0e8" font-weight="700" letter-spacing="-3">Surrogate Pricer</text>
+<rect x="84.0" y="596.0" width="120.0" height="5.0" rx="2" fill="#e0c07a"/>
+<rect x="80.0" y="668.0" width="150.0" height="56.0" rx="28" fill="none" stroke="#3c4558" stroke-width="2"/><text x="155.0" y="705.0" font-size="26" fill="#c9cfdb" text-anchor="middle">Stylus</text>
+<rect x="250.0" y="668.0" width="270.0" height="56.0" rx="28" fill="none" stroke="#3c4558" stroke-width="2"/><text x="385.0" y="705.0" font-size="26" fill="#c9cfdb" text-anchor="middle">Settled in USDG</text>
+<rect x="540.0" y="668.0" width="395.0" height="56.0" rx="28" fill="none" stroke="#3c4558" stroke-width="2"/><text x="737.5" y="705.0" font-size="26" fill="#c9cfdb" text-anchor="middle">Built for Robinhood Chain</text>
+<text x="80.0" y="806.0" font-size="34" fill="#e0c07a" font-weight="700">github.com/johba37/surrogate-pricer</text>
+<text x="1520.0" y="806.0" font-size="26" fill="#a3adbe" text-anchor="end">7,465-parameter model  ·  140 contract tests</text>
+</g>
+</svg>
+</div>
+<div id="cap"></div>
+<div id="help">
+  <b>→ / ←</b>next / previous step<br>
+  <b>↓ / ↑</b>next / previous scene<br>
+  <b>F</b>fullscreen<br>
+  <b>A</b>autoplay on the target times<br>
+  <b>P</b>presenter window: script and clock<br>
+  <b>S</b>script on the stage (rehearsal)<br>
+  <b>R</b>back to the start<br>
+  <b>H</b>this list
+</div>
+<div id="notes">
+  <div class="bar"><span id="clock">0:00</span><span id="target"></span><span id="state">manual</span></div>
+  <div id="list"></div>
+  <p class="keys">Keys typed here drive the stage window: → next, ← back, A autoplay, R reset.
+  Record the stage window only.</p>
+</div>
+<script>
+  const DECK = [{"name": "Hook", "seconds": 15, "words": 36, "steps": [{"say": "In twenty twenty-four, Americans bought almost a hundred and fifty billion dollars of structured notes.", "dur": 6.25, "at": 0.0}, {"say": "The bank that sells the note also sets its price.", "dur": 4.17, "at": 6.25}, {"say": "Surrogate Pricer computes that price on-chain, where anyone can check it.", "dur": 4.58, "at": 10.42}]}, {"name": "The note", "seconds": 19, "words": 47, "steps": [{"say": "The note: one stock token, checked once a week for twenty-six weeks.", "dur": 4.85, "at": 15.0}, {"say": "Back at its starting price? It ends early: your dollar back, plus coupons.", "dur": 5.26, "at": 19.85}, {"say": "Never below sixty percent on a check? Dollar back, every coupon.", "dur": 4.45, "at": 25.11}, {"say": "Below sixty, and it finishes down? You take the stock's loss.", "dur": 4.45, "at": 29.55}]}, {"name": "Two tokens", "seconds": 21, "words": 50, "steps": [{"say": "The cash is locked up front and split into two tokens: the note, and the cover.", "dur": 6.72, "at": 34.0}, {"say": "Hold ten thousand dollars of stock: cover costs about seven hundred fifty.", "dur": 5.04, "at": 40.72}, {"say": "Cross the sixty percent line, and it pays your whole loss back.", "dur": 5.04, "at": 45.76}, {"say": "A cash holder takes the other side, for the coupon.", "dur": 4.2, "at": 50.8}]}, {"name": "Why a neural network", "seconds": 23, "words": 57, "steps": [{"say": "A normal option depends on one date, so it has a formula.", "dur": 4.84, "at": 55.0}, {"say": "This depends on twenty-six, and can end early. No formula: you simulate hundreds of thousands of price paths.", "dur": 7.26, "at": 59.84}, {"say": "That cannot run on a chain. So we trained a small neural network to give the simulation's answer.", "dur": 7.26, "at": 67.11}, {"say": "It runs as a Stylus contract, inside the trade.", "dur": 3.63, "at": 74.37}]}, {"name": "Proof", "seconds": 31, "words": 77, "steps": [{"say": "A real trade from our test chain: ten thousand dollars of notes.", "dur": 4.83, "at": 78.0}, {"say": "The on-chain model priced it at ten thousand three hundred forty-three. The full simulation: ten thousand three hundred thirty-eight.", "dur": 7.65, "at": 82.83}, {"say": "Over a hundred and thirty thousand test points, the average gap is under three dollars, the worst thirty-eight, inside a limit fixed in advance.", "dur": 9.66, "at": 90.48}, {"say": "Where the price jumps, the contract refuses instead of guessing.", "dur": 4.03, "at": 100.14}, {"say": "And payouts never call the model. They are arithmetic on recorded prices.", "dur": 4.83, "at": 104.17}]}, {"name": "Close", "seconds": 11, "words": 26, "steps": [{"say": "Crash cover for stock-token holders. A coupon for cash. A price anyone can check.", "dur": 5.92, "at": 109.0}, {"say": "Settled in USDG, running on Stylus, built for Robinhood Chain. Surrogate Pricer.", "dur": 5.08, "at": 114.92}]}];
+  const still = new URLSearchParams(location.search).has("still");
+  const notesMode = new URLSearchParams(location.search).has("notes");
+  if (still) document.documentElement.classList.add("still");
+  if (notesMode) document.documentElement.classList.add("notes");
+
+  const scenes = [...document.querySelectorAll(".scene")];
+  const last = (i) => DECK[i].steps.length - 1;
+  let i = 0, j = 0, t0 = null, playing = false, timers = [], notesWin = null;
+
+  function render() {
+    scenes.forEach((svg, k) => {
+      svg.classList.toggle("cur", k === i);
+      if (k !== i) return;
+      svg.querySelectorAll(".st").forEach((g) => {
+        const s = +g.dataset.s, off = g.dataset.off, dim = g.dataset.dim;
+        g.classList.toggle("on", s <= j && !(off !== undefined && j >= +off));
+        g.classList.toggle("dim", dim !== undefined && j >= +dim);
+      });
+    });
+    document.getElementById("cap").innerHTML = "<small>SAY</small>" + DECK[i].steps[j].say;
+    history.replaceState(null, "", "#" + (i + 1) + "." + j);
+    tell();
+  }
+  function go(a, b) { i = Math.max(0, Math.min(scenes.length - 1, a)); j = Math.max(0, Math.min(last(i), b)); render(); }
+  function next() {
+    if (t0 === null) t0 = Date.now() - DECK[i].steps[j].at * 1000;
+    if (j < last(i)) go(i, j + 1); else if (i < scenes.length - 1) go(i + 1, 0);
+  }
+  function prev() { if (j > 0) go(i, j - 1); else if (i > 0) go(i - 1, last(i - 1)); }
+  function stop() { timers.forEach(clearTimeout); timers = []; playing = false; }
+  function reset() { stop(); t0 = null; go(0, 0); }
+  function play() {
+    stop(); playing = true; t0 = Date.now(); go(0, 0);
+    DECK.forEach((scene, a) => scene.steps.forEach((st, b) => {
+      if (a || b) timers.push(setTimeout(() => go(a, b), st.at * 1000));
+    }));
+    const end = DECK.reduce((sum, s) => sum + s.seconds, 0);
+    timers.push(setTimeout(() => { playing = false; tell(); }, end * 1000));
+  }
+  function tell() { if (notesWin && !notesWin.closed) notesWin.postMessage({ sp: 1, i, j, t0, playing }, "*"); }
+
+  function key(k) {
+    if (["ArrowRight", "PageDown", " ", "Enter"].includes(k)) { stop(); next(); }
+    else if (["ArrowLeft", "PageUp", "Backspace"].includes(k)) { stop(); prev(); }
+    else if (k === "ArrowDown") { stop(); go(i + 1, 0); }
+    else if (k === "ArrowUp") { stop(); go(i - 1, 0); }
+    else if (k === "Home" || k === "r" || k === "R") reset();
+    else if (k === "End") { stop(); go(scenes.length - 1, last(scenes.length - 1)); }
+    else if (k === "a" || k === "A") { playing ? stop() : play(); tell(); }
+    else if (k === "s" || k === "S") document.body.classList.toggle("script");
+    else if (k === "h" || k === "H" || k === "?") document.getElementById("help").classList.toggle("on");
+    else if (k === "f" || k === "F") {
+      document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+    } else if (k === "p" || k === "P") {
+      notesWin = window.open(location.pathname + "?notes", "sp-notes", "width=760,height=900");
+      setTimeout(tell, 400);
+    } else return false;
+    return true;
+  }
+
+  if (!notesMode) {
+    document.addEventListener("keydown", (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (key(e.key)) e.preventDefault();
+    });
+    window.addEventListener("message", (e) => {
+      if (e.data && e.data.sp === "key") key(e.data.key);
+      if (e.data && e.data.sp === "hello") tell();
+    });
+    let idle;
+    document.addEventListener("mousemove", () => {
+      document.body.classList.remove("idle");
+      clearTimeout(idle);
+      idle = setTimeout(() => document.body.classList.add("idle"), 1500);
+    });
+    const m = /^#(\d+)(?:\.(\d+))?$/.exec(location.hash);
+    if (m) go(+m[1] - 1, +(m[2] || 0)); else render();
+    if (!still && !m) {
+      const help = document.getElementById("help");
+      help.classList.add("on");
+      setTimeout(() => help.classList.remove("on"), 5000);
+    }
+  } else {
+    // presenter window: the script, the clock, and the keys forwarded to the stage
+    const root = document.getElementById("list");
+    DECK.forEach((scene, a) => {
+      const h = document.createElement("h2");
+      const end = scene.steps[0].at + scene.seconds;
+      h.innerHTML = "<span>" + (a + 1) + ". " + scene.name + "</span><span>until " + fmt(end) + "</span>";
+      root.appendChild(h);
+      scene.steps.forEach((st, b) => {
+        const p = document.createElement("p");
+        p.id = "s" + a + "_" + b;
+        p.textContent = st.say;
+        root.appendChild(p);
+      });
+    });
+    let cur = { i: 0, j: 0, t0: null, playing: false };
+    function fmt(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
+    function paint() {
+      DECK.forEach((scene, a) => scene.steps.forEach((st, b) => {
+        const p = document.getElementById("s" + a + "_" + b);
+        const now = a === cur.i && b === cur.j;
+        p.classList.toggle("now", now);
+        p.classList.toggle("done", a < cur.i || (a === cur.i && b < cur.j));
+        if (now) p.scrollIntoView({ block: "center", behavior: "smooth" });
+      }));
+      document.getElementById("state").textContent = cur.playing ? "autoplay" : "manual";
+    }
+    function tick() {
+      const st = DECK[cur.i].steps[cur.j];
+      const t = cur.t0 === null ? 0 : (Date.now() - cur.t0) / 1000;
+      const clock = document.getElementById("clock");
+      clock.textContent = fmt(t);
+      clock.classList.toggle("late", t > st.at + st.dur + 2);
+      document.getElementById("target").textContent = "this line " + fmt(st.at) + " to " + fmt(st.at + st.dur);
+    }
+    window.addEventListener("message", (e) => { if (e.data && e.data.sp === 1) { cur = e.data; paint(); tick(); } });
+    document.addEventListener("keydown", (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || !window.opener) return;
+      if (e.key === "p" || e.key === "P" || e.key === "f" || e.key === "F") return;
+      window.opener.postMessage({ sp: "key", key: e.key }, "*");
+      e.preventDefault();
+    });
+    setInterval(tick, 250);
+    paint();
+    tick();
+    if (window.opener) window.opener.postMessage({ sp: "hello" }, "*");
+  }
+</script>
+</body>
+</html>

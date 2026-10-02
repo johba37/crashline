@@ -40,6 +40,19 @@
   },
   {
     "type": "function",
+    "name": "MAX_HELD_SERIES",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "MAX_SPREAD_BPS",
     "inputs": [],
     "outputs": [
@@ -335,6 +348,19 @@
         "name": "",
         "type": "address",
         "internalType": "contract ISeriesFactory"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "heldSeries",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address[]",
+        "internalType": "address[]"
       }
     ],
     "stateMutability": "view"
@@ -1352,6 +1378,19 @@
   },
   {
     "type": "event",
+    "name": "MinSecsToObservationSet",
+    "inputs": [
+      {
+        "name": "secs",
+        "type": "uint32",
+        "indexed": false,
+        "internalType": "uint32"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "NoteBought",
     "inputs": [
       {
@@ -1674,6 +1713,11 @@
   },
   {
     "type": "error",
+    "name": "HeldSeriesLimit",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "ModelMismatch",
     "inputs": [
       {
@@ -1758,5 +1802,10 @@
         "internalType": "uint40"
       }
     ]
+  },
+  {
+    "type": "error",
+    "name": "WrongAsset",
+    "inputs": []
   }
 ]

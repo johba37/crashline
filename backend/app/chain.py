@@ -50,6 +50,15 @@ KINDS: dict[str, tuple[str, ...]] = {
 ERROR_STRING = bytes.fromhex("08c379a0")  # Error(string)
 PANIC = bytes.fromhex("4e487b71")  # Panic(uint256)
 
+# How a node that prunes old state answers a call at a block it no longer holds.
+STATE_GONE = ("historical state", "missing trie node")
+# The archive RPC is metered (a free plan takes about 19 eth_calls a second and answers a
+# burst with 429 for minutes): small batches, paced, and a 429 waits and tries again.
+ARCHIVE_BATCH = 20
+ARCHIVE_CALLS_PER_SEC = 10
+ARCHIVE_TRIES = 4
+ARCHIVE_WAIT = 5.0  # seconds after the first 429, twice that after the second, ...
+
 
 class RpcError(Exception):
     def __init__(self, code: int, message: str, data: Any = None):
@@ -192,7 +201,6 @@ class Function:
 class Event:
     name: str
     inputs: list[dict]
-    contract: str = ""
 
     @property
     def signature(self) -> str:
@@ -269,7 +277,7 @@ class Registry:
                         iface.functions.setdefault(f.signature, f)
                         iface.functions.setdefault(f.name, f)
                     elif item["type"] == "event":
-                        iface.events.setdefault(item["name"], Event(item["name"], item["inputs"], kind))
+                        iface.events.setdefault(item["name"], Event(item["name"], item["inputs"]))
             self.kinds[kind] = iface
         for items in self.raw.values():
             for item in items:
@@ -304,25 +312,36 @@ REGISTRY = Registry()
 # RPC
 # ---------------------------------------------------------------------------
 
-def _hex(n: int) -> str:
-    return hex(n)
-
-
 def block_tag(block: int | str | None) -> str:
     if block is None:
         return "latest"
     if isinstance(block, int):
-        return _hex(block)
+        return hex(block)
     return block
 
 
+def state_gone(e: RpcError) -> bool:
+    return any(s in (e.message or "") for s in STATE_GONE)
+
+
+def _is_429(e: Exception) -> bool:
+    if isinstance(e, RpcError):
+        return e.code == 429
+    return getattr(getattr(e, "response", None), "status_code", None) == 429  # requests' HTTPError
+
+
 class Chain:
-    def __init__(self, rpc_url: str, registry: Registry = REGISTRY, timeout: float = 30.0):
+    def __init__(self, rpc_url: str, registry: Registry = REGISTRY, timeout: float = 30.0,
+                 archive_url: str | None = None):
         self.rpc_url = rpc_url
         self.registry = registry
         self.w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={"timeout": timeout}))
         self._send_lock = threading.Lock()
         self._chain_id: int | None = None
+        # asked again for what the node refuses because it no longer holds that block's state
+        self.archive = Chain(archive_url, registry, timeout) if archive_url else None
+        self._archive_lock = threading.Lock()
+        self._archive_free = 0.0  # time.monotonic() of the next archive request
 
     # --- raw ---------------------------------------------------------------
     def rpc(self, method: str, params: list | None = None) -> Any:
@@ -331,7 +350,13 @@ class Chain:
             err = resp["error"]
             if isinstance(err, str):
                 raise RpcError(-1, err)
-            raise RpcError(err.get("code", -1), err.get("message", ""), err.get("data"))
+            e = RpcError(err.get("code", -1), err.get("message", ""), err.get("data"))
+            if self.archive is None or not state_gone(e):
+                raise e
+            r = self._from_archive([(method, params or [])])[0]
+            if isinstance(r, RpcError):
+                raise r
+            return r
         return resp.get("result")
 
     def batch(self, calls: list[tuple[str, list]]) -> list[Any]:
@@ -350,6 +375,34 @@ class Chain:
                 out.append(RpcError(e.get("code", -1), e.get("message", ""), e.get("data")))
             else:
                 out.append(r.get("result"))
+        if self.archive is not None:
+            gone = [i for i, r in enumerate(out) if isinstance(r, RpcError) and state_gone(r)]
+            for i, r in zip(gone, self._from_archive([calls[i] for i in gone])):
+                out[i] = r
+        return out
+
+    def _from_archive(self, calls: list[tuple[str, list]]) -> list[Any]:
+        """`calls` asked of the archive RPC, each a result or an RpcError; one request at a
+        time across threads, paced to ARCHIVE_CALLS_PER_SEC."""
+        out: list[Any] = []
+        with self._archive_lock:
+            for i in range(0, len(calls), ARCHIVE_BATCH):
+                part = calls[i:i + ARCHIVE_BATCH]
+                for attempt in range(ARCHIVE_TRIES):
+                    time.sleep(max(0.0, self._archive_free - time.monotonic()))
+                    self._archive_free = time.monotonic() + len(part) / ARCHIVE_CALLS_PER_SEC
+                    try:
+                        res = self.archive.batch(part)
+                    except Exception as e:  # the whole request refused
+                        if not _is_429(e):
+                            raise
+                        res = None
+                    if res is not None and not any(isinstance(r, RpcError) and _is_429(r) for r in res):
+                        break
+                    self._archive_free = time.monotonic() + ARCHIVE_WAIT * (attempt + 1)
+                else:
+                    raise RpcError(429, "the archive RPC is rate limited")
+                out += res
         return out
 
     def call_many(self, calls: list[tuple["Contract", str, tuple]], block: int | str | None = None) -> list[Any]:
@@ -397,7 +450,7 @@ class Chain:
 
     def get_logs(self, from_block: int, to_block: int, topics: list | None = None,
                  address: str | list[str] | None = None) -> list[dict]:
-        f: dict[str, Any] = {"fromBlock": _hex(from_block), "toBlock": _hex(to_block)}
+        f: dict[str, Any] = {"fromBlock": hex(from_block), "toBlock": hex(to_block)}
         if topics is not None:
             f["topics"] = topics
         if address is not None:
@@ -408,12 +461,9 @@ class Chain:
     def at(self, kind: str, address: str) -> "Contract":
         return Contract(self, self.registry.kinds[kind], address.lower())
 
-    def eth_call(self, to: str, data: str, block: int | str | None = None, sender: str | None = None) -> str:
-        tx: dict[str, Any] = {"to": to, "data": data}
-        if sender:
-            tx["from"] = sender
+    def eth_call(self, to: str, data: str, block: int | str | None = None) -> str:
         try:
-            return self.rpc("eth_call", [tx, block_tag(block)])
+            return self.rpc("eth_call", [{"to": to, "data": data}, block_tag(block)])
         except RpcError as e:
             raise self._revert_from(e) from None
 
@@ -426,21 +476,19 @@ class Chain:
         return e
 
     # --- transactions ----------------------------------------------------------
-    def send_tx(self, key: str, to: str | None, data: str = "0x", value: int = 0,
-                gas: int | None = None, wait: bool = True, timeout: float = 60.0) -> dict:
+    def send_tx(self, key: str, to: str | None, data: str = "0x", value: int = 0) -> dict:
         """Signs with `key`, sends, waits for the receipt; raises Revert on a
         failed estimate or a status-0 receipt. Sends from one process are serialized."""
         acct = Account.from_key(key)
         with self._send_lock:
-            tx: dict[str, Any] = {"from": acct.address, "data": data, "value": _hex(value)}
+            tx: dict[str, Any] = {"from": acct.address, "data": data, "value": hex(value)}
             if to is not None:
                 tx["to"] = to
-            if gas is None:
-                try:
-                    est = int(self.rpc("eth_estimateGas", [tx, "latest"]), 16)
-                except RpcError as e:
-                    raise self._revert_from(e) from None
-                gas = est * 12 // 10 + 50_000
+            try:
+                est = int(self.rpc("eth_estimateGas", [tx, "latest"]), 16)
+            except RpcError as e:
+                raise self._revert_from(e) from None
+            gas = est * 12 // 10 + 50_000
             base = int(self.rpc("eth_getBlockByNumber", ["latest", False])["baseFeePerGas"], 16)
             nonce = int(self.rpc("eth_getTransactionCount", [acct.address, "pending"]), 16)
             raw = {"type": 2, "chainId": self.chain_id, "nonce": nonce, "value": value, "data": data,
@@ -449,13 +497,11 @@ class Chain:
                 raw["to"] = to_checksum_address(to)
             signed = acct.sign_transaction(raw)
             tx_hash = self.rpc("eth_sendRawTransaction", ["0x" + signed.raw_transaction.hex()])
-            if not wait:
-                return {"transactionHash": tx_hash}
-            receipt = self.wait_receipt(tx_hash, timeout)
+            receipt = self.wait_receipt(tx_hash)
         if receipt["status"] != "0x1":
             # replay as a call at the parent block to get the revert data
             try:
-                self.rpc("eth_call", [dict(tx, gas=_hex(gas)), _hex(int(receipt["blockNumber"], 16) - 1)])
+                self.rpc("eth_call", [dict(tx, gas=hex(gas)), hex(int(receipt["blockNumber"], 16) - 1)])
             except RpcError as e:
                 raise self._revert_from(e) from None
             raise Revert("TxFailed", {"txHash": tx_hash})
@@ -489,16 +535,9 @@ class Contract:
     iface: Interface
     address: str
 
-    def encode(self, fn: str, *args) -> str:
-        return self.iface.fn(fn).encode(*args)
-
-    def call(self, fn: str, *args, block: int | str | None = None, sender: str | None = None) -> Any:
+    def call(self, fn: str, *args, block: int | str | None = None) -> Any:
         f = self.iface.fn(fn)
-        return f.decode(self.chain.eth_call(self.address, f.encode(*args), block, sender))
-
-    def call_data(self, fn: str, *args) -> tuple[str, list]:
-        """(method, params-without-block) pieces for Chain.batch."""
-        return self.address, self.iface.fn(fn).encode(*args)
+        return f.decode(self.chain.eth_call(self.address, f.encode(*args), block))
 
     def send(self, key: str, fn: str, *args, value: int = 0) -> dict:
         return self.chain.send_tx(key, self.address, self.iface.fn(fn).encode(*args), value=value)

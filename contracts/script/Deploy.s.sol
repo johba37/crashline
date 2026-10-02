@@ -7,7 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SeriesFactory} from "../src/SeriesFactory.sol";
 import {NoteQuoter} from "../src/NoteQuoter.sol";
 import {Desk} from "../src/Desk.sol";
-import {MockChainlinkFeed} from "../src/MockChainlinkFeed.sol";
+import {MockChainlinkFeed} from "../src/mocks/MockChainlinkFeed.sol";
 import {ISurrogatePricer} from "../src/interfaces/ISurrogatePricer.sol";
 
 /// Robinhood Chain testnet (46630) deployment of the Solidity side: factory
@@ -46,7 +46,7 @@ contract Deploy is Script {
         vm.stopBroadcast();
 
         bytes32 weightsHash;
-        if (pricer != address(0)) weightsHash = ISurrogatePricer(pricer).weightsHash();
+        if (pricer != address(0)) weightsHash = _weightsHash(pricer);
 
         console2.log("chain id          ", block.chainid);
         console2.log("deployer          ", deployer);
@@ -80,5 +80,13 @@ contract Deploy is Script {
             string memory out = vm.serializeBytes32(o, "pricerWeightsHash", weightsHash);
             vm.writeJson(out, string.concat(vm.projectRoot(), "/../deployments/", vm.toString(block.chainid), ".json"));
         }
+    }
+
+    /// Asked of the node: forge's EVM can't run Stylus code.
+    function _weightsHash(address pricer) internal returns (bytes32) {
+        bytes memory call = abi.encodeCall(ISurrogatePricer.weightsHash, ());
+        string memory params =
+            string.concat('[{"to":"', vm.toString(pricer), '","data":"', vm.toString(call), '"},"latest"]');
+        return abi.decode(vm.rpc("eth_call", params), (bytes32));
     }
 }

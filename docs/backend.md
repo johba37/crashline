@@ -815,7 +815,8 @@ last block the chain still has and re-indexes (`/health` counts
 `DEMO_TOKEN` (default `sp-devnode-demo` on the dev node), `DEMO_KEY` (default
 Nitro's dev key on the dev node), `TEACHER_DEVICE=cuda` (the GPU teacher),
 `TEACHER_PYTHON`, `TEACHER_SEED`, `TEACHER_PATHS`, `BACKEND_PORT`,
-`DEVNODE_PORT` (then re-run `deploy.py` so `config.json` has the RPC port).
+`DEVNODE_PORT` (then re-run `deploy.py` so `config.json` has the RPC port),
+`ARCHIVE_RPC_URL` (the testnet, below).
 The SQLite db is `backend/data/<chainId>.sqlite`; deleting it while the
 service is stopped just makes it rescan.
 
@@ -823,18 +824,51 @@ service is stopped just makes it rescan.
 
 ```sh
 backend/.venv/bin/python backend/ops/make-config.py deployments/46630.json \
-    --rpc https://rpc.testnet.chain.robinhood.com --out backend/config.json   # demo off; --deployment-block N if the RPC has no old state
-backend/run.sh
+    --rpc https://rpc.testnet.chain.robinhood.com --deployment-block 127553444 \
+    --out backend/config.json   # demo off; the block is given because this RPC has no old state
+backend/ops/install.sh          # with this config: sp-backend alone, the dev node's units stopped and removed
+backend/ops/start.sh
 ```
 
 `make-config.py` takes the addresses from the file `Deploy.s.sol` writes
-(`mockFeed` becomes the feed `RHTSLA`), finds the deployment block by
+(its `feeds` map of name to address if it has one, else `mockFeed` as the
+feed `RHTSLA`), finds the deployment block by
 bisecting `eth_getCode(seriesFactory)` (or takes `--deployment-block`), and
 records the genesis and deployment block hashes. The history backfill needs
 `eth_call` at past blocks; on an RPC without archive state the backfill of
 past slots logs errors and the history holds only what was sampled live.
 Nothing else changes: the same routes, `/config` reports the testnet
 addresses, `demo: false`, and `/demo/*` answers 403.
+
+With `config.json` for another chain than the dev node's, `install.sh`,
+`start.sh` and `stop.sh` leave the dev node alone, and `node.sh` does nothing
+(it would otherwise redeploy and rewrite `config.json`). The dev node's chain
+stays in its docker volume; to go back, restore a dev-node `config.json` and
+run `install.sh` again.
+
+RPC, measured 2026-10-02: `rpc.testnet.chain.robinhood.com` takes batches of
+20 calls (60 are refused, 429) and log ranges of 100,000 blocks, but keeps
+state for the last 15 to 55 minutes only: a call at an older block fails with
+`historical state … is not available`. Alchemy's free plan keeps all state
+and takes batches of 200, but limits `eth_getLogs` to 10 blocks, which the
+indexer can't work with; dRPC's free endpoint refuses batches of more than 3.
+
+So the service takes two RPCs. `--rpc` is the one it indexes and reads from.
+**`ARCHIVE_RPC_URL`** in `backend/.env` (it may carry a key; restart the
+service after setting it) is asked only for what `--rpc` refuses for pruned
+state (`app/chain.py`: per call inside a batch, in requests of 20 calls,
+at most 10 calls a second, a 429 waits and tries again). With it the history
+backfill and the catch-up after a stop work on the public RPC; without it
+the history holds only what was sampled live. At start the service checks
+that the archive is the same chain and logs its host, or that it is not
+used and why. An RPC with a key as `--rpc` needs `--public-rpc`, the URL
+`/config` hands to browsers; `/health` and the 503s never show an RPC's path.
+
+The service holds no key on the testnet. The curator stages feeds and series,
+lists them, pushes a price at least every 26 h and records each observation's
+fixing with `contracts/script/curator.sh` on their own machine (its head has
+the commands). A feed the curator deploys gets its name from a `feeds` entry
+in `deployments/46630.json` and a new `make-config.py` run.
 
 ### Choices where the spec is silent (WP6)
 
@@ -936,6 +970,7 @@ at, for when the 26 h staleness limit pauses the quotes.
 ```sh
 cd backend && .venv/bin/python -m pytest tests -q                # against the dev node; skipped if it is down
 SP_CLEAN=1 .venv/bin/python -m pytest tests/test_wp0_devnode.py   # also recreate the chain and deploy from scratch
+.venv/bin/python -m pytest tests/test_archive.py -q              # the archive fallback; needs no node (marker `offline`)
 ```
 
 The route tests start their own service (`run.sh` on 8651 with a temporary
