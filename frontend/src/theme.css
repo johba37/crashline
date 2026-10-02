@@ -40,6 +40,9 @@
   --color-nebula-core: #f2a866;
   --color-nebula-arm: #9cc9d6;
   --color-nebula-dust: #0a1621;
+  --color-nebula-rose: #e0647a;
+  --color-nebula-violet: #7f74d6;
+  --color-sky-veil: rgb(18 38 54 / 0.5);
   --color-panel: #2c3134;
   --color-panel-top: #363c3f;
   --color-panel-edge: #3a4145;
@@ -181,8 +184,10 @@
   --z-grain: 80;
   --glass-saturate: 180%;
   /* The page's own ground, resolved at the root: inside a forced-theme section (data-theme)
-     it still names the surrounding page's surface, so the section can fade into it. */
+     it still names the surrounding page's surface, so the section can fade into it. The veil
+     is the landing page's ground over the fixed night sky. */
   --page-surface: var(--color-surface);
+  --page-veil: var(--color-sky-veil);
   --grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
@@ -224,6 +229,9 @@
     --color-nebula-core: #f2a866;
     --color-nebula-arm: #9cc9d6;
     --color-nebula-dust: #0a1621;
+    --color-nebula-rose: #e0647a;
+    --color-nebula-violet: #7f74d6;
+    --color-sky-veil: #f2f7f6;
     --color-panel: #eceff0;
     --color-panel-top: #f5f7f7;
     --color-panel-edge: #aab3b7;
@@ -291,6 +299,9 @@
   --color-nebula-core: #f2a866;
   --color-nebula-arm: #9cc9d6;
   --color-nebula-dust: #0a1621;
+  --color-nebula-rose: #e0647a;
+  --color-nebula-violet: #7f74d6;
+  --color-sky-veil: #f2f7f6;
   --color-panel: #eceff0;
   --color-panel-top: #f5f7f7;
   --color-panel-edge: #aab3b7;
@@ -358,6 +369,9 @@
   --color-nebula-core: #f2a866;
   --color-nebula-arm: #9cc9d6;
   --color-nebula-dust: #0a1621;
+  --color-nebula-rose: #e0647a;
+  --color-nebula-violet: #7f74d6;
+  --color-sky-veil: rgb(18 38 54 / 0.5);
   --color-panel: #2c3134;
   --color-panel-top: #363c3f;
   --color-panel-edge: #3a4145;

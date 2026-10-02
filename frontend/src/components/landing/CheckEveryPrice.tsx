@@ -18,19 +18,19 @@ import Section from './Section.tsx'
 const CHECKS = [
   {
     title: 'Which version priced a trade',
-    text: 'Every trade records the price, the fee and the model’s fingerprint, a code unique to its exact version. Change one number in the model and the fingerprint changes.',
+    text: 'Every trade records the price, the fee and the model’s fingerprint: a code that changes if one number in the model does.',
   },
   {
     title: 'Where it may answer',
-    text: 'The model only prices where its accuracy was measured: the stock between 50% and 120% of its starting price, from the first day to the last weekly check, for stocks from calm to very jumpy (a yearly swing of 20% to 90%).',
+    text: 'Only where its accuracy was measured: the stock between 50% and 120% of its starting price, for calm to very jumpy stocks.',
   },
   {
     title: 'When it refuses',
-    text: 'On a check day, a tiny price move can decide whether the note ends early or the insurance switches on. Near those two lines the model refuses rather than guesses. For a calmer stock, it also refuses for a few more days near the crash line in a note’s last weeks.',
+    text: 'Close to a weekly check, a tiny price move near the crash line or the starting price can decide how a note ends. There the model refuses rather than guesses.',
   },
   {
     title: 'Recompute it yourself',
-    text: 'The simulation the model learned from is published code. Anyone can run it on the same inputs and compare.',
+    text: 'The simulation is published code: anyone can run it on the same inputs and compare.',
   },
 ]
 
@@ -38,8 +38,8 @@ export default function CheckEveryPrice() {
   return (
     <Section
       id="verify"
-      title="Check every price"
-      intro="Usually the seller of this kind of insurance also decides, in private, what it is worth. That is how banks priced crash insurance before the financial crisis of 2008. Here one public model sets every price, and anyone can check it."
+      title="Every price is provable"
+      intro="Usually the seller of this kind of insurance decides in private what it is worth. Here one public model sets every price, and anyone can check it."
     >
       <PriceEngine />
 
@@ -63,16 +63,16 @@ export default function CheckEveryPrice() {
           <h3 className="type-heading text-ink">How far off it can be</h3>
           <p className="mt-4 type-readout text-ink">0.38%</p>
           <p className="mt-2 type-body text-ink-muted">
-            of the stock value a note covers, at most, compared with the simulation the model learned from, wherever
-            it answers. On a note covering 1,000 USDG of stock, that’s 3.80 USDG. On average it is 0.03% off.
+            of the stock value a note covers, at most, compared with the simulation: 3.80 USDG on 1,000 USDG of
+            stock. On average it is 0.03% off.
           </p>
           {/* Caption plate (spec patterns.captionPlate). */}
           <div className="mt-6">
             <p className="type-body text-ink">Tested in 187,182 situations kept aside until the model was final.</p>
             <div className="my-3 max-w-md border-t border-line" />
             <p className="type-caption text-info">
-              A final test before release found 0.379% at most, in 130,752 more situations. All of these show how well
-              the model copies the simulation, not whether the simulation is right about real stocks.
+              This shows how well the model copies the simulation, not whether the simulation is right about real
+              stocks.
             </p>
           </div>
         </div>

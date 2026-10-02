@@ -12,7 +12,7 @@ import Section from './Section.tsx'
 const NEXT = [
   {
     title: 'The live network',
-    text: 'After an outside review of the contracts, the notes, the model and the Desk move to Robinhood Chain’s main network. Real stock prices from a live source, with small limits at first.',
+    text: 'After an outside review, everything moves to Robinhood Chain’s main network: real stock prices, small limits at first.',
   },
   {
     title: 'Adding a stock',
@@ -20,7 +20,7 @@ const NEXT = [
   },
   {
     title: 'A note that never ends',
-    text: 'The perpetual note has no end date: one Earn and one Protect token per stock, paying out a little at every weekly check. Unlike today’s notes, its price can come from a formula, plus a small learned correction.',
+    text: 'No end date: one Earn and one Protect token per stock, paying out a little at every weekly check.',
     link: { href: GITHUB.perpetualNote, label: 'Read the perpetual note design' },
   },
 ]

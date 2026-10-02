@@ -23,11 +23,11 @@ const KEY_DOCS = [
 
 export default function Footer() {
   return (
-    <footer className="border-t border-line">
+    <footer className="border-t border-line bg-sky-veil">
       <div className="mx-auto grid max-w-landing gap-10 px-4 py-12 sm:px-6 md:grid-cols-12 md:gap-8 lg:px-8 lg:py-16">
         <div className="md:col-span-6">
           <p className="inline-flex items-center gap-2 text-ink">
-            <Logo className="h-8 w-auto" />
+            <Logo className="h-7 w-auto" />
             <Wordmark />
           </p>
           <p className="mt-3 max-w-sm type-body text-ink-muted">

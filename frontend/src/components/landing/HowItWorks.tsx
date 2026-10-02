@@ -49,6 +49,7 @@ const SIDES = [
   {
     name: 'Protect',
     Icon: ShieldCheck,
+    tone: 'text-protect',
     who: 'You hold 1,000 USDG of TSLA and cover all of it.',
     payLabel: 'You pay once, up front',
     pay: '−85.50 USDG',
@@ -63,6 +64,7 @@ const SIDES = [
   {
     name: 'Earn',
     Icon: Coins,
+    tone: 'text-earn',
     who: 'You take the other side of the same note, and with it the crash risk.',
     payLabel: 'You put in once, up front',
     pay: '−982.00 USDG',
@@ -102,10 +104,10 @@ export default function HowItWorks() {
         One note as an example: six months on 1,000 USDG of TSLA. Every note has its own price and weekly income.
       </p>
       <div className="mt-6 grid items-start gap-6 md:grid-cols-2">
-        {SIDES.map(({ name, Icon, who, payLabel, pay, pays, outcomes, net }) => (
+        {SIDES.map(({ name, Icon, tone, who, payLabel, pay, pays, outcomes, net }) => (
           <article key={name} aria-labelledby={`side-${name}`} className="panel flex flex-col rounded-lg p-5 sm:p-6">
             <div className="flex items-center gap-3">
-              <Icon size={32} weight="duotone" aria-hidden="true" className="shrink-0 text-accent-text" />
+              <Icon size={32} weight="duotone" aria-hidden="true" className={`shrink-0 ${tone}`} />
               <h4 id={`side-${name}`} className="type-heading text-ink">
                 {name}
               </h4>

@@ -204,7 +204,7 @@ export default function FlowMap() {
   }
 
   return (
-    <div className="glass-strong mt-10 rounded-lg lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
+    <div className="glass-strong mt-10 rounded-lg [--color-glass-fill-strong:var(--color-glass-fill)] lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
         <div className="grid grid-cols-2 content-start gap-x-3 p-4 sm:gap-x-4 sm:p-6">
           {(['protect', 'earn'] as const).map((l) => {
             const { name, what, Icon: LaneIcon, text } = LANES[l]

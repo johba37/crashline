@@ -1,10 +1,11 @@
-import { CaretDown, CaretRight, Coins, Cpu, Umbrella } from '@phosphor-icons/react'
+import { CaretDown, CaretRight, Coins, Umbrella } from '@phosphor-icons/react'
+import stylusLogomark from '../../assets/stylus-logomark.svg'
 import ExternalLink from './ExternalLink.tsx'
 import { GITHUB, STYLUS_DOCS } from './links.ts'
 import { FAN, NET, fanY, futures, net } from './priceArt.ts'
 
 // How a price is made, as three plates: the simulation, the model that learned from it, the price.
-// The two plates on the blockchain stand on a steel strip: Stylus, which makes them affordable.
+// Under them, centred, a steel strip credits Stylus, which makes the on-chain part affordable.
 // Sources: docs/k3-vol-input.md (the simulation plays out 2^18 = 262,144 paths for a test price;
 // model/k3 is 10 -> 64 -> 48 -> 40 -> 40 -> 1 with 7,272 weights and 193 biases, 7,465 numbers, in
 // 16-bit integers; ten inputs, of which five vary for k3: spot, vol, time to the next observation,
@@ -13,8 +14,13 @@ import { FAN, NET, fanY, futures, net } from './priceArt.ts'
 // (priceBps is the clean value of one NOTE) and IDeskCover.sol (cover = the pot - NOTE). Stylus:
 // docs.arbitrum.io/stylus/gentle-introduction (WASM contracts, e.g. Rust, next to Solidity ones)
 // and /stylus/concepts/gas-metering ("Compute, which is generally 10-100x cheaper depending on the
-// program"). Nothing in the repo measures this model in Solidity, so no "impossible without" and no
-// factor of our own; the ~45k gas in the README was measured on a smaller test model, not on k3.
+// program"). Nothing in the repo measures this model in Solidity, so the strip says Stylus makes
+// it "practical": never "only possible with", and no factor (the user dropped "cheaper" on
+// 2026-10-02: the point is a fresh on-chain price anyone can verify). The ~45k gas in the README
+// was measured on a smaller test model, not on k3.
+// The logomark (assets/stylus-logomark.svg) is the primary one from Arbitrum's Stylus brand
+// guidelines (arbitrumfoundation.notion.site/Stylus-brand-guidelines-86bc15ab368c4c748f8d7a4e105aa453),
+// unchanged: never recolour it, and never show it below 12px.
 // Prices: the example in HowItWorks.tsx.
 
 const INPUTS = ['Stock price', 'How much it swings', 'Time to next check', 'Checks left', 'Crash line crossed?']
@@ -26,11 +32,11 @@ const PLATE_LINK = 'underline underline-offset-4'
 function Arrow({ label }: { label: string }) {
   return (
     <div aria-hidden="true" className="flex flex-col items-center justify-center lg:flex-row">
-      <span className="h-3 w-0.5 bg-line-strong lg:h-0.5 lg:w-3" />
-      <span className="px-2 py-1 type-caption text-ink-muted">{label}</span>
-      <span className="h-3 w-0.5 bg-line-strong lg:h-0.5 lg:w-3" />
-      <CaretDown size={14} weight="bold" className="-mt-2 mb-0.5 text-line-strong lg:hidden" />
-      <CaretRight size={14} weight="bold" className="-ml-2 hidden text-line-strong lg:block" />
+      <span className="h-4 w-0.5 bg-ink-muted lg:h-0.5 lg:w-4" />
+      <span className="px-2 py-1 type-body font-medium text-ink">{label}</span>
+      <span className="h-4 w-0.5 bg-ink-muted lg:h-0.5 lg:w-4" />
+      <CaretDown size={24} weight="bold" className="-mt-4 mb-0.5 text-ink-muted lg:hidden" />
+      <CaretRight size={24} weight="bold" className="-ml-4 hidden text-ink-muted lg:block" />
     </div>
   )
 }
@@ -38,11 +44,11 @@ function Arrow({ label }: { label: string }) {
 export default function PriceEngine() {
   return (
     <div className="mt-12">
-      <h3 className="type-heading text-ink">How a price is made</h3>
+      <h3 className="type-heading text-ink">Computed on-chain by AI</h3>
       <p className="mt-2 max-w-prose type-body text-ink-muted">
-        A note’s payout depends on every weekly check, so no simple formula gives its fair price. The exact way is to
-        play out many possible futures on a strong computer. That is too much work for a blockchain, so a small AI
-        model learned the answers and gives them there.
+        If only the last day counted, a simple formula would give a note’s fair price. But a note is checked every
+        week and can end early, so the exact way is to play out many possible futures. That is too much work for a
+        blockchain, so a small AI model learned the answers and gives them there.
       </p>
 
       <div className="mt-8 grid lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1.3fr)_auto_minmax(0,1fr)]">
@@ -75,13 +81,12 @@ export default function PriceEngine() {
             Each line is one possible future. The bold ones fall below the crash line.
           </p>
           <p className="mt-4 type-body text-ink-muted">
-            To work out one price exactly, a program (the{' '}
+            The{' '}
             <ExternalLink href={GITHUB.simulation} className={PLATE_LINK}>
               simulation
-            </ExternalLink>
-            ) plays out 262,144 possible futures for the stock, sudden drops included, and averages what the note would
-            pay. That takes about a second on a powerful graphics card. On a blockchain every calculation costs a fee,
-            so this is far too much for every trade.
+            </ExternalLink>{' '}
+            plays out 262,144 possible futures and averages what the note would pay. That takes about a second on a
+            powerful graphics card: far too much for a blockchain, where every calculation costs a fee.
           </p>
         </article>
 
@@ -112,9 +117,9 @@ export default function PriceEngine() {
             </text>
           </svg>
           <p className="mt-4 type-body text-ink-muted">
-            A small AI model studied 3.5 million prices from the simulation until it gave nearly the same answers. The
-            whole model is a list of 7,465 numbers, small enough to run on the blockchain. It looks at the five things
-            on the left, all read from the blockchain, never typed in by a trader.
+            A small AI model studied 3.5 million of the simulation’s prices until it gave nearly the same answers. It
+            is a list of 7,465 numbers, and it reads the five things on the left from the blockchain: no trader types
+            them in.
           </p>
         </article>
 
@@ -141,21 +146,19 @@ export default function PriceEngine() {
           </dl>
           <p className="mt-2 type-caption text-ink-muted">The six-month example on 1,000 USDG of TSLA.</p>
           <p className="mt-4 type-body text-ink-muted">
-            The model gives one number: what Earn is worth right now. Cover costs the pot minus that: 1,067.50 −
-            982.00 = 85.50. The price is worked out on the blockchain, in public, in the same step as the trade.
+            The model gives what Earn is worth. Cover costs the pot minus that: 1,067.50 − 982.00 = 85.50. Both are
+            worked out in public, in the same step as the trade.
           </p>
         </article>
 
-        <div className="panel mt-3 flex gap-3 rounded-md p-4 sm:p-5 lg:col-start-3 lg:col-end-6">
-          <Cpu size={32} weight="duotone" aria-hidden="true" className="shrink-0 text-accent-text" />
+        <div className="panel mx-auto mt-6 flex max-w-2xl items-center gap-4 rounded-md p-4 sm:p-5 lg:col-span-full">
+          <img src={stylusLogomark} alt="" width="48" height="48" className="size-12 shrink-0" />
           <div>
             <p className="type-label text-ink">Made possible by Arbitrum Stylus</p>
             <p className="mt-1 type-body text-ink-muted">
-              Even the small model needs more than 7,000 multiplications for one price, and each one costs a fee.{' '}
-              <ExternalLink href={STYLUS_DOCS}>Stylus</ExternalLink>, a technology from Arbitrum, which Robinhood Chain
-              is built on, lets a blockchain run programs written in Rust, a fast programming language, next to its
-              normal programs. Arbitrum says heavy calculation is generally 10 to 100 times cheaper that way. That is
-              what makes the model affordable in every trade.
+              Every price is computed fresh, on-chain, inside the trade itself, so anyone can verify it.{' '}
+              <ExternalLink href={STYLUS_DOCS}>Stylus</ExternalLink> makes that practical: it runs the model’s 7,000+
+              multiplications as compiled Rust.
             </p>
           </div>
         </div>
