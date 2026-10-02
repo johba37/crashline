@@ -6,8 +6,8 @@ import Wordmark from './Wordmark.tsx'
 
 // Sections on the landing page. Labels stay short so the links fit next to the wordmark at md.
 const LINKS = [
-  { label: 'How it works', href: '#how-it-works' },
-  { label: 'Check prices', href: '#verify' },
+  { label: 'How It Works', href: '#how-it-works' },
+  { label: 'Check Prices', href: '#verify' },
   { label: 'Risks', href: '#risks' },
   { label: 'Roadmap', href: '#roadmap' },
 ]
@@ -68,7 +68,7 @@ export default function NavBar({ revealAfter }: { revealAfter: RefObject<HTMLEle
           to="/app"
           className="ml-auto inline-flex h-10 items-center rounded-full bg-accent px-4 type-button text-on-accent transition-[background-color,box-shadow] duration-160 ease-out hover:bg-accent-hover hover:shadow-ignition active:bg-accent-pressed md:ml-2"
         >
-          Open the app
+          Open the App
         </Link>
       </nav>
     </header>

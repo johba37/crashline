@@ -105,7 +105,7 @@ export default function AppPage() {
       {label}
     </button>
   )
-  const tabs = <div className="flex flex-wrap items-center gap-1">{tab('buy', 'Protect or earn')}{tab('positions', 'My positions')}</div>
+  const tabs = <div className="flex flex-wrap items-center gap-1">{tab('buy', 'Protect or Earn')}{tab('positions', 'My Positions')}</div>
   // The amount starts empty. Once there is one, the last valid entry stays in force while the
   // field is being edited, so the steps below don't close and reopen with every keystroke.
   // Until the field holds an amount again it shows its error, and the order in step 6 waits.
@@ -210,11 +210,11 @@ export default function AppPage() {
           <div className="ml-auto">{testSwitch}</div>
         </div>
         <div className="mb-2 flex flex-col gap-2">
-          <h1 className="type-title text-ink">{view === 'positions' ? 'My positions' : 'Protect a coin or stock, or earn from it'}</h1>
+          <h1 className="type-title text-ink">{view === 'positions' ? 'My positions' : 'Crash insurance for coins and stocks'}</h1>
           <p className="type-body-lg text-ink-muted">
             {view === 'positions'
               ? 'What you hold, what it’s worth today, and what happens next. Open one to see its price so far and what you can do.'
-              : 'Worried that a coin or stock you hold could crash? Insure it here: you pay once, and you get paid if it crashes. Or take the other side and earn a weekly income. You see what you pay and what you can get back before you buy anything.'}
+              : 'Insure what you hold: pay once, and get paid if it crashes. Or be the insurer and earn a weekly income.'}
           </p>
         </div>
 
@@ -249,6 +249,7 @@ export default function AppPage() {
             <Step n={1} title="Pick a coin or stock" state={stock ? 'done' : 'current'}>
               <ChoiceCards
                 label="Coin or stock"
+                centerIcon
                 value={stock}
                 onChange={(v) => set({ stock: v })}
                 choices={stocks.map((sym) => {

@@ -52,7 +52,7 @@ export default function NetworkChip() {
         className="inline-flex h-10 shrink-0 items-center gap-1 rounded-full bg-hold-soft px-2 type-label whitespace-nowrap text-hold sm:gap-1.5 sm:px-3"
       >
         <WarningCircle size={16} weight="bold" aria-hidden="true" />
-        <span className="sr-only sm:not-sr-only">{isPending ? 'Confirm in your wallet…' : 'Wrong network'}</span>
+        <span className="sr-only sm:not-sr-only">{isPending ? 'Confirm in your wallet…' : 'Wrong Network'}</span>
         <CaretDown size={14} weight="bold" aria-hidden="true" />
       </button>
       {/* RainbowKit shows no address button on a network it doesn't know, so the address stands here, drawn like

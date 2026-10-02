@@ -1,7 +1,7 @@
 import { CaretDown, CheckCircle, Coins, FlagCheckered, Info, ShieldCheck, TrendDown } from '@phosphor-icons/react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { useAccount } from 'wagmi'
+import { useAccount, useDisconnect } from 'wagmi'
 import { UNIT, bestCase, crashPayout, date, level, observationsLeft, paused, pct, tradeAmounts, usd, usdg } from '../../market/format.ts'
 import { endedAt } from '../../market/positions.ts'
 import { FEE_BPS, FEE_RECEIVER, SLIPPAGE_BPS } from '../../market/settings.ts'
@@ -234,7 +234,8 @@ export default function Positions({
 }) {
   // The one trade hook serves every row: remember which row started it.
   const [active, setActive] = useState<string | null>(null)
-  const key = (p: Pick<Position, 'series' | 'side'>) => `${p.series.address}-${p.side}`
+  const { disconnect } = useDisconnect()
+  const key =(p: Pick<Position, 'series' | 'side'>) => `${p.series.address}-${p.side}`
 
   if (!supported) {
     return <Notice status={{ tone: 'info', icon: Info, label: 'Not connected to live positions yet', message: 'This page can’t read a wallet’s positions from the chain yet. Switch to Prototype above to see how they look.' }} />
@@ -266,8 +267,12 @@ export default function Positions({
     return (
       <>
         {closed}
-        <Notice status={{ tone: 'neutral', icon: Info, label: 'You don’t hold anything yet', message: 'Once you buy cover or a NOTE, it shows up here.' }}>
-          <button type="button" onClick={onBuy} className="self-start type-label text-ink underline">Protect a coin or stock, or earn from it</button>
+        <Notice status={{ tone: 'neutral', icon: Info, label: 'No positions found for this wallet', message: 'Connect another wallet, or get your first position.' }}>
+          <div className="flex flex-wrap gap-x-6 gap-y-1">
+            {/* Disconnects: the page then asks for a wallet, as it does for a reader without one. */}
+            <button type="button" onClick={() => disconnect()} className="type-label text-ink underline">Connect another wallet</button>
+            <button type="button" onClick={onBuy} className="type-label text-ink underline">Protect or Earn</button>
+          </div>
         </Notice>
       </>
     )
