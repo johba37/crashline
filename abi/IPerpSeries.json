@@ -1,0 +1,754 @@
+[
+  {
+    "type": "function",
+    "name": "CLOSE_AFTER_MISSED",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8",
+        "internalType": "uint8"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "FALLBACK_GRACE",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint40",
+        "internalType": "uint40"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "advance",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct PerpState",
+        "components": [
+          {
+            "name": "phase",
+            "type": "uint8",
+            "internalType": "enum PerpPhase"
+          },
+          {
+            "name": "referenceFixing",
+            "type": "uint96",
+            "internalType": "uint96"
+          },
+          {
+            "name": "lastFixing",
+            "type": "uint96",
+            "internalType": "uint96"
+          },
+          {
+            "name": "knockedIn",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "missedInARow",
+            "type": "uint8",
+            "internalType": "uint8"
+          },
+          {
+            "name": "fixingsDone",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "nextFixing",
+            "type": "uint40",
+            "internalType": "uint40"
+          },
+          {
+            "name": "notionalPerToken",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "noteIndex",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "writerIndex",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "advanceBy",
+    "inputs": [
+      {
+        "name": "maxFixings",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct PerpState",
+        "components": [
+          {
+            "name": "phase",
+            "type": "uint8",
+            "internalType": "enum PerpPhase"
+          },
+          {
+            "name": "referenceFixing",
+            "type": "uint96",
+            "internalType": "uint96"
+          },
+          {
+            "name": "lastFixing",
+            "type": "uint96",
+            "internalType": "uint96"
+          },
+          {
+            "name": "knockedIn",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "missedInARow",
+            "type": "uint8",
+            "internalType": "uint8"
+          },
+          {
+            "name": "fixingsDone",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "nextFixing",
+            "type": "uint40",
+            "internalType": "uint40"
+          },
+          {
+            "name": "notionalPerToken",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "noteIndex",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "writerIndex",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "checkpoint",
+    "inputs": [
+      {
+        "name": "from",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "fromBalance",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "to",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "toBalance",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "claim",
+    "inputs": [
+      {
+        "name": "to",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "claimable",
+    "inputs": [
+      {
+        "name": "holder",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "collateral",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "factory",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "id",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "mint",
+    "inputs": [
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "to",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "collateralIn",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "note",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "notionalOf",
+    "inputs": [
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "pairValuePerNotional",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "pendingFixing",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "pending",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "fixingTime",
+        "type": "uint40",
+        "internalType": "uint40"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "previewMint",
+    "inputs": [
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "collateralIn",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "previewRedeemPair",
+    "inputs": [
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "collateralOut",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "recorder",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IFixingsRecorder"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "redeemPair",
+    "inputs": [
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "to",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "collateralOut",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "state",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct PerpState",
+        "components": [
+          {
+            "name": "phase",
+            "type": "uint8",
+            "internalType": "enum PerpPhase"
+          },
+          {
+            "name": "referenceFixing",
+            "type": "uint96",
+            "internalType": "uint96"
+          },
+          {
+            "name": "lastFixing",
+            "type": "uint96",
+            "internalType": "uint96"
+          },
+          {
+            "name": "knockedIn",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "missedInARow",
+            "type": "uint8",
+            "internalType": "uint8"
+          },
+          {
+            "name": "fixingsDone",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "nextFixing",
+            "type": "uint40",
+            "internalType": "uint40"
+          },
+          {
+            "name": "notionalPerToken",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "noteIndex",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "writerIndex",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "terms",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct PerpTerms",
+        "components": [
+          {
+            "name": "feed",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "firstFixing",
+            "type": "uint40",
+            "internalType": "uint40"
+          },
+          {
+            "name": "fixingInterval",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "kiBarrierBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "meltShare",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "couponReserve",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "writer",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "event",
+    "name": "Claimed",
+    "inputs": [
+      {
+        "name": "holder",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "to",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "Closed",
+    "inputs": [
+      {
+        "name": "atFixing",
+        "type": "uint32",
+        "indexed": false,
+        "internalType": "uint32"
+      },
+      {
+        "name": "lastFixing",
+        "type": "uint96",
+        "indexed": false,
+        "internalType": "uint96"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "FixingProcessed",
+    "inputs": [
+      {
+        "name": "index",
+        "type": "uint32",
+        "indexed": true,
+        "internalType": "uint32"
+      },
+      {
+        "name": "fixingTime",
+        "type": "uint40",
+        "indexed": false,
+        "internalType": "uint40"
+      },
+      {
+        "name": "fixing",
+        "type": "uint96",
+        "indexed": false,
+        "internalType": "uint96"
+      },
+      {
+        "name": "referenceFixing",
+        "type": "uint96",
+        "indexed": false,
+        "internalType": "uint96"
+      },
+      {
+        "name": "knockedIn",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      },
+      {
+        "name": "missed",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      },
+      {
+        "name": "notionalPerToken",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "noteRelease",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "writerRelease",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "Minted",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "to",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "collateralIn",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "PairRedeemed",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "to",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "collateralOut",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "Struck",
+    "inputs": [
+      {
+        "name": "referenceFixing",
+        "type": "uint96",
+        "indexed": false,
+        "internalType": "uint96"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "NotStruck",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "OnlyToken",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "SeriesClosed",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ZeroAmount",
+    "inputs": []
+  }
+]

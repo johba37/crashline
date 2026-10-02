@@ -1,0 +1,356 @@
+[
+  {
+    "type": "function",
+    "name": "allSeries",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address[]",
+        "internalType": "address[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "collateral",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "createSeries",
+    "inputs": [
+      {
+        "name": "terms",
+        "type": "tuple",
+        "internalType": "struct PerpTerms",
+        "components": [
+          {
+            "name": "feed",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "firstFixing",
+            "type": "uint40",
+            "internalType": "uint40"
+          },
+          {
+            "name": "fixingInterval",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "kiBarrierBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "meltShare",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "couponReserve",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "series",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "isSeries",
+    "inputs": [
+      {
+        "name": "series",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "predictSeries",
+    "inputs": [
+      {
+        "name": "terms",
+        "type": "tuple",
+        "internalType": "struct PerpTerms",
+        "components": [
+          {
+            "name": "feed",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "firstFixing",
+            "type": "uint40",
+            "internalType": "uint40"
+          },
+          {
+            "name": "fixingInterval",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "kiBarrierBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "meltShare",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "couponReserve",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "series",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "note",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "writer",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "recorderOf",
+    "inputs": [
+      {
+        "name": "feed",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "recorders",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "seriesId",
+    "inputs": [
+      {
+        "name": "terms",
+        "type": "tuple",
+        "internalType": "struct PerpTerms",
+        "components": [
+          {
+            "name": "feed",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "firstFixing",
+            "type": "uint40",
+            "internalType": "uint40"
+          },
+          {
+            "name": "fixingInterval",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "kiBarrierBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "meltShare",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "couponReserve",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "seriesOf",
+    "inputs": [
+      {
+        "name": "seriesId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "event",
+    "name": "PerpSeriesCreated",
+    "inputs": [
+      {
+        "name": "seriesId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "feed",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "series",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "note",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "writer",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "terms",
+        "type": "tuple",
+        "indexed": false,
+        "internalType": "struct PerpTerms",
+        "components": [
+          {
+            "name": "feed",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "firstFixing",
+            "type": "uint40",
+            "internalType": "uint40"
+          },
+          {
+            "name": "fixingInterval",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "kiBarrierBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "meltShare",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "couponReserve",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "BadBarrier",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "BadCouponReserve",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "BadMeltShare",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "BadSchedule",
+    "inputs": []
+  }
+]

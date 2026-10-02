@@ -1,0 +1,5 @@
+exp_wad: max error 6.92e-18 (relative above 1, absolute below), x in [-40, 8]
+ln_wad:  max absolute error 2.09e-17, x in [0.001, 3]
+principal: 410688 states in 5 worlds, k 50-100%, x 0.01%-130%, every vol 1-150% the contract accepts (148 world/vol pairs refused; lowest accepted vol per world: p1 8%, doc 8%, zero_rates 6%, daily 8%, fast_melt 12%)
+  max |fixed point - 50-digit| = 1.26e-07 bps at ('doc', 5000, 800, 4999, False)
+  from 20% vol up: 7.27e-11 bps
