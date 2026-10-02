@@ -126,6 +126,7 @@ contracts/src/             SeriesFactory, NoteSeries, SeriesToken, AutocallPayou
                            Desk (ERC-4626 on USDG), FixingsRecorder
 contracts/src/mocks/       MockChainlinkFeed, MockUSDG (test and dev-node stand-ins)
 contracts/script/          Deploy.s.sol (Robinhood testnet), curator.sh (the curator's steps there),
+                           testnet-notes.sh (the notes listed there, at real prices),
                            e2e-devnode.sh, export-abi.sh
 abi/                       interface ABIs for the frontend (contracts/script/export-abi.sh)
 stylus/pricer-model/       Rust/Stylus model contract: priceBps(PricerInputs), weightsHash()

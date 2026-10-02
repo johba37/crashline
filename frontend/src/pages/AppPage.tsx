@@ -33,7 +33,7 @@ import Logo from '../components/Logo.tsx'
 import Starfield from '../components/Starfield.tsx'
 import Wordmark from '../components/Wordmark.tsx'
 
-const NAMES: Record<string, string> = { TSLA: 'Tesla', NVDA: 'Nvidia', AAPL: 'Apple', ETH: 'Ethereum' }
+const NAMES: Record<string, string> = { TSLA: 'Tesla', NVDA: 'Nvidia', AAPL: 'Apple', ETH: 'Ethereum', BTC: 'Bitcoin' }
 
 /** What a trade did, in the order form's words: "bought cover for 1,000.00 USDG of TSLA". */
 const did = ({ kind, amount, series }: LateTrade) => {
