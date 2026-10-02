@@ -50,6 +50,15 @@ KINDS: dict[str, tuple[str, ...]] = {
 ERROR_STRING = bytes.fromhex("08c379a0")  # Error(string)
 PANIC = bytes.fromhex("4e487b71")  # Panic(uint256)
 
+# How a node that prunes old state answers a call at a block it no longer holds.
+STATE_GONE = ("historical state", "missing trie node")
+# The archive RPC is metered (a free plan takes about 19 eth_calls a second and answers a
+# burst with 429 for minutes): small batches, paced, and a 429 waits and tries again.
+ARCHIVE_BATCH = 20
+ARCHIVE_CALLS_PER_SEC = 10
+ARCHIVE_TRIES = 4
+ARCHIVE_WAIT = 5.0  # seconds after the first 429, twice that after the second, ...
+
 
 class RpcError(Exception):
     def __init__(self, code: int, message: str, data: Any = None):
@@ -311,13 +320,28 @@ def block_tag(block: int | str | None) -> str:
     return block
 
 
+def state_gone(e: RpcError) -> bool:
+    return any(s in (e.message or "") for s in STATE_GONE)
+
+
+def _is_429(e: Exception) -> bool:
+    if isinstance(e, RpcError):
+        return e.code == 429
+    return getattr(getattr(e, "response", None), "status_code", None) == 429  # requests' HTTPError
+
+
 class Chain:
-    def __init__(self, rpc_url: str, registry: Registry = REGISTRY, timeout: float = 30.0):
+    def __init__(self, rpc_url: str, registry: Registry = REGISTRY, timeout: float = 30.0,
+                 archive_url: str | None = None):
         self.rpc_url = rpc_url
         self.registry = registry
         self.w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={"timeout": timeout}))
         self._send_lock = threading.Lock()
         self._chain_id: int | None = None
+        # asked again for what the node refuses because it no longer holds that block's state
+        self.archive = Chain(archive_url, registry, timeout) if archive_url else None
+        self._archive_lock = threading.Lock()
+        self._archive_free = 0.0  # time.monotonic() of the next archive request
 
     # --- raw ---------------------------------------------------------------
     def rpc(self, method: str, params: list | None = None) -> Any:
@@ -326,7 +350,13 @@ class Chain:
             err = resp["error"]
             if isinstance(err, str):
                 raise RpcError(-1, err)
-            raise RpcError(err.get("code", -1), err.get("message", ""), err.get("data"))
+            e = RpcError(err.get("code", -1), err.get("message", ""), err.get("data"))
+            if self.archive is None or not state_gone(e):
+                raise e
+            r = self._from_archive([(method, params or [])])[0]
+            if isinstance(r, RpcError):
+                raise r
+            return r
         return resp.get("result")
 
     def batch(self, calls: list[tuple[str, list]]) -> list[Any]:
@@ -345,6 +375,34 @@ class Chain:
                 out.append(RpcError(e.get("code", -1), e.get("message", ""), e.get("data")))
             else:
                 out.append(r.get("result"))
+        if self.archive is not None:
+            gone = [i for i, r in enumerate(out) if isinstance(r, RpcError) and state_gone(r)]
+            for i, r in zip(gone, self._from_archive([calls[i] for i in gone])):
+                out[i] = r
+        return out
+
+    def _from_archive(self, calls: list[tuple[str, list]]) -> list[Any]:
+        """`calls` asked of the archive RPC, each a result or an RpcError; one request at a
+        time across threads, paced to ARCHIVE_CALLS_PER_SEC."""
+        out: list[Any] = []
+        with self._archive_lock:
+            for i in range(0, len(calls), ARCHIVE_BATCH):
+                part = calls[i:i + ARCHIVE_BATCH]
+                for attempt in range(ARCHIVE_TRIES):
+                    time.sleep(max(0.0, self._archive_free - time.monotonic()))
+                    self._archive_free = time.monotonic() + len(part) / ARCHIVE_CALLS_PER_SEC
+                    try:
+                        res = self.archive.batch(part)
+                    except Exception as e:  # the whole request refused
+                        if not _is_429(e):
+                            raise
+                        res = None
+                    if res is not None and not any(isinstance(r, RpcError) and _is_429(r) for r in res):
+                        break
+                    self._archive_free = time.monotonic() + ARCHIVE_WAIT * (attempt + 1)
+                else:
+                    raise RpcError(429, "the archive RPC is rate limited")
+                out += res
         return out
 
     def call_many(self, calls: list[tuple["Contract", str, tuple]], block: int | str | None = None) -> list[Any]:

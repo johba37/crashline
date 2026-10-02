@@ -78,9 +78,12 @@ def fingerprint(cfg: dict) -> str:
 
 
 def redact(text: str, cfg: dict) -> str:
-    """`text` without the RPC URL's path: /health reports the last error, and the path may be an API key."""
-    path = urlsplit(cfg.get("rpcUrl", "")).path
-    return text.replace(path, "/...") if len(path) > 1 else text
+    """`text` without the RPC URLs' paths: /health reports the last error, and a path may be an API key."""
+    for url in (cfg.get("rpcUrl"), cfgmod.archive_rpc_url()):
+        path = urlsplit(url or "").path
+        if len(path) > 1:
+            text = text.replace(path, "/...")
+    return text
 
 
 def db_path_for(cfg: dict) -> Path:
@@ -110,7 +113,15 @@ class Indexer:
         with self._lock:
             self.cfg_mtime = self.config_path.stat().st_mtime
             cfg = cfgmod.load(self.config_path)
-            chain = Chain(cfg["rpcUrl"])
+            chain = Chain(cfg["rpcUrl"], archive_url=cfgmod.archive_rpc_url())
+            if chain.archive is not None:
+                try:  # a wrong archive would answer with another chain's state
+                    if chain.archive.chain_id != cfg["chainId"]:
+                        raise ValueError(f"it is chain {chain.archive.chain_id}")
+                    log.info("archive RPC: %s", urlsplit(chain.archive.rpc_url).hostname)
+                except Exception as e:
+                    log.error("ARCHIVE_RPC_URL not used: %s", redact(str(e), cfg))
+                    chain.archive = None
             db = DB(db_path_for(cfg))
             fp = fingerprint(cfg)
             if db.get_meta("fingerprint") != fp or db.get_meta("schema") != SCHEMA_VERSION:
