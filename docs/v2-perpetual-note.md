@@ -73,6 +73,30 @@ v1 gets its end for free from maturity; v2 needs a rule for:
   clean). They could then merge at the ratio of their per-token notional; v1 vintages
   never converge.
 
+## A fresh series by rule
+
+Roadmap, 2026-10-02. Not built, and nothing here is decided beyond the direction.
+
+- Why: the ratchet follows a rising stock, a falling one leaves the series behind. Knocked
+  in, it stays so until the stock regains `H`, and its cover is already paying out. Clean
+  but well below `H`, its barrier sits close under the price: `H` 400 and `k` 60% put it
+  at 240, which is 20% below a price of 300, not 40%.
+- Rule, checked at each fixing, per feed and terms: if no listed series is clean with
+  `x` at or above a threshold, a fresh one may be listed. Same terms, its first fixing is
+  that fixing: it is recorded already, so the series is struck at once and shares every
+  later fixing with the old ones.
+- Who: anyone. Creating a series is permissionless already, listing is the curator's. The
+  Desk gets a function that lists the fresh series when the rule holds, with the old
+  listing's model, vol, earnings date, cap and spread. It needs no key: the curator can be
+  a multisig, and after a crash, when demand for cover is highest, a fresh series doesn't
+  wait for its signers.
+- Bounds: the threshold is the curator's, per feed. The risk budget per feed caps what the
+  Desk can lose over all series of that feed, fresh ones included. The old series stays;
+  its holders keep their payouts.
+- Cost: series don't merge yet (above), so each fresh one is one more vintage, and a
+  threshold close to 1 splits liquidity.
+- Stays with the curator: vol, the earnings date, spreads, risk budgets, the model.
+
 ## Price
 
 Smooth random walk, constant vol `σ`, rate `r` (the world of `ml/teacher.py`). Time
