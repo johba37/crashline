@@ -15,7 +15,9 @@ learned correction. Exact rules: [docs/v2-spec.md](docs/v2-spec.md); frontend gu
 On the roadmap: [docs/roadmap-usdg-yield.md](docs/roadmap-usdg-yield.md), interest on
 the USDG that sits idle in the Desk and in the series; and
 [docs/options-calibration.md](docs/options-calibration.md), a teacher calibrated to listed
-option prices (the market's crash premium), one model per group of stocks.
+option prices (the market's crash premium), one model per group of stocks; and
+[docs/squared-move-note.md](docs/squared-move-note.md), the v2 frame with a rule that pays
+the squared weekly move instead of a knock-in (an idea with checked numbers, nothing built).
 
 ```
 contracts/src/interfaces/  frozen v1 interfaces (factory, series, tokens, quoter, Desk, recorder, pricer)
