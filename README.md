@@ -57,8 +57,9 @@ option prices (the market's crash premium), one model per group of stocks.
 ## Deployed contracts
 
 Robinhood Chain testnet (chain ID 46630), deployed 2026-10-02. The addresses are also in
-[deployments/46630.json](deployments/46630.json), which the app reads. No note is listed yet,
-so no trade has run there.
+[deployments/46630.json](deployments/46630.json), which the app reads. Four notes are listed
+(TSLA, NVDA, ETH, BTC; their feeds and series are in [docs/interfaces.md](docs/interfaces.md));
+no trade has run there yet.
 
 | Contract | Address | Explorer |
 |---|---|---|
@@ -154,7 +155,7 @@ docs/contracts-review.md   self-review: reentrancy, rounding, USDG freeze/pause,
 | Note core, quoter, Desk | 140 forge tests pass: 260 payout-conformity vectors, quoter vectors for k1-r1, k2 and k3 (four vols), fuzz at 1,000 runs, invariants at 512 runs × 100 calls (escrow ≥ claims, no foreign clones). The Desk trades NOTE and WRITER (cover) at two prices and keeps NOTE, within a risk budget per stock; LPs can queue redemptions at any time | `forge test`, [docs/contracts-review.md](docs/contracts-review.md) |
 | End to end | local Nitro dev node with the Stylus k3 pricer, listed at vol 5500 ± a 200 bps band: series struck in the past, NOTE buy, cover buy by a hedger, **mid-life sell at observationsRemaining 16 at the band's quote ± the spread**, autocall (the LP queues a redemption while the fixing is pending), redeem, collect, queue paid, LP withdraw; the same with k2 (no band) | `contracts/script/e2e-devnode.sh`, logs [k3](contracts/logs/e2e-devnode-k3.log), [k2](contracts/logs/e2e-devnode-k2.log) |
 | Happy path | backend-driven on a fresh dev node with the k3 pricer: two weekly series on one product (A stays above the knock-in, B knocks in), both legs traded, every trade checked against teacher v3, matured with the dev clock, settled, redeemed, collected, LP out; USDG conserved to the base unit at every step | `backend/scenarios/happy_path.py`, logs [clock](backend/scenarios/logs/happy_path-clock.log), [hybrid](backend/scenarios/logs/happy_path-hybrid.log), [docs/backend.md](docs/backend.md#happy-path-scenario) |
-| Robinhood Chain testnet (46630) | deployed 2026-10-02: the k3 pricer (Stylus, activated; `weightsHash` matches `model/k3`, 100 golden and 35 reject vectors exact on chain), factory, quoter, Desk on the real USDG, a staged mock feed and its recorder. No series listed yet, so no trade has run there | `deployments/46630.json`, addresses in [docs/interfaces.md](docs/interfaces.md) |
+| Robinhood Chain testnet (46630) | deployed 2026-10-02: the k3 pricer (Stylus, activated; `weightsHash` matches `model/k3`, 100 golden and 35 reject vectors exact on chain), factory, quoter, Desk on the real USDG, a staged mock feed and its recorder. Four series are listed since (TSLA, NVDA, ETH, BTC, each on a mock feed that mirrors its real feed hourly); no trade has run there yet | `deployments/46630.json`, addresses in [docs/interfaces.md](docs/interfaces.md) |
 
 Known limit (teacher v2 / model/k2; lifted by teacher v3 / model/k3, which certifies 20–90%):
 the teacher's jump variance is pinned from history, so total vol must stay above 44.7%.

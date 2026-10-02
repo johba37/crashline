@@ -50,6 +50,9 @@ KINDS: dict[str, tuple[str, ...]] = {
 ERROR_STRING = bytes.fromhex("08c379a0")  # Error(string)
 PANIC = bytes.fromhex("4e487b71")  # Panic(uint256)
 
+# eth_calls per request: the public testnet RPC takes 55 and refuses 66 (429), and /series
+# asks 11 per series.
+CALL_BATCH = 50
 # How a node that prunes old state answers a call at a block it no longer holds.
 STATE_GONE = ("historical state", "missing trie node")
 # The archive RPC is metered (a free plan takes about 19 eth_calls a second and answers a
@@ -413,8 +416,8 @@ class Chain:
             fns.append(f)
             reqs.append(("eth_call", [{"to": c.address, "data": f.encode(*args)}, block_tag(block)]))
         results: list[Any] = []
-        for i in range(0, len(reqs), 500):  # geth's default batch limit is 1000
-            results += self.batch(reqs[i:i + 500])
+        for i in range(0, len(reqs), CALL_BATCH):
+            results += self.batch(reqs[i:i + CALL_BATCH])
         out: list[Any] = []
         for f, r in zip(fns, results):
             if isinstance(r, RpcError):

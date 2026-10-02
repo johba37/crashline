@@ -38,8 +38,22 @@ USDG `0x7E955252E15c84f5768B83c41a71F9eba181802F` (6 decimals). Deployed 2026-10
 | NoteSeries implementation | `0x982F643c5d38A72a5D70c37f5095cb56B5850FD7` |
 | SeriesToken implementation | `0xb34D404041E130174d22881a8Cee6b291E4e4256` |
 
-The Desk's owner (curator) is `0x933a8C0f852f034f1f3b4a17Db4aD831eB3F67e3`. No series is
-listed yet.
+The Desk's owner (curator) is `0x100a2cEAAFd6489a3Af9d9f9Ca537d792aE84cA7` since
+2026-10-02, a keeper key that also owns the four mock feeds below and runs
+`contracts/script/curator.sh keep` every hour: real prices from the Chainlink feeds on
+Robinhood Chain mainnet, the fixings, and a successor for a series that ends. Four series
+are listed, all weekly with 26 observations, knock-in 60%, autocall 100%, coupon 25 bps a
+period (the mock feed and recorder in the table above are not used by any of them):
+
+| Stock | Series | Mock feed | Strike |
+|---|---|---|---|
+| RHTSLA | `0xC759Be1eaf9Efc3E47505B76028CcD3514158294` | `0x6f69e10A64C560d078Ae8892d2c8ebfb67C8bc97` | 2026-05-26 20:00 UTC, 433.59 USD |
+| RHNVDA | `0xB4A5bf08F8Db501F7f7D015b100A58376De9B754` | `0x6D7a35E62014190BC785Bb6136D8f422acaFc56f` | 2026-05-14 20:00 UTC, 235.74 USD |
+| ETH | `0xEBB0ac10260D721a9dB2E055AD6f669f78A1aCC7` | `0x1E6A5f21EFa5AF378327a1FfAfb4e3C28f42E303` | 2026-09-23 00:00 UTC, 2,752.63 USD |
+| BTC | `0xCc7c2293b898E79DDFB0FAbB7F6869eFF0507c69` | `0x00de9D8C1B1664d9f2C875aF03d202D0728fF1B3` | 2026-09-23 00:00 UTC, 86,172.28 USD |
+
+Six earlier series on feeds of the first curator (`0x933a…67e3`) are delisted; a series
+that ends gets a new address, so read the list from `Desk.listedSeries()`.
 
 Implementation notes beyond the interfaces:
 - `desk.listedSeries()` also returns delisted series; check `desk.listing(s)`.

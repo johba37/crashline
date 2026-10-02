@@ -32,6 +32,7 @@ jobs:
         env:
           VITE_WALLETCONNECT_PROJECT_ID: ${{ vars.VITE_WALLETCONNECT_PROJECT_ID }}
           VITE_RPC_URL: ${{ vars.VITE_RPC_URL }}
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
         run: |
           npm ci
           npm run build -- --base=${{ steps.pages.outputs.base_path }}/
