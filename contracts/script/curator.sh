@@ -35,13 +35,14 @@
 #   0 * * * * WALLET="--account curator --password-file $HOME/.curator-pass" <repo>/contracts/script/curator.sh keep >>$HOME/curator-keep.log 2>&1
 #
 # Env: RPC (https://rpc.testnet.chain.robinhood.com), DEPLOYMENTS (<repo>/deployments/46630.json);
-#      stage: INITIAL_USD (250), PATH_BPS ("9400 8800 5500 7200 8100 8600 9100 8300 8700 9000"),
+#      stage: INITIAL_USD (250), PATH_BPS ("9400 8800 5500 7200 8100 8600 9100 8300 8700 9000";
+#             PATH_BPS="" stages a series with no past observation, struck one interval before NEXT_OBS),
 #             SPOT_BPS (8500), NEXT_OBS (unix time; default LEAD_SECS, 3 days, from now),
 #             KI (6000), AC (10000), COUPON (25), COUNT (26), INTERVAL (604800: the Desk lists weekly series only);
 #      list:  VOL (5500), VOL_BAND (200), BID_BPS (20), ASK_BPS (30), CAP (100000 NOTE),
 #             RISK_BUDGET_BPS (2000);
 #      keep:  SOURCE_RPC (https://rpc.mainnet.chain.robinhood.com), SOURCES ("NAME=feed ..": the
-#             Chainlink feeds of RHTSLA, RHNVDA, ETH and BTC on Robinhood Chain mainnet).
+#             Chainlink feeds of RHTSLA, RHNVDA, RHAAPL, ETH and BTC on Robinhood Chain mainnet).
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)" # contracts/
@@ -52,7 +53,7 @@ RPC="${RPC:-https://rpc.testnet.chain.robinhood.com}"
 DEPLOYMENTS="${DEPLOYMENTS:-$ROOT/deployments/46630.json}"
 WALLET="${WALLET:-}"
 SOURCE_RPC="${SOURCE_RPC:-https://rpc.mainnet.chain.robinhood.com}"
-SOURCES="${SOURCES:-RHTSLA=0x4A1166a659A55625345e9515b32adECea5547C38 RHNVDA=0x379EC4f7C378F34a1B47E4F3cbeBCbAC3E8E9F15 ETH=0x78F3556b67E17Df817D51Ef5a990cDaF09E8d3A9 BTC=0xa2c5184bF03d373Dc9dE4876eb4Bce595B460251}"
+SOURCES="${SOURCES:-RHTSLA=0x4A1166a659A55625345e9515b32adECea5547C38 RHNVDA=0x379EC4f7C378F34a1B47E4F3cbeBCbAC3E8E9F15 RHAAPL=0x6B22A786bAa607d76728168703a39Ea9C99f2cD0 ETH=0x78F3556b67E17Df817D51Ef5a990cDaF09E8d3A9 BTC=0xa2c5184bF03d373Dc9dE4876eb4Bce595B460251}"
 
 TERMS_T="(address,uint40,uint32,uint8,uint16,uint16,uint16)"
 STATE_T="((uint8,uint96,uint8,bool,bool,uint40,uint40,uint128))"
@@ -117,7 +118,7 @@ cmd_stage() {
   local strike t_next done_ series recorder who
   who=$(me)
   initial=$(units "${INITIAL_USD:-250}" 8)
-  read -r -a path <<<"${PATH_BPS:-9400 8800 5500 7200 8100 8600 9100 8300 8700 9000}"
+  read -r -a path <<<"${PATH_BPS-9400 8800 5500 7200 8100 8600 9100 8300 8700 9000}"
   spot=${SPOT_BPS:-8500}
   interval=${INTERVAL:-604800}
   count=${COUNT:-26}
