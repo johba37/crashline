@@ -278,7 +278,7 @@ export default function AppPage() {
                     value: 'earn',
                     icon: <Coins size={24} weight="bold" />,
                     title: 'Earn a weekly income',
-                    // The rate differs from note to note, so no single figure stands here: the range, once it is live.
+                    // The rate may differ from note to note, so it is the average over the notes, not one note's.
                     body: <>Be the insurer: you earn <EarnRate />. In a big crash, you get back less.</>,
                   },
                 ]}
