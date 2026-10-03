@@ -56,12 +56,12 @@ export default function PositionGraph({ s, side, path, now }: {
   // The dot's label sits next to the dot while there's room to its right. In the right half it
   // goes above or below the dot instead, on the side the path didn't come from (judged by the
   // price about a label's width back): left of the dot it would lie on the path. Either way it
-  // keeps clear of both lines and of the words above the starting price, moving up or down,
+  // keeps clear of both lines and of the words above them, moving up or down,
   // whichever is nearer.
   const tight = xLast > 1 / 2
   const before = path.findLast((p) => x(p.time) < xLast - 0.15) ?? path[0]
   const away = last && before.price > last.price ? NEAR : -NEAR
-  const taken = [[yStart - CLEAR - (ended ? 0 : WORDS), yStart + CLEAR], [yCrash - CLEAR, yCrash + CLEAR]]
+  const taken = [[yStart - CLEAR - (ended ? 0 : WORDS), yStart + CLEAR], [yCrash - CLEAR - (ended ? 0 : WORDS), yCrash + CLEAR]]
   const spots = tight ? [yLast + away, yLast - away] : [yLast]
   let yName = spots.find((c) => taken.every(([from, to]) => c <= from || c >= to)) ?? spots[0]
   for (const [from, to] of taken) if (yName > from && yName < to) yName = yName - from < to - yName ? from : to
@@ -123,15 +123,20 @@ export default function PositionGraph({ s, side, path, now }: {
 
         {/* The words on the two lines stay outside the image: they're read out as text, and the info icon can be reached. */}
         {!ended && (
-          <span className="absolute right-0 flex items-center gap-1 type-label whitespace-nowrap text-ink-muted" style={{ bottom: HEIGHT - yStart + 6 }}>
-            <Term t="endsEarly">Ends early</Term> from here up
-          </span>
+          <>
+            <span className="absolute right-0 flex items-center gap-1 type-label whitespace-nowrap text-ink-muted" style={{ bottom: HEIGHT - yStart + 6 }}>
+              <Term t="endsEarly">Ends early</Term> from here up
+            </span>
+            <span className="absolute right-0 flex items-center type-label whitespace-nowrap text-ink-muted" style={{ bottom: HEIGHT - yCrash + 6 }}>
+              <Term t="crashLine">Crash Line</Term>
+            </span>
+          </>
         )}
         {/* A note that has ended says what did happen at the line, one that runs what does or would. */}
         <p className="absolute right-2 bottom-2 left-3 type-label text-ink">
-          {ended && !hit ? `${s.symbol} never closed below this line at a weekly check.` : (
+          {ended && !hit ? <>{s.symbol} never closed below this line at a <Term t="weeklyCheck" />.</> : (
             <>
-              {hit ? `${s.symbol} closed below this line` : 'Below this line at a weekly check'}:{' '}
+              {hit ? `${s.symbol} closed below this line` : <>Below this line at a <Term t="weeklyCheck" /></>}:{' '}
               {side === 'note' ? `your money ${ended ? 'was' : 'is'} at risk.` : hit ? `your cover ${ended ? 'was' : 'is'} switched on.` : 'your cover switches on.'}
             </>
           )}

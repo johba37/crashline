@@ -121,7 +121,7 @@ export default function LevelPicker({
               <>
                 <div aria-hidden="true" className="absolute inset-x-0 bottom-0 rounded-b-md bg-accent-soft" style={{ top: line.y }} />
                 <p className={`absolute left-3 right-2 type-label text-ink ${under ? '' : 'bottom-2'}`} style={under && { top: under.y + CLEAR }}>
-                  {hit ? `${s.symbol} already closed below this line` : 'Below this line at a weekly check'}:{' '}
+                  Crash Line: {hit ? `${s.symbol} already closed below this line, so` : <>below this line at a <Term t="weeklyCheck" />,</>}{' '}
                   {goal === 'protect' ? (hit ? 'the cover is switched on.' : 'your cover switches on.') : 'your money is at risk.'}
                 </p>
               </>
