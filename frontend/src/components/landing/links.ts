@@ -1,6 +1,6 @@
 // GitHub links for the landing page and the nav. Only files that exist on main.
 // After PR #2 merges: add docs/risk.md, docs/pitch.md, docs/user-stories.md and docs/market.md.
-const REPO = 'https://github.com/johba37/surrogate-pricer'
+const REPO = 'https://github.com/johba37/crashline'
 const doc = (file: string) => `${REPO}/blob/main/docs/${file}`
 
 export const GITHUB = {

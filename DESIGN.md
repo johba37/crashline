@@ -1,8 +1,8 @@
 # Crashline — Design Decisions
 
 Status: session of 2026-09-29. Supersedes the deleted GapGuard `DESIGN.md` (in git
-history). Idea spec: `~/arb-hackathon/ideas/surrogate-pricer.md`. The original
-repository slug is `surrogate-pricer`; the product name is Crashline.
+history). Idea spec: `~/arb-hackathon/ideas/surrogate-pricer.md`. The repository
+was `surrogate-pricer` until 2026-10-03 and is now `johba37/crashline`, after the product.
 
 ## Verified chain facts (probed 2026-09-29, Robinhood mainnet block 75777267)
 

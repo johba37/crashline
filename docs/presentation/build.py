@@ -49,7 +49,7 @@ FRONTEND = OUT.parents[1] / "frontend"
 
 # Deploy.s.sol was broadcast to Robinhood Chain testnet (46630) on 2026-10-02: deployments/46630.json.
 DEPLOYED_ON_ROBINHOOD_TESTNET = True
-REPO_URL = "github.com/johba37/surrogate-pricer"
+REPO_URL = "github.com/johba37/crashline"
 
 W, H = 1600, 900
 

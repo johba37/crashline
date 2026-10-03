@@ -3,7 +3,7 @@
 > Owner: Max · Created: 2026-09-30 · Updated 2026-09-30 after the contracts and `model/k2` landed on `main`,
 > and again for the two-leg Desk (`IDeskCover`) and the LP redemption queue (`IDeskQueue`).
 > johba owns the contracts, backend and model.
-> Repo: `johba37/surrogate-pricer`. Work branch: **`max/frontend`**, based on `main`.
+> Repo: `johba37/crashline` (`johba37/surrogate-pricer` until 2026-10-03). Work branch: **`max/frontend`**, based on `main`.
 > Hard dates (SGT):
 > - **Registration closes Oct 3, 01:01.**
 > - **Hedge submission Oct 1, 23:59.**
