@@ -1,7 +1,13 @@
-// PLACEHOLDER, red on purpose: Earn's weekly income across the notes that are open. To make it
-// live: useMarket(false).data?.series (src/market/useMarket.ts), each note's
-// terms.couponBpsPerPeriod through pct() (as dashboard/SeriesDetail.tsx does), lowest to highest,
-// and one figure while there is only one note. Then drop the red.
+// What Earn pays a week, on average over the notes. Today every note pays the same 0.25% (25 bps):
+// the model is certified for that coupon only (tools/domains/k3.json) and the curator lists notes
+// with it (contracts/script/curator.sh). Once notes pay different rates, work it out from the open
+// notes: useMarket(false).data?.series (src/market/useMarket.ts), each note's terms.couponBpsPerPeriod.
+// Bold, so it stands out in the sentence (user, 2026-10-03). The "~" reads "around".
 export default function EarnRate() {
-  return <mark className="rounded-sm bg-abort-soft px-1 whitespace-nowrap text-abort">x% to x% a week</mark>
+  return (
+    <strong className="font-semibold whitespace-nowrap">
+      <span aria-hidden="true">~</span>
+      <span className="sr-only">around </span>0.25% per week
+    </strong>
+  )
 }

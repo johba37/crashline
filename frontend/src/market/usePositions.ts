@@ -34,13 +34,15 @@ export type PendingPosition = { series: SeriesView; side: Position['side']; stal
  * /accounts/{address} (the holdings and what was paid) on the notes of `market`, delisted ones
  * too, each with its price path from /series/{address}/history (docs/backend.md). `traded` is the
  * last trade made here: the holdings are re-read quickly until they include its block, and what
- * it bought is `pending` until then. After 10 s the quick reads stop and `reload` starts them again.
+ * it bought is `pending` until then, what it sold or collected `updating`. After 10 s the quick reads
+ * stop and `reload` starts them again.
  * Without a backend there is no reader (`supported` is off), and without a wallet nobody to look
  * up (`needsWallet`).
  */
 export function usePositions(test: boolean, market: MarketData | undefined, traded: Traded | null): {
   positions: Position[]
   pending: PendingPosition | null
+  updating: PendingPosition | null
   supported: boolean
   needsWallet: boolean
   isLoading: boolean
@@ -86,12 +88,14 @@ export function usePositions(test: boolean, market: MarketData | undefined, trad
     setGaveUp(null)
     void account.refetch()
   }
-  if (test) return { positions: fixturePositions, pending: null, supported: true, needsWallet: false, isLoading: false, error: null, reload }
-  // Only a buy is on its way to the list: what was sold or collected is still in it, and leaves.
+  if (test) return { positions: fixturePositions, pending: null, updating: null, supported: true, needsWallet: false, isLoading: false, error: null, reload }
+  // Only a buy is on its way to the list: what was sold or collected is still in it, as it was
+  // before, and leaves (or changes, after selling part of it).
   const bought = behind && (traded.kind === 'buy' || traded.kind === 'buyCover')
   return {
     positions: held.map((p) => ({ ...p, path: paths[notes.indexOf(p.series)]?.data ?? [] })),
     pending: bought ? { series: traded.series, side: traded.kind === 'buy' ? 'note' : 'cover', stalled } : null,
+    updating: behind && !bought ? { series: traded.series, side: traded.kind === 'sell' || traded.kind === 'collect' ? 'note' : 'cover', stalled } : null,
     supported: live,
     needsWallet: live && address === undefined,
     isLoading: account.isLoading,

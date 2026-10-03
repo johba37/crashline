@@ -2,10 +2,11 @@ import { useRef, type KeyboardEvent, type ReactNode } from 'react'
 
 type Choice<T extends string> = { value: T; title: string; body: ReactNode; aside?: ReactNode; icon?: ReactNode }
 
-/** Big radio cards for a decision (a stock, a goal): one tab stop, arrow keys move the choice. */
+/** Big radio cards for a decision (a stock, a goal): one tab stop, arrow keys move the choice.
+    The icon sits at the title's line, or with `centerIcon` in the middle of the card's height. */
 export default function ChoiceCards<T extends string>({
-  label, choices, value, onChange,
-}: { label: string; choices: Choice<T>[]; value?: T; onChange: (value: T) => void }) {
+  label, choices, value, onChange, centerIcon,
+}: { label: string; choices: Choice<T>[]; value?: T; onChange: (value: T) => void; centerIcon?: boolean }) {
   const refs = useRef<(HTMLButtonElement | null)[]>([])
   const index = choices.findIndex((c) => c.value === value)
 
@@ -35,7 +36,7 @@ export default function ChoiceCards<T extends string>({
               on ? 'bg-surface-overlay shadow-[inset_0_0_0_2px_var(--color-accent)]' : 'bg-surface-well shadow-[inset_0_0_0_1px_var(--color-line-strong)] hover:bg-surface-overlay'
             }`}
           >
-            {c.icon && <span aria-hidden="true" className={on ? 'text-accent-text' : 'text-ink-muted'}>{c.icon}</span>}
+            {c.icon && <span aria-hidden="true" className={`${centerIcon ? 'flex self-center' : ''} ${on ? 'text-accent-text' : 'text-ink-muted'}`}>{c.icon}</span>}
             <span className="flex min-w-0 flex-1 flex-col gap-1">
               <span className="flex items-baseline justify-between gap-3">
                 <span className="type-label text-ink">{c.title}</span>

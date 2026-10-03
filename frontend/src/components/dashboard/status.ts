@@ -2,9 +2,9 @@
 // dashboard's plain vocabulary (glossary.ts). Facts per docs/interfaces.md "Errors worth a human message".
 import {
   CheckCircle, FlagCheckered, Gauge, HourglassMedium, Info, MoonStars, Pulse, Queue, ShieldWarning,
-  Timer, TrendDown, Vault, X, XCircle, type Icon,
+  Timer, TrendDown, Vault, Wallet, X, XCircle, type Icon,
 } from '@phosphor-icons/react'
-import { dateTime, paused } from '../../market/format.ts'
+import { dateTime, paused, usdg } from '../../market/format.ts'
 import type { Refusal, SeriesView } from '../../market/types.ts'
 
 export type Tone = 'go' | 'hold' | 'abort' | 'info' | 'neutral'
@@ -58,6 +58,16 @@ export function refusalStatus({ error, args }: Refusal, s?: SeriesView): Status 
       return { tone: 'abort', icon: XCircle, label: 'Fee too high', message: 'The fee is above what the contract allows.' }
     case 'Inconsistent':
       return { tone: 'abort', icon: XCircle, label: 'Input error', message: 'The price inputs don’t match. This is a bug on our side.' }
+    case 'ERC20InsufficientBalance': {
+      // [sender, balance, needed, token]. useTrade adds the token (USDG, NOTE or cover) when the wallet was the one short;
+      // NOTE and cover are counted in USDG, as everywhere on the page.
+      const [, balance, needed, token] = args as [unknown, bigint, bigint, string | undefined]
+      if (!token) return { tone: 'abort', icon: XCircle, label: 'It didn’t go through', message: 'One side of it didn’t have enough to pay. Nothing was bought or sold.' }
+      const unit = token === 'USDG' ? 'USDG' : `USDG of ${token}`
+      return { tone: 'hold', icon: Wallet, label: `Not enough ${token} in your wallet`, message: `This needs ${usdg(needed)} ${unit}, and your wallet has ${usdg(balance)} ${unit}. Nothing was bought or sold.` }
+    }
+    case 'ERC20InsufficientAllowance':
+      return { tone: 'abort', icon: XCircle, label: 'Not approved', message: 'Your wallet hasn’t allowed the Desk to take that much. Try again: your wallet asks for the approval first. Nothing was bought or sold.' }
     case 'UserRejected':
       return { tone: 'neutral', icon: X, label: 'Cancelled in your wallet' }
     default:

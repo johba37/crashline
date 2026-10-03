@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
-import { type Address, type Hex, erc20Abi } from 'viem'
+import { type Address, type Hex, erc20Abi, isAddressEqual } from 'viem'
 import {
   getAccount,
   readContract,
@@ -24,6 +24,10 @@ const QUOTE = {
   buyCover: 'quoteBuyCover',
   sellCover: 'quoteSellCover',
 } as const
+
+/** What a trade takes from the wallet, in the page's words: USDG for a buy, else the leg it sells or collects. */
+const spent = (kind: TradeKind | CollectKind) =>
+  kind === 'buy' || kind === 'buyCover' ? 'USDG' : kind === 'sell' || kind === 'collect' ? 'NOTE' : 'cover'
 
 /** A trade that went through after its order was left behind. */
 export type LateTrade = { series: SeriesView; kind: TradeKind | CollectKind; amount: bigint; hash: Hex }
@@ -151,14 +155,18 @@ export function useTrade(deployment: Deployment | null): {
         // Buys pay USDG; sells hand in the leg they sell.
         const token = kind === 'sell' ? series.note : kind === 'sellCover' ? series.writer : usdg
         const needed = isBuy ? limit : amount
-        const allowance = await readContract(config, {
-          address: token,
-          abi: erc20Abi,
-          functionName: 'allowance',
-          args: [account, desk],
-          chainId,
-        })
+        const [balance, allowance] = await Promise.all([
+          readContract(config, { address: token, abi: erc20Abi, functionName: 'balanceOf', args: [account], chainId }),
+          readContract(config, { address: token, abi: erc20Abi, functionName: 'allowance', args: [account, desk], chainId }),
+        ])
         if (left()) return
+        // Without enough to pay (or to sell) the trade would revert, so the wallet isn't asked for
+        // anything, not even the approval. Said in the token's own words, as its revert would be.
+        const spends = isBuy ? quoted : amount
+        if (balance < spends) {
+          set({ step: 'failed', refusal: { error: 'ERC20InsufficientBalance', args: [account, balance, spends, spent(kind)] } })
+          return
+        }
         if (allowance < needed) {
           set({ step: 'approving' })
           const approval = await ask(writeContract(config, {
@@ -188,7 +196,11 @@ export function useTrade(deployment: Deployment | null): {
         if (left()) return
         await send(writeContract(config, request))
       } catch (error) {
-        set({ step: 'failed', hash, refusal: decodeRefusal(error) })
+        const refusal = decodeRefusal(error)
+        // A transfer short of funds names whose they were: when the wallet's, it was short of what this trade spends.
+        const account = getAccount(config).address
+        const own = refusal.error === 'ERC20InsufficientBalance' && account !== undefined && isAddressEqual(refusal.args[0] as Address, account)
+        set({ step: 'failed', hash, refusal: own ? { ...refusal, args: [...refusal.args, spent(p.kind)] } : refusal })
       }
     })
     return last.current

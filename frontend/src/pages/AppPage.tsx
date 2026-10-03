@@ -1,6 +1,6 @@
 import { Coins, Info, ShieldCheck } from '@phosphor-icons/react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
-import { useLayoutEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import AmountField from '../components/dashboard/AmountField.tsx'
 import ChoiceCards from '../components/dashboard/ChoiceCards.tsx'
@@ -28,7 +28,9 @@ import { useMarket } from '../market/useMarket.ts'
 import { usePositions } from '../market/usePositions.ts'
 import { usePracticeTrade } from '../market/usePracticeTrade.ts'
 import { type LateTrade, useTrade } from '../market/useTrade.ts'
-import { API_URL } from '../wagmi.ts'
+import { erc20Abi } from 'viem'
+import { useAccount, useReadContract } from 'wagmi'
+import { API_URL, chain } from '../wagmi.ts'
 import Logo from '../components/Logo.tsx'
 import Starfield from '../components/Starfield.tsx'
 import Wordmark from '../components/Wordmark.tsx'
@@ -61,6 +63,17 @@ export default function AppPage() {
   const chainTrade = useTrade(deployment)
   const practiceTrade = usePracticeTrade()
   const trade: Trade = test ? practiceTrade : chainTrade
+  // The wallet's USDG, so the order says before the wallet is asked that it isn't enough. Read
+  // again as often as the market, and after every trade. The prototype spends nothing, so it has none.
+  const { address } = useAccount()
+  const wallet = useReadContract({
+    address: deployment?.usdg, abi: erc20Abi, functionName: 'balanceOf', args: address && [address], chainId: chain.id,
+    query: { enabled: !test && deployment !== null && address !== undefined, refetchInterval: 15_000 },
+  })
+  const { refetch: rereadWallet } = wallet
+  useEffect(() => {
+    if (chainTrade.traded) void rereadWallet()
+  }, [chainTrade.traded, rereadWallet])
   // Two views of the page: the guided flow to buy, and what the wallet already holds.
   const view = params.get('view') === 'positions' ? 'positions' : 'buy'
   // The trade's status belongs to the order the reader has put together: another stock, goal or
@@ -105,7 +118,7 @@ export default function AppPage() {
       {label}
     </button>
   )
-  const tabs = <div className="flex flex-wrap items-center gap-1">{tab('buy', 'Protect or earn')}{tab('positions', 'My positions')}</div>
+  const tabs = <div className="flex flex-wrap items-center gap-1">{tab('buy', 'Protect or Earn')}{tab('positions', 'My Positions')}</div>
   // The amount starts empty. Once there is one, the last valid entry stays in force while the
   // field is being edited, so the steps below don't close and reopen with every keystroke.
   // Until the field holds an amount again it shows its error, and the order in step 6 waits.
@@ -210,11 +223,11 @@ export default function AppPage() {
           <div className="ml-auto">{testSwitch}</div>
         </div>
         <div className="mb-2 flex flex-col gap-2">
-          <h1 className="type-title text-ink">{view === 'positions' ? 'My positions' : 'Protect a coin or stock, or earn from it'}</h1>
+          <h1 className="type-title text-ink">{view === 'positions' ? 'My positions' : 'Crash insurance for coins and stocks'}</h1>
           <p className="type-body-lg text-ink-muted">
             {view === 'positions'
               ? 'What you hold, what it’s worth today, and what happens next. Open one to see its price so far and what you can do.'
-              : 'Worried that a coin or stock you hold could crash? Insure it here: you pay once, and you get paid if it crashes. Or take the other side and earn a weekly income. You see what you pay and what you can get back before you buy anything.'}
+              : 'Insure what you hold: pay once, and get paid if it crashes. Or be the insurer and earn a weekly income.'}
           </p>
         </div>
 
@@ -249,6 +262,7 @@ export default function AppPage() {
             <Step n={1} title="Pick a coin or stock" state={stock ? 'done' : 'current'}>
               <ChoiceCards
                 label="Coin or stock"
+                centerIcon
                 value={stock}
                 onChange={(v) => set({ stock: v })}
                 choices={stocks.map((sym) => {
@@ -277,7 +291,7 @@ export default function AppPage() {
                     value: 'earn',
                     icon: <Coins size={24} weight="bold" />,
                     title: 'Earn a weekly income',
-                    // The rate differs from note to note, so no single figure stands here: the range, once it is live.
+                    // One figure for all notes (EarnRate.tsx): every note pays the same today.
                     body: <>Be the insurer: you earn <EarnRate />. In a big crash, you get back less.</>,
                   },
                 ]}
@@ -384,6 +398,7 @@ export default function AppPage() {
               {goal && ready && chosen && (
                 <Order
                   key={`${chosen.address}-${goal}`} s={chosen} goal={goal} amount={amount} amountOk={parseAmount(amountText) !== null} market={market} trade={trade} placed={placed?.order ?? null} onPlaced={(order) => setPlaced(order && { steps, order })}
+                  balance={test ? undefined : wallet.data}
                   // ?open= names the position as the list keys its rows: the note and the side that was bought.
                   onView={() => set({ view: 'positions', open: `${chosen.address}-${goal === 'protect' ? 'cover' : 'note'}` })}
                 />

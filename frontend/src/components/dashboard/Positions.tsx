@@ -1,7 +1,7 @@
 import { CaretDown, CheckCircle, Coins, FlagCheckered, Info, ShieldCheck, TrendDown } from '@phosphor-icons/react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { useAccount } from 'wagmi'
+import { useAccount, useDisconnect } from 'wagmi'
 import { UNIT, bestCase, crashPayout, date, level, observationsLeft, paused, pct, tradeAmounts, usd, usdg } from '../../market/format.ts'
 import { endedAt } from '../../market/positions.ts'
 import { FEE_BPS, FEE_RECEIVER, SLIPPAGE_BPS } from '../../market/settings.ts'
@@ -143,13 +143,22 @@ function PendingRow({ pending: { series: s, side, stalled }, open, onReload }: {
   )
 }
 
-/** One position: a line you can read at a glance, and behind a click its price graph, what happens next and what you can do. */
-function Row({ p, now, trade, active, open, onAct }: { p: Position; now: number; trade: Trade; active: boolean; open: boolean; onAct: () => void }) {
+/**
+ * One position: a line you can read at a glance, and behind a click its price graph, what happens next and what you can do.
+ * Once it is sold or collected, the list still shows it as it was until the backend has the block (`updating`): the card
+ * shimmers from the moment the transaction is sent until then, like a bought one on its way in, and offers nothing to do.
+ */
+function Row({ p, now, trade, active, open, updating, onAct, onReload }: {
+  p: Position; now: number; trade: Trade; active: boolean; open: boolean; updating: PendingPosition | null; onAct: () => void; onReload: () => void
+}) {
   const { isConnected } = useAccount()
   const details = useBroughtIntoView<HTMLDetailsElement>(open)
   const { series: s, side, amount } = p
   const r = read(p)
   const busy = active && ['quoting', 'approving', 'trading'].includes(trade.state.step)
+  // Sent, and waiting for its block.
+  const sent = active && trade.state.step === 'trading' && trade.state.hash !== undefined
+  const shimmer = sent || (updating !== null && !updating.stalled)
   const bid = r.cover ? s.coverBid : s.noteBid
   // A paused price comes back by itself. Until then the button stays, rests, and says that it
   // waits; the notice above it says for what.
@@ -164,7 +173,7 @@ function Row({ p, now, trade, active, open, onAct }: { p: Position; now: number;
 
   return (
     <li>
-      <details ref={details} open={open} className="panel panel-sheer group rounded-lg">
+      <details ref={details} open={open} aria-busy={shimmer || undefined} className={`panel panel-sheer group rounded-lg ${shimmer ? 'position-shimmer' : ''}`}>
         <summary className="flex cursor-pointer list-none items-center gap-4 rounded-lg p-5 [&::-webkit-details-marker]:hidden">
           <TickerBadge symbol={s.symbol} />
           <span className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-6 gap-y-3">
@@ -174,7 +183,7 @@ function Row({ p, now, trade, active, open, onAct }: { p: Position; now: number;
               </span>
               <span className="flex flex-wrap items-center gap-x-3 gap-y-1 type-label text-ink-muted">
                 <StatusChip status={r.status} />
-                {r.when}
+                {sent ? 'Confirming on the chain…' : updating ? (updating.stalled ? 'Taking longer than usual' : 'Updating your list…') : r.when}
               </span>
             </span>
             <span className="flex flex-col sm:items-end">
@@ -189,7 +198,7 @@ function Row({ p, now, trade, active, open, onAct }: { p: Position; now: number;
         <div className="flex flex-col gap-5 border-t border-line p-5">
           <p className="type-body text-ink">{r.story}</p>
           <PositionGraph s={s} side={side} path={p.path} now={now} />
-          {!r.ended && !bid.ok && (
+          {!r.ended && !bid.ok && !updating && (
             <Notice status={refusalStatus(bid.refusal, s)}>
               {wait && <p className="type-body text-ink">{r.cover ? 'Your cover stays valid' : 'Your NOTE keeps earning'} in the meantime. Only selling it back has to wait.</p>}
             </Notice>
@@ -198,7 +207,12 @@ function Row({ p, now, trade, active, open, onAct }: { p: Position; now: number;
           {active && trade.state.step === 'done' && (
             <Notice status={trade.state.hash ? confirmed : { ...confirmed, label: 'Practice run done', message: `This is the prototype, so nothing was ${r.ended ? 'collected' : 'sold'} and your wallet wasn’t asked for anything.` }} />
           )}
-          {wait ? (
+          {updating ? updating.stalled && (
+            <>
+              <p className="type-body text-ink">It went through and the USDG is in your wallet. This list just hasn’t caught up yet.</p>
+              <button type="button" onClick={onReload} className={BUTTON}>Reload positions</button>
+            </>
+          ) : wait ? (
             <button type="button" disabled className={BUTTON}>Waiting for a price to sell…</button>
           ) : r.action && (!isConnected ? (
             <ConnectButton.Custom>
@@ -211,7 +225,7 @@ function Row({ p, now, trade, active, open, onAct }: { p: Position; now: number;
               {busy ? (trade.state.step === 'approving' ? 'Confirm in your wallet…' : r.ended ? 'Collecting…' : 'Selling…') : r.action}
             </button>
           ))}
-          {!r.ended && (r.action || wait) && (
+          {!r.ended && !updating && (r.action || wait) && (
             <p className="type-label text-ink-muted">Selling is optional: you can also keep it until it ends.</p>
           )}
         </div>
@@ -224,16 +238,18 @@ function Row({ p, now, trade, active, open, onAct }: { p: Position; now: number;
  * What the wallet holds, as a list: each row reads at a glance (what, state, worth now) and opens
  * to its price graph, what happens next and the one thing you can do with it. `open` names the
  * one that starts opened (series and side, as the rows are keyed): the one that was just bought.
- * Until the backend lists it, `pending` holds its place as a skeleton.
+ * Until the backend lists it, `pending` holds its place as a skeleton. What was sold or collected
+ * (`updating`) shimmers until the backend no longer lists it as it was.
  */
 export default function Positions({
-  positions, pending, supported, needsWallet, isLoading, error, reload, open, now, trade, onBuy,
+  positions, pending, updating, supported, needsWallet, isLoading, error, reload, open, now, trade, onBuy,
 }: {
-  positions: Position[]; pending: PendingPosition | null; supported: boolean; needsWallet: boolean; isLoading: boolean; error: Error | null
+  positions: Position[]; pending: PendingPosition | null; updating: PendingPosition | null; supported: boolean; needsWallet: boolean; isLoading: boolean; error: Error | null
   reload: () => void; open: string | null; now: number; trade: Trade; onBuy: () => void
 }) {
   // The one trade hook serves every row: remember which row started it.
   const [active, setActive] = useState<string | null>(null)
+  const { disconnect } = useDisconnect()
   const key = (p: Pick<Position, 'series' | 'side'>) => `${p.series.address}-${p.side}`
 
   if (!supported) {
@@ -266,8 +282,12 @@ export default function Positions({
     return (
       <>
         {closed}
-        <Notice status={{ tone: 'neutral', icon: Info, label: 'You don’t hold anything yet', message: 'Once you buy cover or a NOTE, it shows up here.' }}>
-          <button type="button" onClick={onBuy} className="self-start type-label text-ink underline">Protect a coin or stock, or earn from it</button>
+        <Notice status={{ tone: 'neutral', icon: Info, label: 'No positions found for this wallet', message: 'Connect another wallet, or start a new position.' }}>
+          <div className="flex flex-wrap gap-x-6 gap-y-1">
+            {/* Disconnects: the page then asks for a wallet, as it does for a reader without one. */}
+            <button type="button" onClick={() => disconnect()} className="type-label text-ink underline">Connect another wallet</button>
+            <button type="button" onClick={onBuy} className="type-label text-ink underline">Protect or Earn</button>
+          </div>
         </Notice>
       </>
     )
@@ -280,7 +300,10 @@ export default function Positions({
         {positions.map((p) => pending && key(p) === key(pending) ? (
           <PendingRow key={key(p)} pending={pending} open={open === key(p)} onReload={reload} />
         ) : (
-          <Row key={key(p)} p={p} now={now} trade={trade} active={active === key(p)} open={open === key(p)} onAct={() => { trade.reset(); setActive(key(p)) }} />
+          <Row
+            key={key(p)} p={p} now={now} trade={trade} active={active === key(p)} open={open === key(p)}
+            updating={updating && key(updating) === key(p) ? updating : null} onAct={() => { trade.reset(); setActive(key(p)) }} onReload={reload}
+          />
         ))}
         {pending && !positions.some((p) => key(p) === key(pending)) && (
           <PendingRow pending={pending} open={open === key(pending)} onReload={reload} />

@@ -9,8 +9,8 @@ import EarnRate from './EarnRate.tsx'
 // worded for any coin or stock. The nodes are flat tints in the lane colour: no gradient, and no glass of
 // their own (glass never sits inside glass). On glass the lane colour is for icons and lines only:
 // text is ink, the one colour that clears the contrast gate on a tint in both themes. No worked example and no figures here: the one
-// example is the panels in HowItWorks.tsx, and the weekly income differs per note, so its rate is
-// a range over the open notes (EarnRate.tsx). What a reader may want on top sits behind info icons. Tokens:
+// example is the panels in HowItWorks.tsx, and the weekly income may differ per note, so its rate is
+// EarnRate.tsx's one figure for all notes. What a reader may want on top sits behind info icons. Tokens:
 // contracts/src/interfaces/INoteSeries.sol (NOTE and WRITER are plain ERC-20s, one pair per note;
 // redeem pays whoever holds them) and IDeskCover.sol (the Desk buys both back).
 
