@@ -120,7 +120,7 @@ export default function Order({ s, goal, amount, amountOk, market, trade, placed
   const kind = KIND[goal][selling ? 1 : 0]
   const quote = { buy: s.noteAsk, sell: s.noteBid, buyCover: s.coverAsk, sellCover: s.coverBid }[kind]
   const amounts = quote.ok ? tradeAmounts(kind, amount, quote.value, FEE_BPS) : null
-  const busy =['waiting', 'quoting', 'approving', 'trading'].includes(trade.state.step)
+  const busy = ['waiting', 'quoting', 'approving', 'trading'].includes(trade.state.step)
   // Only an order sent from this form is its own: the trade's status is shared with My positions.
   const sent = useRef(false)
   useEffect(() => {
@@ -129,8 +129,8 @@ export default function Order({ s, goal, amount, amountOk, market, trade, placed
     onPlaced({ kind, hash: trade.state.hash })
   }, [kind, onPlaced, trade.state])
   const done = placed !== null || trade.state.step === 'done'
-  // Once it went through, what it took from the wallet is no reason to stop it.
-  const stop = blocker(s, kind, amount, amountOk, market, done ? undefined : balance)
+  // While it runs and once it went through, what it takes from the wallet is no reason to stop it.
+  const stop = blocker(s, kind, amount, amountOk, market, done || busy ? undefined : balance)
   // A paused price comes back by itself, so the order stays as it is. Its button rests and says
   // that it waits; the notice above it says for what.
   const wait = amountOk && paused(quote) && !done

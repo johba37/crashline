@@ -6,8 +6,8 @@ import Section from './Section.tsx'
 // The page speaks about any coin or stock; one note is the worked example, and only here: TSLA,
 // 26 weekly checks, the end one week after the last (27 weeks, "six months"), crash line 60%, ends
 // early at 100%, weekly income 0.25% (25 bps), for 1,000 USDG of the stock. The income is this
-// note's own: other notes may pay other rates, so outside the example the rate is the average over
-// the notes (EarnRate.tsx).
+// note's own: other notes may pay other rates, so outside the example the rate is EarnRate.tsx's
+// one figure for all notes.
 //
 // Payouts (contracts/src/interfaces/INoteSeries.sol), 2.50 a week:
 //   the pot, locked on day one (maxPayout)   1,000 + 27 x 2.50 = 1,067.50

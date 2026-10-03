@@ -1,6 +1,6 @@
 import { Coins, Info, ShieldCheck } from '@phosphor-icons/react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
-import { useLayoutEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import AmountField from '../components/dashboard/AmountField.tsx'
 import ChoiceCards from '../components/dashboard/ChoiceCards.tsx'
@@ -64,12 +64,16 @@ export default function AppPage() {
   const practiceTrade = usePracticeTrade()
   const trade: Trade = test ? practiceTrade : chainTrade
   // The wallet's USDG, so the order says before the wallet is asked that it isn't enough. Read
-  // again as often as the market. The prototype spends nothing, so it has none.
+  // again as often as the market, and after every trade. The prototype spends nothing, so it has none.
   const { address } = useAccount()
   const wallet = useReadContract({
     address: deployment?.usdg, abi: erc20Abi, functionName: 'balanceOf', args: address && [address], chainId: chain.id,
     query: { enabled: !test && deployment !== null && address !== undefined, refetchInterval: 15_000 },
   })
+  const { refetch: rereadWallet } = wallet
+  useEffect(() => {
+    if (chainTrade.traded) void rereadWallet()
+  }, [chainTrade.traded, rereadWallet])
   // Two views of the page: the guided flow to buy, and what the wallet already holds.
   const view = params.get('view') === 'positions' ? 'positions' : 'buy'
   // The trade's status belongs to the order the reader has put together: another stock, goal or
@@ -287,7 +291,7 @@ export default function AppPage() {
                     value: 'earn',
                     icon: <Coins size={24} weight="bold" />,
                     title: 'Earn a weekly income',
-                    // The rate may differ from note to note, so it is the average over the notes, not one note's.
+                    // One figure for all notes (EarnRate.tsx): every note pays the same today.
                     body: <>Be the insurer: you earn <EarnRate />. In a big crash, you get back less.</>,
                   },
                 ]}

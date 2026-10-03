@@ -59,9 +59,12 @@ export function refusalStatus({ error, args }: Refusal, s?: SeriesView): Status 
     case 'Inconsistent':
       return { tone: 'abort', icon: XCircle, label: 'Input error', message: 'The price inputs don’t match. This is a bug on our side.' }
     case 'ERC20InsufficientBalance': {
-      // [sender, balance, needed], in the token's units: USDG for a buy, the cover or NOTE (counted in USDG) for a sale.
-      const [, balance, needed] = args as [unknown, bigint, bigint]
-      return { tone: 'hold', icon: Wallet, label: 'Not enough in your wallet', message: `This needs ${usdg(needed)} USDG, and your wallet has ${usdg(balance)} USDG. Nothing was bought or sold.` }
+      // [sender, balance, needed, token]. useTrade adds the token (USDG, NOTE or cover) when the wallet was the one short;
+      // NOTE and cover are counted in USDG, as everywhere on the page.
+      const [, balance, needed, token] = args as [unknown, bigint, bigint, string | undefined]
+      if (!token) return { tone: 'abort', icon: XCircle, label: 'It didn’t go through', message: 'One side of it didn’t have enough to pay. Nothing was bought or sold.' }
+      const unit = token === 'USDG' ? 'USDG' : `USDG of ${token}`
+      return { tone: 'hold', icon: Wallet, label: `Not enough ${token} in your wallet`, message: `This needs ${usdg(needed)} ${unit}, and your wallet has ${usdg(balance)} ${unit}. Nothing was bought or sold.` }
     }
     case 'ERC20InsufficientAllowance':
       return { tone: 'abort', icon: XCircle, label: 'Not approved', message: 'Your wallet hasn’t allowed the Desk to take that much. Try again: your wallet asks for the approval first. Nothing was bought or sold.' }

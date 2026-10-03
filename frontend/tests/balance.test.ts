@@ -25,8 +25,17 @@ test('a trade on the Desk or a collect on the series decodes it', () => {
   }
 })
 
-test('it reads as not enough in the wallet, with both amounts', () => {
+test('short in the wallet, it names what the trade spends, with both amounts', () => {
+  // useTrade adds the token when the wallet was the one short: USDG for a buy, the leg for a sale or a collect.
+  const buy = refusalStatus({ error: 'ERC20InsufficientBalance', args: [zeroAddress, 0n, 42n * USDG, 'USDG'] })
+  assert.equal(buy.label, 'Not enough USDG in your wallet')
+  assert.match(buy.message ?? '', /needs 42\.00 USDG, and your wallet has 0\.00 USDG\./)
+  const sale = refusalStatus({ error: 'ERC20InsufficientBalance', args: [zeroAddress, 400n * USDG, 1_000n * USDG, 'cover'] })
+  assert.equal(sale.label, 'Not enough cover in your wallet')
+  assert.match(sale.message ?? '', /needs 1,000\.00 USDG of cover, and your wallet has 400\.00 USDG of cover\./)
+})
+
+test('short elsewhere, it doesn’t blame the wallet', () => {
   const status = refusalStatus({ error: 'ERC20InsufficientBalance', args: [zeroAddress, 0n, 42n * USDG] })
-  assert.equal(status.label, 'Not enough in your wallet')
-  assert.match(status.message ?? '', /needs 42\.00 USDG, and your wallet has 0\.00 USDG/)
+  assert.doesNotMatch(`${status.label} ${status.message}`, /wallet/)
 })
