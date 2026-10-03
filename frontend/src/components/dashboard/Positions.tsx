@@ -235,7 +235,7 @@ export default function Positions({
   // The one trade hook serves every row: remember which row started it.
   const [active, setActive] = useState<string | null>(null)
   const { disconnect } = useDisconnect()
-  const key =(p: Pick<Position, 'series' | 'side'>) => `${p.series.address}-${p.side}`
+  const key = (p: Pick<Position, 'series' | 'side'>) => `${p.series.address}-${p.side}`
 
   if (!supported) {
     return <Notice status={{ tone: 'info', icon: Info, label: 'Not connected to live positions yet', message: 'This page can’t read a wallet’s positions from the chain yet. Switch to Prototype above to see how they look.' }} />
@@ -267,7 +267,7 @@ export default function Positions({
     return (
       <>
         {closed}
-        <Notice status={{ tone: 'neutral', icon: Info, label: 'No positions found for this wallet', message: 'Connect another wallet, or get your first position.' }}>
+        <Notice status={{ tone: 'neutral', icon: Info, label: 'No positions found for this wallet', message: 'Connect another wallet, or start a new position.' }}>
           <div className="flex flex-wrap gap-x-6 gap-y-1">
             {/* Disconnects: the page then asks for a wallet, as it does for a reader without one. */}
             <button type="button" onClick={() => disconnect()} className="type-label text-ink underline">Connect another wallet</button>

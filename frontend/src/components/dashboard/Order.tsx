@@ -333,7 +333,7 @@ export default function Order({ s, goal, amount, amountOk, market, trade, placed
           </button>
         ) : (
           <button type="button" onClick={onView} className="rounded-full px-2 py-1 underline transition-colors duration-160 hover:text-ink">
-            Already hold {token}? Sell it in My positions
+            Already hold {token}? Sell it in My Positions
           </button>
         )}
       </div>

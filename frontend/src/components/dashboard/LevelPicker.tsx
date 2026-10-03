@@ -86,7 +86,8 @@ export default function LevelPicker({
   const gap = first > 0 ? rows[first].y - rows[first - 1].y : 0
   const between = line && !hit && gap >= 80 ? rows[first].y - gap / 2 : null
   // Today's price when it's already under every line: its label sits where the band's text would
-  // rise from the bottom edge, so the text starts below the label instead.
+  // rise from the bottom edge, so the text starts below the label instead. It takes its place in
+  // the flow there, so on a narrow screen the diagram grows to hold every line of it.
   const under = rows[last + 1]
 
   // The weekly checks still to come, as a share of the time from now to the end date.
@@ -114,13 +115,13 @@ export default function LevelPicker({
             aria-label={goal === 'protect' ? 'How far the price has to fall' : 'How far the price can fall'}
             onKeyDown={onKeyDown}
             className="relative col-start-2"
-            style={{ height }}
+            style={{ minHeight: height }}
           >
             {/* Below the chosen line: where the cover pays, or where the money is at risk. */}
             {line && (
               <>
                 <div aria-hidden="true" className="absolute inset-x-0 bottom-0 rounded-b-md bg-accent-soft" style={{ top: line.y }} />
-                <p className={`absolute left-3 right-2 type-label text-ink ${under ? '' : 'bottom-2'}`} style={under && { top: under.y + CLEAR }}>
+                <p className={`type-label text-ink ${under ? 'relative mr-2 ml-3 pb-2' : 'absolute right-2 bottom-2 left-3'}`} style={under && { marginTop: under.y + CLEAR }}>
                   Crash Line: {hit ? `${s.symbol} already closed below this line, so` : <>below this line at a <Term t="weeklyCheck" />,</>}{' '}
                   {goal === 'protect' ? (hit ? 'the cover is switched on.' : 'your cover switches on.') : 'your money is at risk.'}
                 </p>

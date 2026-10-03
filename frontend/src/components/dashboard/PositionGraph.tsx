@@ -10,7 +10,7 @@ const TOP = 36
 const BOTTOM = 80
 const APART = 20 // between two prices in the gutter
 const CLEAR = 12 // kept free above and below a line, for the dot's label
-const WORDS = 26 // the words above the starting price, with their gap to the line
+const WORDS = 26 // the words above the starting price or the crash line, with their gap to the line
 const NEAR = 18 // from the dot's middle to its label's, when the label sits above or below it
 
 /**
@@ -62,9 +62,14 @@ export default function PositionGraph({ s, side, path, now }: {
   const before = path.findLast((p) => x(p.time) < xLast - 0.15) ?? path[0]
   const away = last && before.price > last.price ? NEAR : -NEAR
   const taken = [[yStart - CLEAR - (ended ? 0 : WORDS), yStart + CLEAR], [yCrash - CLEAR - (ended ? 0 : WORDS), yCrash + CLEAR]]
-  const spots = tight ? [yLast + away, yLast - away] : [yLast]
+  // Never across the crash line from the dot: below it lie the band's words.
+  const spots = (tight ? [yLast + away, yLast - away] : [yLast]).filter((c) => c < yCrash === yLast < yCrash)
   let yName = spots.find((c) => taken.every(([from, to]) => c <= from || c >= to)) ?? spots[0]
-  for (const [from, to] of taken) if (yName > from && yName < to) yName = yName - from < to - yName ? from : to
+  for (const [i, [from, to]] of taken.entries()) {
+    if (yName <= from || yName >= to) continue
+    // Out to the nearer side. At the crash line, to the dot's own side: the band's words lie below it.
+    yName = (i === 1 ? yLast < yCrash : yName - from < to - yName) ? from : to
+  }
 
   const checks = Array.from({ length: s.terms.observationCount }, (_, k) => s.terms.strikeTime + (k + 1) * s.terms.observationInterval)
 
@@ -134,9 +139,9 @@ export default function PositionGraph({ s, side, path, now }: {
         )}
         {/* A note that has ended says what did happen at the line, one that runs what does or would. */}
         <p className="absolute right-2 bottom-2 left-3 type-label text-ink">
-          {ended && !hit ? <>{s.symbol} never closed below this line at a <Term t="weeklyCheck" />.</> : (
+          {ended && !hit ? `${s.symbol} never closed below this line at a weekly check.` : (
             <>
-              {hit ? `${s.symbol} closed below this line` : <>Below this line at a <Term t="weeklyCheck" /></>}:{' '}
+              {hit ? `${s.symbol} closed below this line` : 'Below this line at a weekly check'}:{' '}
               {side === 'note' ? `your money ${ended ? 'was' : 'is'} at risk.` : hit ? `your cover ${ended ? 'was' : 'is'} switched on.` : 'your cover switches on.'}
             </>
           )}
