@@ -884,7 +884,7 @@ successor, says what it couldn't do and exits 1.
 Since 2026-10-02 that wallet is a keeper key on this host
 (`0x100a2cEAAFd6489a3Af9d9f9Ca537d792aE84cA7`, an encrypted keystore and its
 password file in `/opt/ai/secrets`, outside the repo): it owns the Desk and
-the four feeds of the listed series, and the user's crontab runs `keep` with
+the five feeds of the listed series, and the user's crontab runs `keep` with
 it at minute 2 of every hour, logging to `/opt/ai/cache/curator-keep.log`.
 The service itself still holds no key.
 
