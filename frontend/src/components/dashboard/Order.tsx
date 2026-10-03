@@ -1,4 +1,4 @@
-import { CaretDown, Info } from '@phosphor-icons/react'
+import { CaretDown, Info, Wallet } from '@phosphor-icons/react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Address, Hex } from 'viem'
@@ -31,8 +31,11 @@ const ACTION: Record<TradeKind, [string, string]> = {
   sellCover: ['Sell cover', 'Selling cover…'],
 }
 
-/** Why the order can't go ahead, checked before anyone signs (prices don't check the Desk's limits). */
-function blocker(s: SeriesView, kind: TradeKind, amount: bigint, amountOk: boolean, market: MarketData): Status | null {
+/**
+ * Why the order can't go ahead, checked before anyone signs (prices don't check the Desk's limits).
+ * `balance` is the wallet's USDG where it is known: a buy it can't pay for waits too, after the Desk's own reasons.
+ */
+function blocker(s: SeriesView, kind: TradeKind, amount: bigint, amountOk: boolean, market: MarketData, balance?: bigint): Status | null {
   // The page keeps the last amount while step 3 is edited: no order goes ahead for an amount that is no longer in the field.
   if (!amountOk) {
     return { tone: 'hold', icon: Info, label: 'Enter an amount in step 3', message: `What you see here is still for ${usdg(amount)} USDG, the last amount you entered. Enter a new amount in step 3 to go on.` }
@@ -47,8 +50,12 @@ function blocker(s: SeriesView, kind: TradeKind, amount: bigint, amountOk: boole
   if (kind === 'buy' && amount > noteOnOffer(s)) {
     return { ...refusalStatus({ error: 'CapExceeded', args: [] }), message: `Only ${usdg(noteOnOffer(s), 0)} USDG of this note is on offer. Enter a smaller amount in step 3.` }
   }
+  const cost = kind === 'buy' || kind === 'buyCover' ? tradeAmounts(kind, amount, quote.value, FEE_BPS).total : 0n
+  const short: Status | null = balance !== undefined && balance < cost
+    ? { tone: 'hold', icon: Wallet, label: 'Not enough USDG in your wallet', message: `This costs ${usdg(cost)} USDG, and your wallet has ${usdg(balance)} USDG. Add USDG to it, or enter a smaller amount in step 3.` }
+    : null
   const adds = addsToDesk(s, kind, amount)
-  if (adds === 0n) return null
+  if (adds === 0n) return short
   if (market.queue.waiting > 0n) return refusalStatus({ error: 'QueuePending', args: [] })
   const room = roomFor(s, kind, market)
   if (room !== null && amount > room) {
@@ -60,7 +67,7 @@ function blocker(s: SeriesView, kind: TradeKind, amount: bigint, amountOk: boole
       message: 'How much is sold on one coin or stock is limited, so that every payout can always be paid. Enter a smaller amount in step 3.',
     }
   }
-  return null
+  return short
 }
 
 /** Where to look a transaction up. The dev node has no explorer: there it's the transaction's hash. */
@@ -97,11 +104,12 @@ function Outcome({ when, get, gain, children }: { when: string; get: string; gai
  * An order that went through is not sent twice: it is reported with `onPlaced` and handed back as
  * `placed` for as long as the steps above stay as they are, and until then the button rests. What
  * was bought has its own button to `onView` it in My positions, which is also where a holding is
- * sold from: the form itself sells only a sold-out note, where there is nothing to buy.
+ * sold from: the form itself sells only a sold-out note, where there is nothing to buy. `balance`
+ * is the wallet's USDG, unknown without a wallet and in the prototype.
  */
-export default function Order({ s, goal, amount, amountOk, market, trade, placed, onPlaced, onView }: {
+export default function Order({ s, goal, amount, amountOk, market, trade, placed, onPlaced, onView, balance }: {
   s: SeriesView; goal: Goal; amount: bigint; amountOk: boolean; market: MarketData; trade: Trade
-  placed: Placed | null; onPlaced: (placed: Placed | null) => void; onView: () => void
+  placed: Placed | null; onPlaced: (placed: Placed | null) => void; onView: () => void; balance?: bigint
 }) {
   const { isConnected } = useAccount()
   // A sold-out note can only be sold back, so its order opens on selling. Only where it opens:
@@ -112,8 +120,7 @@ export default function Order({ s, goal, amount, amountOk, market, trade, placed
   const kind = KIND[goal][selling ? 1 : 0]
   const quote = { buy: s.noteAsk, sell: s.noteBid, buyCover: s.coverAsk, sellCover: s.coverBid }[kind]
   const amounts = quote.ok ? tradeAmounts(kind, amount, quote.value, FEE_BPS) : null
-  const stop = blocker(s, kind, amount, amountOk, market)
-  const busy = ['waiting', 'quoting', 'approving', 'trading'].includes(trade.state.step)
+  const busy =['waiting', 'quoting', 'approving', 'trading'].includes(trade.state.step)
   // Only an order sent from this form is its own: the trade's status is shared with My positions.
   const sent = useRef(false)
   useEffect(() => {
@@ -122,6 +129,8 @@ export default function Order({ s, goal, amount, amountOk, market, trade, placed
     onPlaced({ kind, hash: trade.state.hash })
   }, [kind, onPlaced, trade.state])
   const done = placed !== null || trade.state.step === 'done'
+  // Once it went through, what it took from the wallet is no reason to stop it.
+  const stop = blocker(s, kind, amount, amountOk, market, done ? undefined : balance)
   // A paused price comes back by itself, so the order stays as it is. Its button rests and says
   // that it waits; the notice above it says for what.
   const wait = amountOk && paused(quote) && !done

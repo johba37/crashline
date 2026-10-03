@@ -81,6 +81,13 @@ export const deskAbi = [
   {
     type: 'function',
     inputs: [],
+    name: 'MAX_HELD_SERIES',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
     name: 'MAX_SPREAD_BPS',
     outputs: [{ name: '', internalType: 'uint16', type: 'uint16' }],
     stateMutability: 'view',
@@ -203,6 +210,13 @@ export const deskAbi = [
     outputs: [
       { name: '', internalType: 'contract ISeriesFactory', type: 'address' },
     ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'heldSeries',
+    outputs: [{ name: '', internalType: 'address[]', type: 'address[]' }],
     stateMutability: 'view',
   },
   {
@@ -746,6 +760,14 @@ export const deskAbi = [
     type: 'event',
     anonymous: false,
     inputs: [
+      { name: 'secs', internalType: 'uint32', type: 'uint32', indexed: false },
+    ],
+    name: 'MinSecsToObservationSet',
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
       {
         name: 'series',
         internalType: 'address',
@@ -1019,6 +1041,7 @@ export const deskAbi = [
     inputs: [{ name: 'feeBps', internalType: 'uint16', type: 'uint16' }],
     name: 'FeeTooHigh',
   },
+  { type: 'error', inputs: [], name: 'HeldSeriesLimit' },
   {
     type: 'error',
     inputs: [{ name: 'field', internalType: 'uint8', type: 'uint8' }],
@@ -1060,6 +1083,7 @@ export const deskAbi = [
     inputs: [{ name: 'obsTime', internalType: 'uint40', type: 'uint40' }],
     name: 'TooCloseToObservation',
   },
+  { type: 'error', inputs: [], name: 'WrongAsset' },
   {
     type: 'function',
     inputs: [],
@@ -1284,10 +1308,30 @@ export const deskAbi = [
     inputs: [{ name: 'region', internalType: 'uint8', type: 'uint8' }],
     name: 'Uncertified',
   },
+  { type: 'error', inputs: [], name: 'AlreadyInitialized' },
   { type: 'error', inputs: [], name: 'AlreadySettled' },
   { type: 'error', inputs: [], name: 'NotSettled' },
   { type: 'error', inputs: [], name: 'NotStruck' },
+  { type: 'error', inputs: [], name: 'OnlyFactory' },
   { type: 'error', inputs: [], name: 'ZeroAmount' },
+  {
+    type: 'error',
+    inputs: [
+      { name: 'sender', type: 'address' },
+      { name: 'balance', type: 'uint256' },
+      { name: 'needed', type: 'uint256' },
+    ],
+    name: 'ERC20InsufficientBalance',
+  },
+  {
+    type: 'error',
+    inputs: [
+      { name: 'spender', type: 'address' },
+      { name: 'allowance', type: 'uint256' },
+      { name: 'needed', type: 'uint256' },
+    ],
+    name: 'ERC20InsufficientAllowance',
+  },
 ] as const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1908,10 +1952,30 @@ export const noteSeriesAbi = [
     ],
     name: 'Struck',
   },
+  { type: 'error', inputs: [], name: 'AlreadyInitialized' },
   { type: 'error', inputs: [], name: 'AlreadySettled' },
   { type: 'error', inputs: [], name: 'NotSettled' },
   { type: 'error', inputs: [], name: 'NotStruck' },
+  { type: 'error', inputs: [], name: 'OnlyFactory' },
   { type: 'error', inputs: [], name: 'ZeroAmount' },
+  {
+    type: 'error',
+    inputs: [
+      { name: 'sender', type: 'address' },
+      { name: 'balance', type: 'uint256' },
+      { name: 'needed', type: 'uint256' },
+    ],
+    name: 'ERC20InsufficientBalance',
+  },
+  {
+    type: 'error',
+    inputs: [
+      { name: 'spender', type: 'address' },
+      { name: 'allowance', type: 'uint256' },
+      { name: 'needed', type: 'uint256' },
+    ],
+    name: 'ERC20InsufficientAllowance',
+  },
 ] as const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2125,6 +2189,7 @@ export const seriesFactoryAbi = [
     name: 'SeriesCreated',
   },
   { type: 'error', inputs: [], name: 'BadBarriers' },
+  { type: 'error', inputs: [], name: 'BadCollateral' },
   { type: 'error', inputs: [], name: 'BadCoupon' },
   { type: 'error', inputs: [], name: 'BadFeed' },
   { type: 'error', inputs: [], name: 'BadSchedule' },
@@ -2285,6 +2350,8 @@ export const seriesTokenAbi = [
     ],
     name: 'Transfer',
   },
+  { type: 'error', inputs: [], name: 'AlreadyInitialized' },
+  { type: 'error', inputs: [], name: 'OnlyFactory' },
   { type: 'error', inputs: [], name: 'OnlySeries' },
 ] as const
 

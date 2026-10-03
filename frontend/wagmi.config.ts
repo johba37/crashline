@@ -1,5 +1,5 @@
 import { defineConfig } from '@wagmi/cli'
-import type { Abi } from 'viem'
+import { parseAbi, type Abi } from 'viem'
 import aggregator from '../abi/IAggregatorV3.json' with { type: 'json' }
 import deskCover from '../abi/IDeskCover.json' with { type: 'json' }
 import deskQueue from '../abi/IDeskQueue.json' with { type: 'json' }
@@ -11,6 +11,13 @@ import seriesToken from '../abi/ISeriesToken.json' with { type: 'json' }
 import surrogatePricer from '../abi/ISurrogatePricer.json' with { type: 'json' }
 
 const errorsOf = (abi: Abi): Abi => abi.filter((item) => item.type === 'error')
+
+// The tokens a trade moves (USDG, NOTE, WRITER) are OpenZeppelin 5 ERC-20s: a transfer of more
+// than the wallet holds, or than it allowed, reverts with these (draft-IERC6093).
+const erc20Errors = parseAbi([
+  'error ERC20InsufficientBalance(address sender, uint256 balance, uint256 needed)',
+  'error ERC20InsufficientAllowance(address spender, uint256 allowance, uint256 needed)',
+])
 
 /** Concatenates ABIs, keeping the first item of each signature. */
 const merge = (...abis: Abi[]): Abi => {
@@ -27,7 +34,8 @@ const merge = (...abis: Abi[]): Abi => {
 
 // Reverts are decoded against the ABI of the contract called, so the Desk and the quoter also
 // carry the errors they bubble up: the quoter's and the pricer's, and the series' (the Desk
-// reverts ZeroAmount itself and calls into the series on trades).
+// reverts ZeroAmount itself and calls into the series on trades). The Desk and the series also
+// carry the tokens' (a trade pays USDG and hands in NOTE or WRITER).
 export default defineConfig({
   out: 'src/market/abi.ts',
   contracts: [
@@ -40,11 +48,12 @@ export default defineConfig({
         errorsOf(noteQuoter as Abi),
         errorsOf(surrogatePricer as Abi),
         errorsOf(noteSeries as Abi),
+        erc20Errors,
       ),
     },
     { name: 'FixingsRecorder', abi: fixingsRecorder as Abi },
     { name: 'NoteQuoter', abi: merge(noteQuoter as Abi, errorsOf(surrogatePricer as Abi)) },
-    { name: 'NoteSeries', abi: noteSeries as Abi },
+    { name: 'NoteSeries', abi: merge(noteSeries as Abi, erc20Errors) },
     { name: 'SeriesFactory', abi: seriesFactory as Abi },
     { name: 'SeriesToken', abi: seriesToken as Abi },
     { name: 'SurrogatePricer', abi: surrogatePricer as Abi },

@@ -28,7 +28,9 @@ import { useMarket } from '../market/useMarket.ts'
 import { usePositions } from '../market/usePositions.ts'
 import { usePracticeTrade } from '../market/usePracticeTrade.ts'
 import { type LateTrade, useTrade } from '../market/useTrade.ts'
-import { API_URL } from '../wagmi.ts'
+import { erc20Abi } from 'viem'
+import { useAccount, useReadContract } from 'wagmi'
+import { API_URL, chain } from '../wagmi.ts'
 import Logo from '../components/Logo.tsx'
 import Starfield from '../components/Starfield.tsx'
 import Wordmark from '../components/Wordmark.tsx'
@@ -61,6 +63,13 @@ export default function AppPage() {
   const chainTrade = useTrade(deployment)
   const practiceTrade = usePracticeTrade()
   const trade: Trade = test ? practiceTrade : chainTrade
+  // The wallet's USDG, so the order says before the wallet is asked that it isn't enough. Read
+  // again as often as the market. The prototype spends nothing, so it has none.
+  const { address } = useAccount()
+  const wallet = useReadContract({
+    address: deployment?.usdg, abi: erc20Abi, functionName: 'balanceOf', args: address && [address], chainId: chain.id,
+    query: { enabled: !test && deployment !== null && address !== undefined, refetchInterval: 15_000 },
+  })
   // Two views of the page: the guided flow to buy, and what the wallet already holds.
   const view = params.get('view') === 'positions' ? 'positions' : 'buy'
   // The trade's status belongs to the order the reader has put together: another stock, goal or
@@ -385,6 +394,7 @@ export default function AppPage() {
               {goal && ready && chosen && (
                 <Order
                   key={`${chosen.address}-${goal}`} s={chosen} goal={goal} amount={amount} amountOk={parseAmount(amountText) !== null} market={market} trade={trade} placed={placed?.order ?? null} onPlaced={(order) => setPlaced(order && { steps, order })}
+                  balance={test ? undefined : wallet.data}
                   // ?open= names the position as the list keys its rows: the note and the side that was bought.
                   onView={() => set({ view: 'positions', open: `${chosen.address}-${goal === 'protect' ? 'cover' : 'note'}` })}
                 />

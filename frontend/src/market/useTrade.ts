@@ -151,14 +151,18 @@ export function useTrade(deployment: Deployment | null): {
         // Buys pay USDG; sells hand in the leg they sell.
         const token = kind === 'sell' ? series.note : kind === 'sellCover' ? series.writer : usdg
         const needed = isBuy ? limit : amount
-        const allowance = await readContract(config, {
-          address: token,
-          abi: erc20Abi,
-          functionName: 'allowance',
-          args: [account, desk],
-          chainId,
-        })
+        const [balance, allowance] = await Promise.all([
+          readContract(config, { address: token, abi: erc20Abi, functionName: 'balanceOf', args: [account], chainId }),
+          readContract(config, { address: token, abi: erc20Abi, functionName: 'allowance', args: [account, desk], chainId }),
+        ])
         if (left()) return
+        // Without enough to pay (or to sell) the trade would revert, so the wallet isn't asked for
+        // anything, not even the approval. Said in the token's own words, as its revert would be.
+        const spends = isBuy ? quoted : amount
+        if (balance < spends) {
+          set({ step: 'failed', refusal: { error: 'ERC20InsufficientBalance', args: [account, balance, spends] } })
+          return
+        }
         if (allowance < needed) {
           set({ step: 'approving' })
           const approval = await ask(writeContract(config, {

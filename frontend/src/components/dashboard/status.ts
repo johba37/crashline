@@ -2,9 +2,9 @@
 // dashboard's plain vocabulary (glossary.ts). Facts per docs/interfaces.md "Errors worth a human message".
 import {
   CheckCircle, FlagCheckered, Gauge, HourglassMedium, Info, MoonStars, Pulse, Queue, ShieldWarning,
-  Timer, TrendDown, Vault, X, XCircle, type Icon,
+  Timer, TrendDown, Vault, Wallet, X, XCircle, type Icon,
 } from '@phosphor-icons/react'
-import { dateTime, paused } from '../../market/format.ts'
+import { dateTime, paused, usdg } from '../../market/format.ts'
 import type { Refusal, SeriesView } from '../../market/types.ts'
 
 export type Tone = 'go' | 'hold' | 'abort' | 'info' | 'neutral'
@@ -58,6 +58,13 @@ export function refusalStatus({ error, args }: Refusal, s?: SeriesView): Status 
       return { tone: 'abort', icon: XCircle, label: 'Fee too high', message: 'The fee is above what the contract allows.' }
     case 'Inconsistent':
       return { tone: 'abort', icon: XCircle, label: 'Input error', message: 'The price inputs don’t match. This is a bug on our side.' }
+    case 'ERC20InsufficientBalance': {
+      // [sender, balance, needed], in the token's units: USDG for a buy, the cover or NOTE (counted in USDG) for a sale.
+      const [, balance, needed] = args as [unknown, bigint, bigint]
+      return { tone: 'hold', icon: Wallet, label: 'Not enough in your wallet', message: `This needs ${usdg(needed)} USDG, and your wallet has ${usdg(balance)} USDG. Nothing was bought or sold.` }
+    }
+    case 'ERC20InsufficientAllowance':
+      return { tone: 'abort', icon: XCircle, label: 'Not approved', message: 'Your wallet hasn’t allowed the Desk to take that much. Try again: your wallet asks for the approval first. Nothing was bought or sold.' }
     case 'UserRejected':
       return { tone: 'neutral', icon: X, label: 'Cancelled in your wallet' }
     default:
