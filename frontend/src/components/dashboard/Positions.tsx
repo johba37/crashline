@@ -128,9 +128,12 @@ const BAR = 'rounded-full bg-ink/10'
 /**
  * A position that was bought and isn't in the list yet: its card as a skeleton, in the row's
  * layout (opened like the row will be), with a band of light over it while the list catches up.
- * When that takes too long the band stops and the reader can reload the list herself.
+ * When that takes too long the band stops and the reader can reload the list herself. `leaving`:
+ * one sold or collected in full, on its way to History while that catches up.
  */
-function PendingRow({ pending: { series: s, side, stalled }, open, onReload }: { pending: PendingPosition; open: boolean; onReload: () => void }) {
+function PendingRow({ pending: { series: s, side, stalled }, leaving = false, open, onReload }: {
+  pending: PendingPosition; leaving?: boolean; open: boolean; onReload: () => void
+}) {
   const card = useBroughtIntoView<HTMLDivElement>(open)
   return (
     <li>
@@ -139,8 +142,8 @@ function PendingRow({ pending: { series: s, side, stalled }, open, onReload }: {
           <TickerBadge symbol={s.symbol} />
           <span className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-6 gap-y-3">
             <span className="flex flex-col gap-1">
-              <span className="type-heading text-ink">{side === 'cover' ? `Your new cover on ${s.symbol}` : `Your new NOTE on ${s.symbol}`}</span>
-              <span className="type-label text-ink-muted">{stalled ? 'Taking longer than usual' : 'Adding it to your list…'}</span>
+              <span className="type-heading text-ink">{`Your ${leaving ? '' : 'new '}${side === 'cover' ? 'cover' : 'NOTE'} on ${s.symbol}`}</span>
+              <span className="type-label text-ink-muted">{stalled ? 'Taking longer than usual' : leaving ? 'Moving it to History…' : 'Adding it to your list…'}</span>
             </span>
             <span aria-hidden="true" className="flex flex-col gap-2 sm:items-end">
               <span className={`h-3 w-16 ${BAR}`} />
@@ -152,8 +155,10 @@ function PendingRow({ pending: { series: s, side, stalled }, open, onReload }: {
         </div>
         {stalled ? (
           <div className="flex flex-col gap-4 border-t border-line p-5">
-            <p className="type-body text-ink">Your order went through and it’s in your wallet. This list just hasn’t caught up yet.</p>
-            <button type="button" onClick={onReload} className={BUTTON}>Reload position</button>
+            <p className="type-body text-ink">
+              {leaving ? 'It went through and the USDG is in your wallet.' : 'Your order went through and it’s in your wallet.'} This list just hasn’t caught up yet.
+            </p>
+            <button type="button" onClick={onReload} className={BUTTON}>{leaving ? 'Reload positions' : 'Reload position'}</button>
           </div>
         ) : open && (
           <div aria-hidden="true" className="flex flex-col gap-5 border-t border-line p-5">
@@ -340,13 +345,18 @@ export default function Positions({
       updating={updating && key(updating) === key(p) ? updating : null} onAct={() => { trade.reset(); setActive(key(p)) }} onReload={reload}
     />
   )
-  const history = historyFailed ? (
-    <div className="mt-8">
-      <Notice status={{ tone: 'neutral', icon: Info, label: 'Can’t read your history right now', message: 'What you sold or collected before shows here once it can be read.' }}>
-        <button type="button" onClick={reload} className="self-start type-label text-ink underline">Try again</button>
-      </Notice>
-    </div>
-  ) : before.length > 0 && <History count={before.length}>{before.map(row)}</History>
+  const history = (
+    <>
+      {historyFailed && (
+        <div className="mt-8">
+          <Notice status={{ tone: 'neutral', icon: Info, label: 'Can’t read your history right now', message: 'What you sold or collected may be missing here until it can be read.' }}>
+            <button type="button" onClick={reload} className="self-start type-label text-ink underline">Try again</button>
+          </Notice>
+        </div>
+      )}
+      {before.length > 0 && <History count={before.length}>{before.map(row)}</History>}
+    </>
+  )
   // A row that was just sold or collected may be on its way to History: the list isn't empty then.
   if (held.length === 0 && !pending && !updating) {
     return (
@@ -379,6 +389,10 @@ export default function Positions({
         ) : row(p))}
         {pending && !held.some((p) => key(p) === key(pending)) && (
           <PendingRow pending={pending} open={open === key(pending)} onReload={reload} />
+        )}
+        {/* Sold or collected in full, and held back until History has it: its place, and its reload once that takes too long. */}
+        {updating && !positions.some((p) => key(p) === key(updating)) && (
+          <PendingRow pending={updating} leaving open={false} onReload={reload} />
         )}
       </ul>
       {history}

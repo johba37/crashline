@@ -83,13 +83,12 @@ export function usePositions(test: boolean, market: MarketData | undefined, trad
     retry: 1,
   })
   // A position no longer held is told by its trades and collects: without both it would read as
-  // given away for nothing, so History waits for them, and says so when one was never read (a
-  // failed refresh keeps the last answer; the error count stays while a retry is under way).
+  // given away for nothing, so History waits for them.
   const history = trades.data !== undefined && redeemed.data !== undefined
-  const historyFailed = [trades, redeemed].some((q) => q.data === undefined && (q.isError || q.errorUpdateCount > 0))
   // While either is older than the holdings, a sale or collect the holdings already show may be
   // missing from it: a position that seems to have left without one waits for the next answer.
-  const lags = [trades.data, redeemed.data].some((data) => data !== undefined && account.data !== undefined && older(data, account.data))
+  const stale = (data: unknown) => data !== undefined && account.data !== undefined && older(data, account.data)
+  const lags = stale(trades.data) || stale(redeemed.data)
   // Behind until every answer has the trade's block: a collect shows only in the last one. One that
   // can't be read is left out, or the wait would never end: History says so instead.
   const behind = live && traded !== null && account.data !== undefined &&
@@ -106,6 +105,11 @@ export function usePositions(test: boolean, market: MarketData | undefined, trad
     () => (live && address && account.data && market ? fromAccount(account.data, [...market.series, ...market.delisted], address, redeemed.data, trades.data) : []),
     [account.data, address, live, market, redeemed.data, trades.data],
   )
+  const waiting = (p: Position) => p.closed && p.away > 0n && lags
+  // Said when one was never read (the error count stays while a retry is under way), or when one
+  // too old to show a position can't be read again (a failed refresh keeps the last answer).
+  const historyFailed = [trades, redeemed].some((q) =>
+    q.data === undefined ? q.isError || q.errorUpdateCount > 0 : q.isError && stale(q.data) && held.some(waiting))
   // The path only draws the graph: a position shows before it, and without it if it can't be read.
   const notes = [...new Map(held.map((p) => [p.series.address, p.series])).values()]
   const paths = useQueries({
@@ -127,7 +131,7 @@ export function usePositions(test: boolean, market: MarketData | undefined, trad
   // before, and leaves (or changes, after selling part of it).
   const bought = behind && (traded.kind === 'buy' || traded.kind === 'buyCover')
   return {
-    positions: held.filter((p) => !p.closed || (history && !(lags && p.away > 0n))).map((p) => ({ ...p, path: paths[notes.indexOf(p.series)]?.data ?? [] })),
+    positions: held.filter((p) => !p.closed || (history && !waiting(p))).map((p) => ({ ...p, path: paths[notes.indexOf(p.series)]?.data ?? [] })),
     pending: bought ? { series: traded.series, side: traded.kind === 'buy' ? 'note' : 'cover', stalled } : null,
     updating: behind && !bought ? { series: traded.series, side: traded.kind === 'sell' || traded.kind === 'collect' ? 'note' : 'cover', stalled } : null,
     supported: live,
