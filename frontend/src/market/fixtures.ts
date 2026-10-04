@@ -165,11 +165,25 @@ const endedEarly = series({ n: 12, stock: TSLA, initial: 24_310_000_000n, done: 
 
 /**
  * What a wallet could hold, one of each kind: cover that is waiting, cover that is switched on,
- * a NOTE that is earning, and cover on a note that ended early and waits to be collected.
+ * a NOTE that is earning, and cover on a note that ended early and waits to be collected. And
+ * what it held before: cover sold back to the Desk a week ago, the NOTE of the note that ended
+ * early, collected, and a NOTE that left the wallet without either (sent to another wallet).
  */
 export const fixturePositions: Position[] = [
-  { series: note(1), side: 'cover', amount: 1_000n * USDG_UNIT, paid: 74n * USDG_UNIT, path: path(note(1), now, TSLA.spot) },
-  { series: note(8), side: 'cover', amount: 500n * USDG_UNIT, paid: 61_500_000n, path: path(note(8), now, NVDA.spot) },
-  { series: note(10), side: 'note', amount: 2_000n * USDG_UNIT, paid: 2_014n * USDG_UNIT, path: path(note(10), now, AAPL.spot) },
-  { series: endedEarly, side: 'cover', amount: 1_000n * USDG_UNIT, paid: 88n * USDG_UNIT, path: path(endedEarly, now - 3 * WEEK, 24_780_000_000n) },
+  { series: note(1), side: 'cover', amount: 1_000n * USDG_UNIT, paid: 74n * USDG_UNIT, path: path(note(1), now, TSLA.spot), bought: [note(1).terms.strikeTime + 3 * DAY], exits: [], closed: false, away: 0n },
+  { series: note(8), side: 'cover', amount: 500n * USDG_UNIT, paid: 61_500_000n, path: path(note(8), now, NVDA.spot), bought: [note(8).terms.strikeTime + 2 * WEEK], exits: [], closed: false, away: 0n },
+  { series: note(10), side: 'note', amount: 2_000n * USDG_UNIT, paid: 2_014n * USDG_UNIT, path: path(note(10), now, AAPL.spot), bought: [note(10).terms.strikeTime + DAY], exits: [], closed: false, away: 0n },
+  { series: endedEarly, side: 'cover', amount: 1_000n * USDG_UNIT, paid: 88n * USDG_UNIT, path: path(endedEarly, now - 3 * WEEK, 24_780_000_000n), bought: [endedEarly.terms.strikeTime + DAY], exits: [], closed: false, away: 0n },
+  {
+    series: note(9), side: 'cover', amount: 500n * USDG_UNIT, paid: 39_500_000n, path: path(note(9), now, NVDA.spot), bought: [note(9).terms.strikeTime + DAY],
+    exits: [{ time: now - WEEK, kind: 'sold', amount: 500n * USDG_UNIT, usdg: 41_000_000n }], closed: true, away: 0n,
+  },
+  {
+    series: endedEarly, side: 'note', amount: 1_000n * USDG_UNIT, paid: 991n * USDG_UNIT, path: path(endedEarly, now - 3 * WEEK, 24_780_000_000n), bought: [endedEarly.terms.strikeTime + DAY],
+    exits: [{ time: now - 2 * WEEK, kind: 'collected', amount: 1_000n * USDG_UNIT, usdg: 1_000n * endedEarly.state.payoutPerNote }], closed: true, away: 0n,
+  },
+  {
+    series: note(2), side: 'note', amount: 500n * USDG_UNIT, paid: 497n * USDG_UNIT, path: path(note(2), now, TSLA.spot), bought: [note(2).terms.strikeTime + 2 * DAY],
+    exits: [], closed: true, away: 500n * USDG_UNIT,
+  },
 ]
