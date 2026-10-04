@@ -191,6 +191,11 @@ function Row({ p, now, trade, active, open, updating, onAct, onReload }: {
   // Sent, and waiting for its block.
   const sent = active && trade.state.step === 'trading' && trade.state.hash !== undefined
   const shimmer = sent || (updating !== null && !updating.stalled)
+  // A wait that ran out opens the row once, as the reader may have closed it: its reload is inside.
+  const stalled = updating?.stalled === true
+  useEffect(() => {
+    if (stalled) details.current?.setAttribute('open', '')
+  }, [stalled, details])
   const bid = r.cover ? s.coverBid : s.noteBid
   // A paused price comes back by itself. Until then the button stays, rests, and says that it
   // waits; the notice above it says for what. A position no longer held waits for nothing.
@@ -207,8 +212,7 @@ function Row({ p, now, trade, active, open, updating, onAct, onReload }: {
 
   return (
     <li>
-      {/* A wait that ran out opens the row: its reload is inside. */}
-      <details ref={details} open={open || !!updating?.stalled} aria-busy={shimmer || undefined} className={`panel panel-sheer group rounded-lg ${shimmer ? 'position-shimmer' : ''}`}>
+      <details ref={details} open={open} aria-busy={shimmer || undefined} className={`panel panel-sheer group rounded-lg ${shimmer ? 'position-shimmer' : ''}`}>
         <summary className="flex cursor-pointer list-none items-center gap-4 rounded-lg p-5 [&::-webkit-details-marker]:hidden">
           <TickerBadge symbol={s.symbol} />
           <span className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-6 gap-y-3">

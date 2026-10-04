@@ -108,11 +108,12 @@ export function usePositions(test: boolean, market: MarketData | undefined, trad
     () => (live && address && account.data && market ? fromAccount(account.data, [...market.series, ...market.delisted], address, redeemed.data, trades.data) : []),
     [account.data, address, live, market, redeemed.data, trades.data],
   )
-  // Meanwhile a position that has just left the holdings waits before it joins History. One already
-  // shown there stays: a refresh's three answers come in one by one.
+  // Meanwhile a position that has just left the holdings, and seems to have left without a sale or
+  // collect, waits before it joins History. One already shown there stays: a refresh's three
+  // answers come in one by one.
   const [shown, setShown] = useState<string[]>([])
   const id = (p: Position) => `${address}-${p.series.address}-${p.side}`
-  const waiting = (p: Position) => p.closed && lags && !shown.includes(id(p))
+  const waiting = (p: Position) => p.closed && p.away > 0n && lags && !shown.includes(id(p))
   // Said when one was never read (the error count stays while a retry is under way), or when one
   // older than the holdings can't be read again (a failed refresh keeps the last answer): what it
   // misses may be a row held back, or one that can't be told at all, such as a collect of NOTE

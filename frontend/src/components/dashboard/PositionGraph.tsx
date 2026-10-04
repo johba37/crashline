@@ -41,7 +41,8 @@ export default function PositionGraph({ s, side, path, marks, closed, now }: {
   useEffect(() => {
     const box = plot.current
     if (!box) return
-    const observer = new ResizeObserver(() => setWidth(box.clientWidth))
+    // A closed row reads 0 wide: the width it had stays.
+    const observer = new ResizeObserver(() => box.clientWidth > 0 && setWidth(box.clientWidth))
     observer.observe(box)
     return () => observer.disconnect()
   }, [])
