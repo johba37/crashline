@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useAccount } from 'wagmi'
 import { API_URL } from '../wagmi'
 import { fixturePositions } from './fixtures.ts'
-import { endedAt, fromAccount, fromHistory, older, reflects } from './positions.ts'
+import { endedAt, fromAccount, fromHistory, getAll, older, reflects } from './positions.ts'
 import { type MarketData, Phase, type Position, type SeriesView } from './types.ts'
 import type { Traded } from './useTrade.ts'
 
@@ -66,11 +66,11 @@ export function usePositions(test: boolean, market: MarketData | undefined, trad
     refetchInterval,
     retry: 1,
   })
-  // The wallet's trades, more of them than the account's last 50: when it got in and out, and what that cost.
+  // All the wallet's trades, not only the account's last 50: when it got in and out, and what that cost.
   const trades = useQuery({
     queryKey: ['trades', API_URL, address],
     enabled: live && address !== undefined,
-    queryFn: ({ signal }) => get(`/trades?account=${address}&limit=500`, signal),
+    queryFn: ({ signal }) => getAll((path) => get(path, signal), `/trades?account=${address}`, 'trades'),
     refetchInterval,
     retry: 1,
   })
@@ -78,7 +78,7 @@ export function usePositions(test: boolean, market: MarketData | undefined, trad
   const redeemed = useQuery({
     queryKey: ['redeemed', API_URL, address],
     enabled: live && address !== undefined,
-    queryFn: ({ signal }) => get(`/events?account=${address}&name=Redeemed&limit=500`, signal),
+    queryFn: ({ signal }) => getAll((path) => get(path, signal), `/events?account=${address}&name=Redeemed`, 'events'),
     refetchInterval,
     retry: 1,
   })
