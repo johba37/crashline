@@ -1,4 +1,4 @@
-import { ArrowUUpLeft, CaretDown, CheckCircle, ClockCounterClockwise, Coins, FlagCheckered, HandCoins, Info, ShieldCheck, TrendDown } from '@phosphor-icons/react'
+import { ArrowSquareOut, ArrowUUpLeft, CaretDown, CheckCircle, ClockCounterClockwise, Coins, FlagCheckered, HandCoins, Info, ShieldCheck, TrendDown } from '@phosphor-icons/react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useAccount, useDisconnect } from 'wagmi'
@@ -34,19 +34,28 @@ function read(p: Position) {
   const weekly = (amount * BigInt(s.terms.couponBpsPerPeriod)) / 10_000n
 
   if (p.closed) {
-    // Held before and no longer: what came back, and how and when it left.
+    // Held before and no longer: what came back, and how and when it left. What left without a sale
+    // or a collect (the backend sees no transfers) is said as such, not as sold for nothing.
     const last = p.exits[p.exits.length - 1]
     const got = p.exits.reduce((total, e) => total + e.usdg, 0n)
-    const how = last?.kind === 'collected' ? 'Collected' : 'Sold'
-    const story = p.exits.length === 0 ? 'It’s no longer in this wallet.' : p.exits.map((e) => {
+    if (!last) {
+      return {
+        cover, ended, closed: true, status: { tone: 'neutral', icon: ArrowSquareOut, label: 'No longer held' } as Status,
+        when: '', figure: 'Nothing to this wallet', figureLabel: 'You got back', money: null, quoteOk: true,
+        story: 'It’s no longer in this wallet. It wasn’t sold back to the Desk or collected by this wallet, so it was probably sent to another wallet.',
+        action: null,
+      }
+    }
+    const how = last.kind === 'collected' ? 'Collected' : 'Sold'
+    const story = p.exits.map((e) => {
       const what = e.amount === amount ? 'it' : `${usdg(e.amount, 0)} USDG of it`
       return e.kind === 'sold'
         ? `You sold ${what} back to the Desk on ${date(e.time)} for ${usdg(e.usdg)} USDG.`
         : `You collected ${usdg(e.usdg)} USDG${what === 'it' ? '' : ` for ${what}`} on ${date(e.time)}, after the note ended.`
-    }).join(' ')
+    }).join(' ') + (p.away > 0n ? ` ${usdg(p.away, 0)} USDG of it wasn’t sold or collected by this wallet, so it was probably sent to another wallet.` : '')
     return {
       cover, ended, closed: true, status: { tone: 'neutral', icon: how === 'Sold' ? ArrowUUpLeft : HandCoins, label: how } as Status,
-      when: last ? `${how} ${date(last.time)}` : '', figure: `${usdg(got)} USDG`, figureLabel: 'You got back', money: got, quoteOk: true,
+      when: `${how} ${date(last.time)}`, figure: `${usdg(got)} USDG`, figureLabel: 'You got back', money: got, quoteOk: true,
       story, action: null,
     }
   }
@@ -285,9 +294,10 @@ function History({ count, children }: { count: number; children: ReactNode }) {
  * (`updating`) shimmers until the backend lists it as it is now: smaller, or under History.
  */
 export default function Positions({
-  positions, pending, updating, supported, needsWallet, isLoading, error, reload, open, now, trade, onBuy,
+  positions, pending, updating, supported, needsWallet, isLoading, error, historyFailed, reload, open, now, trade, onBuy,
 }: {
   positions: Position[]; pending: PendingPosition | null; updating: PendingPosition | null; supported: boolean; needsWallet: boolean; isLoading: boolean; error: Error | null
+  historyFailed: boolean
   reload: () => void; open: string | null; now: number; trade: Trade; onBuy: () => void
 }) {
   // The one trade hook serves every row: remember which row started it.
@@ -330,15 +340,24 @@ export default function Positions({
       updating={updating && key(updating) === key(p) ? updating : null} onAct={() => { trade.reset(); setActive(key(p)) }} onReload={reload}
     />
   )
-  const history = before.length > 0 && <History count={before.length}>{before.map(row)}</History>
-  if (held.length === 0 && !pending) {
+  const history = historyFailed ? (
+    <div className="mt-8">
+      <Notice status={{ tone: 'neutral', icon: Info, label: 'Can’t read your history right now', message: 'What you sold or collected before shows here once it can be read.' }}>
+        <button type="button" onClick={reload} className="self-start type-label text-ink underline">Try again</button>
+      </Notice>
+    </div>
+  ) : before.length > 0 && <History count={before.length}>{before.map(row)}</History>
+  // A row that was just sold or collected may be on its way to History: the list isn't empty then.
+  if (held.length === 0 && !pending && !updating) {
     return (
       <>
         {closed}
         <Notice
           status={before.length > 0
             ? { tone: 'neutral', icon: Info, label: 'Nothing open right now', message: 'What you held before is under History, below.' }
-            : { tone: 'neutral', icon: Info, label: 'No positions found for this wallet', message: 'Connect another wallet, or start a new position.' }}
+            : historyFailed
+              ? { tone: 'neutral', icon: Info, label: 'Nothing open right now', message: 'Connect another wallet, or start a new position.' }
+              : { tone: 'neutral', icon: Info, label: 'No positions found for this wallet', message: 'Connect another wallet, or start a new position.' }}
         >
           <div className="flex flex-wrap gap-x-6 gap-y-1">
             {/* Disconnects: the page then asks for a wallet, as it does for a reader without one. */}

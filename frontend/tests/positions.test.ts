@@ -17,10 +17,10 @@ const OWNER = '0x933a8C0f852f034f1f3b4a17Db4aD831eB3F67e3'
 
 test('a NOTE and a cover holding each become a position with what was paid', () => {
   const [note] = fromAccount({ positions: [row('1000000', '0', '991000', '0')] }, listed, OWNER)
-  assert.deepEqual(note, { series: listed[0], side: 'note', amount: 1_000_000n, paid: 991_000n, bought: [], exits: [], closed: false, path: [] })
+  assert.deepEqual(note, { series: listed[0], side: 'note', amount: 1_000_000n, paid: 991_000n, bought: [], exits: [], closed: false, away: 0n, path: [] })
 
   const [cover] = fromAccount({ positions: [row('0', '1000000', '0', '90500')] }, listed, OWNER)
-  assert.deepEqual(cover, { series: listed[0], side: 'cover', amount: 1_000_000n, paid: 90_500n, bought: [], exits: [], closed: false, path: [] })
+  assert.deepEqual(cover, { series: listed[0], side: 'cover', amount: 1_000_000n, paid: 90_500n, bought: [], exits: [], closed: false, away: 0n, path: [] })
 })
 
 test('both sides of one note are two positions', () => {
@@ -60,7 +60,7 @@ test('a side sold back in full is closed, with what its buys cost and what the s
   assert.deepEqual(rest, [])
   assert.deepEqual(cover, {
     series: listed[0], side: 'cover', amount: 1_000_000n, paid: 90_500n, bought: [1790500000],
-    exits: [{ time: 1790900000, kind: 'sold', amount: 1_000_000n, usdg: 171_000n }], closed: true, path: [],
+    exits: [{ time: 1790900000, kind: 'sold', amount: 1_000_000n, usdg: 171_000n }], closed: true, away: 0n, path: [],
   })
 })
 
@@ -92,6 +92,30 @@ test('a side partly sold stays open, with the sale among its exits', () => {
   const trades = [trade('sell', 1790900000, owner, SERIES, '400000', '390000'), trade('buy', 1790500000, owner, SERIES, '1000000', '991000')]
   const [note] = fromAccount({ positions: [row('600000', '0', '594600', '0')], trades }, listed, OWNER)
   assert.deepEqual([note.closed, note.amount, note.paid, note.exits.map((e) => [e.kind, e.amount])], [false, 600_000n, 594_600n, [['sold', 400_000n]]])
+})
+
+test('what went out beyond the buys came in another way, and counts as held from the start', () => {
+  // 10 came by a mint or a transfer and were sold, then 1 bought and sold: it held 10 at most.
+  const trades = [
+    trade('sell', 1790600000, owner, SERIES, '10000000', '9900000'), trade('buy', 1790700000, owner, SERIES, '1000000', '991000'),
+    trade('sell', 1790800000, owner, SERIES, '1000000', '990000'),
+  ]
+  const [note] = fromAccount({ positions: [row('0', '0', '0', '0')], trades }, listed, OWNER)
+  assert.deepEqual([note.closed, note.amount, note.paid, note.exits.length], [true, 10_000_000n, 991_000n, 2])
+})
+
+test('a side bought and then sent away is closed without a way out', () => {
+  const [cover] = fromAccount({ positions: [row('0', '0', '0', '0')], trades: [trade('buyCover', 1790500000)] }, listed, OWNER)
+  assert.deepEqual([cover.closed, cover.amount, cover.paid, cover.exits, cover.away], [true, 1_000_000n, 90_500n, [], 1_000_000n])
+})
+
+test('a side sold, bought again and sent away says what was sent away', () => {
+  const trades = [
+    trade('buyCover', 1790500000, owner, SERIES, '3000000'), trade('sellCover', 1790600000, owner, SERIES, '3000000'),
+    trade('buyCover', 1790700000, owner, SERIES, '2000000'),
+  ]
+  const [cover] = fromAccount({ positions: [row('0', '0', '0', '0')], trades }, listed, OWNER)
+  assert.deepEqual([cover.amount, cover.exits.length, cover.away], [3_000_000n, 1, 2_000_000n])
 })
 
 test('the wallet’s own trade list wins over the account’s last 50, which may have lost the buy', () => {

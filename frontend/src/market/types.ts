@@ -122,8 +122,8 @@ export type Exit = { time: number; kind: 'sold' | 'collected'; amount: bigint; u
 /**
  * What a wallet holds in one note: one side of it, as the backend's /accounts/{address} reports it
  * (docs/backend.md). `amount` is NOTE or WRITER in base units, `paid` its cost basis in USDG.
- * A `closed` position is one the wallet held and no longer does: `amount` is then what it bought
- * (or, with no buy on record, what it let go of) and `paid` what all its buys cost.
+ * A `closed` position is one the wallet held and no longer does: `amount` is then the most it held
+ * at once (what came in other than by a buy counted from the start) and `paid` what all its buys cost.
  */
 export type Position = {
   series: SeriesView
@@ -134,6 +134,7 @@ export type Position = {
   bought: number[] // unix seconds of the Desk buys of this side the wallet received, oldest first
   exits: Exit[] // sales and collects of this side by the wallet, oldest first
   closed: boolean
+  away: bigint // closed: what left the wallet without a sale or a collect on record (sent away), else 0
 }
 
 /** The four Desk trades. */

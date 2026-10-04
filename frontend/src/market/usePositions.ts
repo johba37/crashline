@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useAccount } from 'wagmi'
 import { API_URL } from '../wagmi'
 import { fixturePositions } from './fixtures.ts'
-import { endedAt, fromAccount, fromHistory, reflects } from './positions.ts'
+import { endedAt, fromAccount, fromHistory, older, reflects } from './positions.ts'
 import { type MarketData, Phase, type Position, type SeriesView } from './types.ts'
 import type { Traded } from './useTrade.ts'
 
@@ -35,7 +35,8 @@ export type PendingPosition = { series: SeriesView; side: Position['side']; stal
  * too, each with its price path from /series/{address}/history (docs/backend.md). `traded` is the
  * last trade made here: the holdings are re-read quickly until they include its block, and what
  * it bought is `pending` until then, what it sold or collected `updating`. After 10 s the quick reads
- * stop and `reload` starts them again.
+ * stop and `reload` starts them again. What the wallet no longer holds shows once its trades and
+ * collects are read; `historyFailed` says when they can't be.
  * Without a backend there is no reader (`supported` is off), and without a wallet nobody to look
  * up (`needsWallet`).
  */
@@ -47,6 +48,7 @@ export function usePositions(test: boolean, market: MarketData | undefined, trad
   needsWallet: boolean
   isLoading: boolean
   error: Error | null
+  historyFailed: boolean
   reload: () => void
 } {
   const { address } = useAccount()
@@ -80,9 +82,19 @@ export function usePositions(test: boolean, market: MarketData | undefined, trad
     refetchInterval,
     retry: 1,
   })
-  // Behind until every answer has the trade's block: a collect shows only in the last one.
+  // A position no longer held is told by its trades and collects: without both it would read as
+  // given away for nothing, so History waits for them, and says so when one was never read (a
+  // failed refresh keeps the last answer; the error count stays while a retry is under way).
+  const history = trades.data !== undefined && redeemed.data !== undefined
+  const historyFailed = [trades, redeemed].some((q) => q.data === undefined && (q.isError || q.errorUpdateCount > 0))
+  // While either is older than the holdings, a sale or collect the holdings already show may be
+  // missing from it: a position that seems to have left without one waits for the next answer.
+  const lags = [trades.data, redeemed.data].some((data) => data !== undefined && account.data !== undefined && older(data, account.data))
+  // Behind until every answer has the trade's block: a collect shows only in the last one. One that
+  // can't be read is left out, or the wait would never end: History says so instead.
   const behind = live && traded !== null && account.data !== undefined &&
-    [account.data, trades.data, redeemed.data].some((data) => data !== undefined && !reflects(data, traded.block))
+    (!reflects(account.data, traded.block) ||
+      [trades, redeemed].some((q) => q.data !== undefined && !q.isError && !reflects(q.data, traded.block)))
   const block = traded?.block
   useEffect(() => {
     if (!behind || stalled || block === undefined) return
@@ -107,19 +119,23 @@ export function usePositions(test: boolean, market: MarketData | undefined, trad
   const reload = () => {
     setGaveUp(null)
     void account.refetch()
+    void trades.refetch()
+    void redeemed.refetch()
   }
-  if (test) return { positions: fixturePositions, pending: null, updating: null, supported: true, needsWallet: false, isLoading: false, error: null, reload }
+  if (test) return { positions: fixturePositions, pending: null, updating: null, supported: true, needsWallet: false, isLoading: false, error: null, historyFailed: false, reload }
   // Only a buy is on its way to the list: what was sold or collected is still in it, as it was
   // before, and leaves (or changes, after selling part of it).
   const bought = behind && (traded.kind === 'buy' || traded.kind === 'buyCover')
   return {
-    positions: held.map((p) => ({ ...p, path: paths[notes.indexOf(p.series)]?.data ?? [] })),
+    positions: held.filter((p) => !p.closed || (history && !(lags && p.away > 0n))).map((p) => ({ ...p, path: paths[notes.indexOf(p.series)]?.data ?? [] })),
     pending: bought ? { series: traded.series, side: traded.kind === 'buy' ? 'note' : 'cover', stalled } : null,
     updating: behind && !bought ? { series: traded.series, side: traded.kind === 'sell' || traded.kind === 'collect' ? 'note' : 'cover', stalled } : null,
     supported: live,
     needsWallet: live && address === undefined,
-    isLoading: account.isLoading,
+    // The list waits for all three first answers, so a wallet with only History never reads as empty.
+    isLoading: account.isLoading || trades.isLoading || redeemed.isLoading,
     error: account.error,
+    historyFailed,
     reload,
   }
 }

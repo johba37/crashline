@@ -20,7 +20,8 @@ type Redeemed = { events?: { series: string; time: number; args: { caller: strin
  * Held: its amount and cost basis, from the backend. Held before and no longer: `closed`, with
  * what its buys cost. `bought` are the times of the Desk buys of that side the wallet received;
  * `exits` its sales to the Desk and what it collected (`redeemed`, at the note's payout for that
- * side). The trades come from `trades` (GET /trades, up to 500); until that answers, from the
+ * side), and `away` what left it without either (the backend sees no transfers). The trades come
+ * from `trades` (GET /trades, up to 500); until that answers, from the
  * account's own list, which holds only the last 50. `path` is empty: it comes from the note's history.
  */
 export function fromAccount(json: unknown, series: SeriesView[], owner: string, redeemed: unknown = {}, trades?: unknown): Position[] {
@@ -53,26 +54,32 @@ export function fromAccount(json: unknown, series: SeriesView[], owner: string, 
       const bought = buys.map((t) => t.time)
       const held = row ? BigInt(cover ? row.writer : row.note) : 0n
       if (row && held > 0n) {
-        return [{ series: s, side, amount: held, paid: BigInt(cover ? row.costBasis.writer : row.costBasis.note), bought, exits, closed: false, path: [] }]
+        return [{ series: s, side, amount: held, paid: BigInt(cover ? row.costBasis.writer : row.costBasis.note), bought, exits, closed: false, away: 0n, path: [] }]
       }
       if (buys.length === 0 && exits.length === 0) return []
       // The most it held at once: buys add and exits take away, in time order (a buy first within a
-      // second). With no buy on record, what it let go of.
+      // second). What went out beyond the buys came in another way (a mint, a transfer), and counts
+      // as held from the start: the highest level less the lowest. Where it ends above the lowest,
+      // that much left another way.
       const moves: [number, bigint][] = [...buys.map((t): [number, bigint] => [t.time, BigInt(t.amount)]), ...exits.map((e): [number, bigint] => [e.time, -e.amount])]
       let level = 0n
       let most = 0n
+      let least = 0n
       for (const [, change] of moves.sort((x, y) => x[0] - y[0] || (y[1] > x[1] ? 1 : -1))) {
         level += change
         if (level > most) most = level
+        if (level < least) least = level
       }
-      const amount = buys.length > 0 ? most : sum(exits.map((e) => e.amount))
-      return [{ series: s, side, amount, paid: sum(buys.map((t) => BigInt(t.usdg))), bought, exits, closed: true, path: [] }]
+      return [{ series: s, side, amount: most - least, paid: sum(buys.map((t) => BigInt(t.usdg))), bought, exits, closed: true, away: level - least, path: [] }]
     })
   })
 }
 
 /** Whether an /accounts answer has reached `block`: every answer says which block it was read at. */
 export const reflects = (json: unknown, block: bigint) => BigInt((json as Account).block) >= block
+
+/** Whether one answer was read at an earlier block than another. */
+export const older = (json: unknown, than: unknown) => (json as Account).block < (than as Account).block
 
 /** When a note that has ended stopped: the weekly check it ended early at, else its end date. */
 export const endedAt = (s: SeriesView) =>
