@@ -7,9 +7,10 @@ const GAP = 8 // px between the icon and the tip, and to the viewport edge
 /**
  * An info icon that explains a word. Hover (after 300ms) or keyboard focus shows the tip; a
  * tap or click pins it, Escape or a tap elsewhere closes it. Screen readers get the text as the
- * button's description, so it never depends on the popover.
+ * button's description, so it never depends on the popover. `mark` swaps the icon for a button
+ * of its own look (its name and classes), such as a mark on a graph.
  */
-export default function InfoTip({ label, children }: { label: string; children: ReactNode }) {
+export default function InfoTip({ label, mark, children }: { label: string; mark?: { name: string; className: string }; children: ReactNode }) {
   const [open, setOpen] = useState(false)
   const [pinned, setPinned] = useState(false)
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
@@ -64,7 +65,7 @@ export default function InfoTip({ label, children }: { label: string; children: 
       <button
         ref={button}
         type="button"
-        aria-label={`What does “${label}” mean?`}
+        aria-label={mark?.name ?? `What does “${label}” mean?`}
         aria-describedby={id}
         aria-expanded={open}
         onPointerEnter={(e) => {
@@ -80,9 +81,9 @@ export default function InfoTip({ label, children }: { label: string; children: 
         onFocus={(e) => e.currentTarget.matches(':focus-visible') && setOpen(true)}
         onBlur={() => !pinned && setOpen(false)}
         onClick={() => (pinned ? close() : (setPinned(true), setOpen(true)))}
-        className="relative -my-1 inline-grid size-6 shrink-0 place-items-center rounded-full align-middle text-ink-muted transition-colors duration-160 hover:text-ink aria-expanded:text-ink after:absolute after:-inset-2"
+        className={mark?.className ?? 'relative -my-1 inline-grid size-6 shrink-0 place-items-center rounded-full align-middle text-ink-muted transition-colors duration-160 hover:text-ink aria-expanded:text-ink after:absolute after:-inset-2'}
       >
-        <Info size={16} weight="bold" aria-hidden="true" />
+        {!mark && <Info size={16} weight="bold" aria-hidden="true" />}
       </button>
       <span id={id} hidden>{children}</span>
       {open && createPortal(

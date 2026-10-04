@@ -116,9 +116,14 @@ export type MarketData = {
 /** One recorded price of a stock: unix seconds and the feed price (8 decimals). */
 export type PricePoint = { time: number; price: bigint }
 
+/** A way out of a position: sold back to the Desk, or collected from a note that ended. */
+export type Exit = { time: number; kind: 'sold' | 'collected'; amount: bigint; usdg: bigint }
+
 /**
  * What a wallet holds in one note: one side of it, as the backend's /accounts/{address} reports it
  * (docs/backend.md). `amount` is NOTE or WRITER in base units, `paid` its cost basis in USDG.
+ * A `closed` position is one the wallet held and no longer does: `amount` is then what it bought
+ * (or, with no buy on record, what it let go of) and `paid` what all its buys cost.
  */
 export type Position = {
   series: SeriesView
@@ -126,6 +131,9 @@ export type Position = {
   amount: bigint
   paid: bigint
   path: PricePoint[] // the stock since the note started, oldest first, the last point is now
+  bought: number[] // unix seconds of the Desk buys of this side the wallet received, oldest first
+  exits: Exit[] // sales and collects of this side by the wallet, oldest first
+  closed: boolean
 }
 
 /** The four Desk trades. */

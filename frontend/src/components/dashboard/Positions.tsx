@@ -1,4 +1,4 @@
-import { CaretDown, CheckCircle, Coins, FlagCheckered, Info, ShieldCheck, TrendDown } from '@phosphor-icons/react'
+import { ArrowUUpLeft, CaretDown, CheckCircle, ClockCounterClockwise, Coins, FlagCheckered, HandCoins, Info, ShieldCheck, TrendDown } from '@phosphor-icons/react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useAccount, useDisconnect } from 'wagmi'
@@ -9,7 +9,7 @@ import type { Position } from '../../market/types.ts'
 import type { PendingPosition } from '../../market/usePositions.ts'
 import Notice from './Notice.tsx'
 import type { Trade } from './Order.tsx'
-import PositionGraph from './PositionGraph.tsx'
+import PositionGraph, { type Mark } from './PositionGraph.tsx'
 import StatusChip from './StatusChip.tsx'
 import { confirmed, refusalStatus, type Status } from './status.ts'
 import Term from './Term.tsx'
@@ -33,6 +33,24 @@ function read(p: Position) {
   const hit = s.state.knockedIn
   const weekly = (amount * BigInt(s.terms.couponBpsPerPeriod)) / 10_000n
 
+  if (p.closed) {
+    // Held before and no longer: what came back, and how and when it left.
+    const last = p.exits[p.exits.length - 1]
+    const got = p.exits.reduce((total, e) => total + e.usdg, 0n)
+    const how = last?.kind === 'collected' ? 'Collected' : 'Sold'
+    const story = p.exits.length === 0 ? 'It’s no longer in this wallet.' : p.exits.map((e) => {
+      const what = e.amount === amount ? 'it' : `${usdg(e.amount, 0)} USDG of it`
+      return e.kind === 'sold'
+        ? `You sold ${what} back to the Desk on ${date(e.time)} for ${usdg(e.usdg)} USDG.`
+        : `You collected ${usdg(e.usdg)} USDG${what === 'it' ? '' : ` for ${what}`} on ${date(e.time)}, after the note ended.`
+    }).join(' ')
+    return {
+      cover, ended, closed: true, status: { tone: 'neutral', icon: how === 'Sold' ? ArrowUUpLeft : HandCoins, label: how } as Status,
+      when: last ? `${how} ${date(last.time)}` : '', figure: `${usdg(got)} USDG`, figureLabel: 'You got back', money: got, quoteOk: true,
+      story, action: null,
+    }
+  }
+
   if (ended) {
     // A settled note pays NOTE its payout and cover the rest of what was locked in.
     const perNote = s.state.payoutPerNote
@@ -49,7 +67,7 @@ function read(p: Position) {
         ? { tone: crashed ? 'go' : 'neutral', icon: ShieldCheck, label: 'Protected' }
         : crashed ? { tone: 'abort', icon: TrendDown, label: 'Ended in a crash' } : { tone: 'neutral', icon: CheckCircle, label: 'Ended' }
     return {
-      cover, ended, status, when: `Ended ${on}`, figure: plus(collect), figureLabel: 'To collect', money: collect, quoteOk: true,
+      cover, ended, closed: false, status, when: `Ended ${on}`, figure: plus(collect), figureLabel: 'To collect', money: collect, quoteOk: true,
       story: s.state.autocalled
         ? <>It <Term t="endsEarly">ended early</Term> on {on}, because {sym} was back at its starting price of {start} at a weekly check. {cover ? 'You get back part of what you paid.' : 'You get your amount back, plus the income up to that day.'}</>
         : crashed
@@ -81,7 +99,7 @@ function read(p: Position) {
     story = <>You earn {plus(weekly)} for every week. On {end} you get {plus(bestCase(s, amount))}, unless {sym} closes below {line} at a weekly check and stays down.{early}</>
   }
   return {
-    cover, ended, status, when: `Until ${end}`, figure: worth === null ? (paused(bid) ? 'Waiting for a price' : '—') : `${usdg(worth)} USDG`, figureLabel: 'Worth now', money: worth, quoteOk: bid.ok,
+    cover, ended, closed: false, status, when: `Until ${end}`, figure: worth === null ? (paused(bid) ? 'Waiting for a price' : '—') : `${usdg(worth)} USDG`, figureLabel: 'Worth now', money: worth, quoteOk: bid.ok,
     story, action: worth === null ? null : `Sell now for ${usdg(worth)} USDG`,
   }
 }
@@ -161,8 +179,10 @@ function Row({ p, now, trade, active, open, updating, onAct, onReload }: {
   const shimmer = sent || (updating !== null && !updating.stalled)
   const bid = r.cover ? s.coverBid : s.noteBid
   // A paused price comes back by itself. Until then the button stays, rests, and says that it
-  // waits; the notice above it says for what.
-  const wait = !r.ended && paused(bid)
+  // waits; the notice above it says for what. A position no longer held waits for nothing.
+  const wait = !r.closed && !r.ended && paused(bid)
+  const marks: Mark[] = [...p.bought.map((time) => ({ time, kind: 'bought' as const })), ...p.exits.map(({ time, kind }) => ({ time, kind }))]
+    .sort((a, b) => a.time - b.time)
 
   const act = () => {
     onAct()
@@ -188,7 +208,7 @@ function Row({ p, now, trade, active, open, updating, onAct, onReload }: {
             </span>
             <span className="flex flex-col sm:items-end">
               <span className="type-label text-ink-muted">{r.figureLabel}</span>
-              <span className={`type-data ${r.ended && r.money ? 'text-go' : 'text-ink'}`}>{r.figure}</span>
+              <span className={`type-data ${!r.closed && r.ended && r.money ? 'text-go' : 'text-ink'}`}>{r.figure}</span>
               <span className="type-label text-ink-muted">You paid {usdg(p.paid)} USDG</span>
             </span>
           </span>
@@ -197,8 +217,8 @@ function Row({ p, now, trade, active, open, updating, onAct, onReload }: {
 
         <div className="flex flex-col gap-5 border-t border-line p-5">
           <p className="type-body text-ink">{r.story}</p>
-          <PositionGraph s={s} side={side} path={p.path} now={now} />
-          {!r.ended && !bid.ok && !updating && (
+          <PositionGraph s={s} side={side} path={p.path} marks={marks} now={now} />
+          {!r.closed && !r.ended && !bid.ok && !updating && (
             <Notice status={refusalStatus(bid.refusal, s)}>
               {wait && <p className="type-body text-ink">{r.cover ? 'Your cover stays valid' : 'Your NOTE keeps earning'} in the meantime. Only selling it back has to wait.</p>}
             </Notice>
@@ -235,11 +255,34 @@ function Row({ p, now, trade, active, open, updating, onAct, onReload }: {
 }
 
 /**
+ * What the wallet held before, at the very bottom of the list: one dropdown, closed until opened,
+ * with a row per position it sold or collected, newest first. Only there when there is one.
+ */
+function History({ count, children }: { count: number; children: ReactNode }) {
+  return (
+    <details className="group/history mt-8">
+      {/* Set like the page's title, not as a card: a part of the page that its title opens and closes. */}
+      <summary className="flex cursor-pointer list-none items-start justify-between gap-3 [&::-webkit-details-marker]:hidden">
+        <span className="flex flex-col gap-2">
+          <h2 className="flex items-center gap-3 type-title text-ink">
+            <ClockCounterClockwise size={28} weight="bold" aria-hidden="true" className="shrink-0 text-ink-muted" />
+            History
+          </h2>
+          <span className="type-body-lg text-ink-muted">{count === 1 ? '1 position you no longer hold' : `${count} positions you no longer hold`}</span>
+        </span>
+        <CaretDown size={24} weight="bold" aria-hidden="true" className="mt-1.5 shrink-0 text-ink-muted transition-transform duration-240 group-open/history:rotate-180" />
+      </summary>
+      <ul className="mt-6 flex flex-col gap-4">{children}</ul>
+    </details>
+  )
+}
+
+/**
  * What the wallet holds, as a list: each row reads at a glance (what, state, worth now) and opens
  * to its price graph, what happens next and the one thing you can do with it. `open` names the
  * one that starts opened (series and side, as the rows are keyed): the one that was just bought.
  * Until the backend lists it, `pending` holds its place as a skeleton. What was sold or collected
- * (`updating`) shimmers until the backend no longer lists it as it was.
+ * (`updating`) shimmers until the backend lists it as it is now: smaller, or under History.
  */
 export default function Positions({
   positions, pending, updating, supported, needsWallet, isLoading, error, reload, open, now, trade, onBuy,
@@ -274,21 +317,36 @@ export default function Positions({
       </Notice>
     )
   }
-  // A position that was sold or collected leaves the list, and its row's "Done" with it: say it here.
-  const closed = active !== null && trade.state.step === 'done' && !positions.some((p) => key(p) === active) && (
-    <Notice status={{ ...confirmed, message: 'The USDG is in your wallet, so this position is no longer in your list.' }} />
+  const held = positions.filter((p) => !p.closed)
+  // Newest way out first.
+  const before = positions.filter((p) => p.closed).sort((a, b) => (b.exits.at(-1)?.time ?? 0) - (a.exits.at(-1)?.time ?? 0))
+  // A position that was sold or collected in full leaves the list for History, and its row's "Done" with it: say it here.
+  const closed = active !== null && trade.state.step === 'done' && !held.some((p) => key(p) === active) && (
+    <Notice status={{ ...confirmed, message: 'The USDG is in your wallet. This position is now under History, at the bottom of your list.' }} />
   )
-  if (positions.length === 0 && !pending) {
+  const row = (p: Position) => (
+    <Row
+      key={key(p)} p={p} now={now} trade={trade} active={active === key(p)} open={open === key(p)}
+      updating={updating && key(updating) === key(p) ? updating : null} onAct={() => { trade.reset(); setActive(key(p)) }} onReload={reload}
+    />
+  )
+  const history = before.length > 0 && <History count={before.length}>{before.map(row)}</History>
+  if (held.length === 0 && !pending) {
     return (
       <>
         {closed}
-        <Notice status={{ tone: 'neutral', icon: Info, label: 'No positions found for this wallet', message: 'Connect another wallet, or start a new position.' }}>
+        <Notice
+          status={before.length > 0
+            ? { tone: 'neutral', icon: Info, label: 'Nothing open right now', message: 'What you held before is under History, below.' }
+            : { tone: 'neutral', icon: Info, label: 'No positions found for this wallet', message: 'Connect another wallet, or start a new position.' }}
+        >
           <div className="flex flex-wrap gap-x-6 gap-y-1">
             {/* Disconnects: the page then asks for a wallet, as it does for a reader without one. */}
             <button type="button" onClick={() => disconnect()} className="type-label text-ink underline">Connect another wallet</button>
             <button type="button" onClick={onBuy} className="type-label text-ink underline">Protect or Earn</button>
           </div>
         </Notice>
+        {history}
       </>
     )
   }
@@ -297,18 +355,14 @@ export default function Positions({
       {closed}
       <ul className="flex flex-col gap-4">
         {/* A buy that adds to a position shows as pending in its place: the row's figures are the old ones. */}
-        {positions.map((p) => pending && key(p) === key(pending) ? (
+        {held.map((p) => pending && key(p) === key(pending) ? (
           <PendingRow key={key(p)} pending={pending} open={open === key(p)} onReload={reload} />
-        ) : (
-          <Row
-            key={key(p)} p={p} now={now} trade={trade} active={active === key(p)} open={open === key(p)}
-            updating={updating && key(updating) === key(p) ? updating : null} onAct={() => { trade.reset(); setActive(key(p)) }} onReload={reload}
-          />
-        ))}
-        {pending && !positions.some((p) => key(p) === key(pending)) && (
+        ) : row(p))}
+        {pending && !held.some((p) => key(p) === key(pending)) && (
           <PendingRow pending={pending} open={open === key(pending)} onReload={reload} />
         )}
       </ul>
+      {history}
     </>
   )
 }

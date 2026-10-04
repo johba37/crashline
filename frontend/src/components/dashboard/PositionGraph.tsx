@@ -1,5 +1,6 @@
 import { date, fromFeed, trigger, usd } from '../../market/format.ts'
 import { Phase, type PricePoint, type SeriesView } from '../../market/types.ts'
+import InfoTip from '../Tooltip.tsx'
 import Term from './Term.tsx'
 
 // The plot, in px. Prices are to scale between two insets: the top one leaves room for the words
@@ -13,16 +14,21 @@ const CLEAR = 12 // kept free above and below a line, for the dot's label
 const WORDS = 26 // the words above the starting price or the crash line, with their gap to the line
 const NEAR = 18 // from the dot's middle to its label's, when the label sits above or below it
 
+/** When the reader got in or out of the position: a Desk buy, a sale back to the Desk, a collect. */
+export type Mark = { time: number; kind: 'bought' | 'sold' | 'collected' }
+const SAID: Record<Mark['kind'], string> = { bought: 'You bought', sold: 'You sold', collected: 'You collected' }
+
 /**
  * One position as a price graph: the stock's path since the note started, against the note's
  * starting price (it ends early from there up) and its crash line. Price runs top to bottom and
  * is to scale; time runs from the note's start to its end date, so the path stops at today and
  * what's to the right of it stays empty: a line into the future would read as a forecast.
  */
-export default function PositionGraph({ s, side, path, now }: {
+export default function PositionGraph({ s, side, path, marks, now }: {
   s: SeriesView
   side: 'cover' | 'note'
   path: PricePoint[]
+  marks: Mark[] // oldest first
   now: number
 }) {
   const ended = s.state.phase === Phase.Settled
@@ -71,6 +77,32 @@ export default function PositionGraph({ s, side, path, now }: {
     yName = (i === 1 ? yLast < yCrash : yName - from < to - yName) ? from : to
   }
 
+  // Where the reader got in and out: a ring on the path at that day's price (the last point at or
+  // before it; a collect, which comes after the end, at the end). Each is named on the side the path
+  // doesn't go to next or, close to today's dot, on the side away from that dot's label. A name
+  // that would lie on one already placed is left out; its ring says it when hovered or tapped. A
+  // ring on today's dot is drawn wider and hollow, around the dot.
+  const rings = last
+    ? marks.filter((m) => m.time >= s.terms.strikeTime).map((m) => {
+        const t = Math.min(m.time, last.time)
+        const at = path.findLast((p) => p.time <= t) ?? path[0]
+        const xb = x(t)
+        const yb = y(at.price)
+        return { ...m, price: at.price, xb, yb, atDot: xLast - xb < 0.02 && Math.abs(yb - yLast) < 8 }
+      })
+    : []
+  const ring = (r: (typeof rings)[number]) => `absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-ink ${r.atDot ? 'size-5' : 'size-3 bg-plot'}`
+  const placed = [{ x: xLast, y: yName }]
+  const named = rings.flatMap((r) => {
+    const next = path.find((p) => x(p.time) > r.xb + 0.1)
+    const above = xLast - r.xb < 0.2 ? yName > r.yb : !(next && next.price > r.price)
+    const yl = r.yb + (above ? -NEAR : NEAR)
+    if (placed.some((q) => Math.abs(q.x - r.xb) < 0.2 && Math.abs(q.y - yl) < NEAR)) return []
+    placed.push({ x: r.xb, y: yl })
+    return [{ ...r, yl }]
+  })
+  const unnamed = rings.filter((r) => !named.some((n) => n.time === r.time && n.kind === r.kind))
+
   const checks = Array.from({ length: s.terms.observationCount }, (_, k) => s.terms.strikeTime + (k + 1) * s.terms.observationInterval)
 
   return (
@@ -84,7 +116,7 @@ export default function PositionGraph({ s, side, path, now }: {
       <div className="relative col-start-2" style={{ height: HEIGHT }}>
         <div
           role="img"
-          aria-label={`${s.symbol} since ${date(s.terms.strikeTime)}: started at ${usd(start)}${last ? `, ${ended ? 'ended at' : 'now'} ${usd(last.price)}` : ''}. Crash line at ${usd(crash)}, ${hit ? 'crossed' : 'not crossed'}.`}
+          aria-label={`${s.symbol} since ${date(s.terms.strikeTime)}: started at ${usd(start)}${last ? `, ${ended ? 'ended at' : 'now'} ${usd(last.price)}` : ''}. Crash line at ${usd(crash)}, ${hit ? 'crossed' : 'not crossed'}.${rings.map((r) => ` ${SAID[r.kind]} on ${date(r.time)} at ${usd(r.price)}.`).join('')}`}
           className="absolute inset-0"
         >
           {/* Below the crash line: where the cover pays, or where the money is at risk. */}
@@ -113,6 +145,15 @@ export default function PositionGraph({ s, side, path, now }: {
                     vectorEffect="non-scaling-stroke"
                   />
                 </svg>
+                {named.map((r, i) => (
+                  <span key={i} aria-hidden="true" className={ring(r)} style={{ left: `${r.xb * 100}%`, top: r.yb }} />
+                ))}
+                {named.map((r, i) => (
+                  <span key={i} className="absolute inset-x-0 flex -translate-y-1/2" style={{ top: r.yl }}>
+                    <span style={{ flexBasis: `${r.xb * 100}%` }} />
+                    <span className="-ml-1.5 shrink-0 type-label whitespace-nowrap text-ink">{SAID[r.kind]}</span>
+                  </span>
+                ))}
                 <span aria-hidden="true" className="absolute size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-ink" style={{ left: `${xLast * 100}%`, top: yLast }} />
                 {/* The empty box before the label gives way when the label wouldn't fit after it, so the label never runs off the right edge. */}
                 <span className="absolute inset-x-0 flex -translate-y-1/2" style={{ top: yName }}>
@@ -125,6 +166,15 @@ export default function PositionGraph({ s, side, path, now }: {
             )}
           </div>
         </div>
+
+        {/* The rings without a name stay outside the image too, as buttons that say it: on top of today's dot, which shows through a ring around it. */}
+        {unnamed.map((r, i) => (
+          <span key={i} className="absolute" style={{ left: `${r.xb * 100}%`, top: r.yb }}>
+            <InfoTip label={SAID[r.kind]} mark={{ name: `${SAID[r.kind]} on ${date(r.time)}`, className: `${ring(r)} top-0 left-0 cursor-pointer transition-transform duration-160 hover:scale-150 aria-expanded:scale-150 after:absolute after:-inset-2` }}>
+              {SAID[r.kind]} here, on {date(r.time)}.
+            </InfoTip>
+          </span>
+        ))}
 
         {/* The words on the two lines stay outside the image: they're read out as text, and the info icon can be reached. */}
         {!ended && (

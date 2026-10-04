@@ -54,15 +54,35 @@ export function usePositions(test: boolean, market: MarketData | undefined, trad
   // The trade whose wait ran out, by its block: a later trade starts a wait of its own.
   const [gaveUp, setGaveUp] = useState<bigint | null>(null)
   const stalled = traded !== null && gaveUp === traded.block
+  // Each answer is re-read quickly until it has the last trade's block.
+  const refetchInterval = ({ state }: { state: { data?: unknown } }) =>
+    traded !== null && !stalled && state.data !== undefined && !reflects(state.data, traded.block) ? CATCH_UP_MS : REFETCH_MS
   const account = useQuery({
     queryKey: ['account', API_URL, address],
     enabled: live && address !== undefined,
     queryFn: ({ signal }) => get(`/accounts/${address}`, signal),
-    refetchInterval: ({ state }) =>
-      traded !== null && !stalled && state.data !== undefined && !reflects(state.data, traded.block) ? CATCH_UP_MS : REFETCH_MS,
+    refetchInterval,
     retry: 1,
   })
-  const behind = live && traded !== null && account.data !== undefined && !reflects(account.data, traded.block)
+  // The wallet's trades, more of them than the account's last 50: when it got in and out, and what that cost.
+  const trades = useQuery({
+    queryKey: ['trades', API_URL, address],
+    enabled: live && address !== undefined,
+    queryFn: ({ signal }) => get(`/trades?account=${address}&limit=500`, signal),
+    refetchInterval,
+    retry: 1,
+  })
+  // What the wallet collected from notes that ended: a closed position's way out (the backend's events).
+  const redeemed = useQuery({
+    queryKey: ['redeemed', API_URL, address],
+    enabled: live && address !== undefined,
+    queryFn: ({ signal }) => get(`/events?account=${address}&name=Redeemed&limit=500`, signal),
+    refetchInterval,
+    retry: 1,
+  })
+  // Behind until every answer has the trade's block: a collect shows only in the last one.
+  const behind = live && traded !== null && account.data !== undefined &&
+    [account.data, trades.data, redeemed.data].some((data) => data !== undefined && !reflects(data, traded.block))
   const block = traded?.block
   useEffect(() => {
     if (!behind || stalled || block === undefined) return
@@ -71,8 +91,8 @@ export function usePositions(test: boolean, market: MarketData | undefined, trad
   }, [behind, block, stalled])
 
   const held = useMemo(
-    () => (live && address && account.data && market ? fromAccount(account.data, [...market.series, ...market.delisted]) : []),
-    [account.data, address, live, market],
+    () => (live && address && account.data && market ? fromAccount(account.data, [...market.series, ...market.delisted], address, redeemed.data, trades.data) : []),
+    [account.data, address, live, market, redeemed.data, trades.data],
   )
   // The path only draws the graph: a position shows before it, and without it if it can't be read.
   const notes = [...new Map(held.map((p) => [p.series.address, p.series])).values()]
