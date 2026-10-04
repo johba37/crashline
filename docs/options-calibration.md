@@ -1,6 +1,7 @@
 # Roadmap: a teacher calibrated to listed options
 
-Status: design, 2026-10-01. Not for the Oct 4 submission. Step 1 is done (option smiles for
+Status: design, 2026-10-01; the vol feed's requirements added 2026-10-04 (reason 4,
+[Who writes the vol](#who-writes-the-vol), step 7). Not for the Oct 4 submission. Step 1 is done (option smiles for
 13 stocks, a jump fit to them, the note-price impact); daily snapshots are running; the
 decisions in [Open decisions](#open-decisions) come before any model is retrained. Code:
 `ml/options_calibrate.py`, log `ml/options_calibrate.log`, outputs `ml/options_calibrate.json`,
@@ -15,7 +16,7 @@ same risk, and listed options are that price list: insurance on the stock at eve
 Calibrating means choosing the teacher's jump settings so that its own option prices match
 the market's.
 
-Three reasons it matters here:
+Four reasons it matters here:
 
 1. **The note is crash insurance.** The NOTE holder is short a put at the 60% knock-in
    barrier, and the Desk now sells the other side outright as cover (`IDeskCover`). The
@@ -28,6 +29,14 @@ Three reasons it matters here:
    at-the-money vol misprices the note by 30–140 bps in the worst of 24 states, with a sign
    that depends on the stock and the state (below), more than the student's own error
    (37.9 bps, [k3-vol-input.md](k3-vol-input.md)).
+4. **The price has to move with a crash.** Sellers of crash protection (NOTE buyers, LPs)
+   are plentiful in quiet times and scarce in a crash, when everyone wants protection.
+   Insurance markets clear that by price: premiums rise after a catastrophe and the higher
+   price brings capital back. The Desk can only do the same if its vol follows the options
+   market within a day. A vol from price history, or one that is updated slowly, sells cover
+   too cheaply exactly then, and the LPs pay the difference. Protection already sold is not
+   at risk (each series holds its maximum payout in escrow); new protection is. So the vol
+   source is a question of the Desk surviving a crash, not only of accuracy.
 
 **Words used below.** *Implied vol*: an option's price turned back into the bumpiness it
 implies. *ATM vol*: the implied vol of the option whose strike is today's price (the most
@@ -199,11 +208,29 @@ Shapes move, most in selloffs. Each recalibration is a new model and a new `weig
 ### Who writes the vol
 
 The Desk's owner (the curator) sets vol per listing with `listSeries`; the contract can't
-read option prices. **Proposal for the contracts side:** a keeper role that can only update a
-listing's vol, bounded per update and per day, fed by an off-chain job that reads ATM vol
-from the same snapshots. Between updates the vol band (`volBandBps`) covers a stale vol. A
-Desk buy with `model/k3` and a vol band (two model calls) is 775,042 L2 execution gas on the
-dev node ([README](../README.md)).
+read option prices. **Proposal for the contracts side:** a vol feed, a keeper role that can
+only update a listing's vol, fed by an off-chain job that reads ATM vol from the same
+snapshots. A Desk buy with `model/k3` and a vol band (two model calls) is 775,042 L2
+execution gas on the dev node ([README](../README.md)).
+
+The feed has to keep up with a crash (reason 4). What that asks of it:
+
+| requirement | why | today |
+|---|---|---|
+| follows a crash within a day | a lagging vol sells cover too cheaply when demand peaks | the owner relists by hand |
+| bounds that stop a bad keeper but not a crash | a per-update or per-day cap that rejects a jump from 30% to 80% also keeps the crash out of the price | no keeper, no bounds |
+| a certified vol range that covers crisis vols | `listSeries` rejects a vol outside the pricer's range, so the series stops quoting when demand peaks | K3: 20–90%; MSTR's ATM vol is 69.5% on a calm day |
+| fails closed when stale | as the price feed does (`FeedStale`): no cover sold on an old vol | the vol band (`volBandBps`) covers small gaps only |
+
+The vol band already prices every trade against the trader on both sides (`_sidePrice`): the
+Desk sells NOTE at the higher of the two NOTE prices, and sells cover at the maximum payout
+minus the lower one. It is the safety margin between updates, sized for a day's drift, not
+for a crash.
+
+**Open: how to bound the keeper without slowing a crash.** Candidates: wide bounds with a
+band that widens after a large move and narrows again; rises allowed faster than falls; a
+second signer for a move beyond the bound. The snapshot history (step 2) shows how far ATM
+vol moves in a day; a sharp selloff in that history is the test case.
 
 ## Limits of this model
 
@@ -227,7 +254,7 @@ dev node ([README](../README.md)).
 | meaning of the vol input | total vol (today) / 6-month ATM vol | ATM vol |
 | shape granularity | one / groups / per stock | groups, if the test and the snapshot history hold |
 | recalibration trigger | fixed schedule / note-price drift above a threshold | drift, threshold from the snapshot history |
-| who writes the vol | owner by hand / a bounded keeper role | keeper role (contracts) |
+| who writes the vol | owner by hand / a bounded keeper role | a keeper role whose bounds let a crash through ([Who writes the vol](#who-writes-the-vol)) |
 | model richness | constant jumps / stochastic vol + jumps | constant jumps first |
 
 ## Plan
@@ -240,6 +267,7 @@ dev node ([README](../README.md)).
 | 4 | teacher v4 configs per group, new checks, band sizing per group | |
 | 5 | per group: label, train, gate (K3 pipeline, ~5 GPU-hours), certify, Stylus size, quoter vectors, backend teacher mapping | |
 | 6 | recalibration runbook: daily drift report, threshold, model switch per listing | |
+| 7 | vol feed (contracts): keeper role, bounds that let a crash through, staleness, a certified vol range that covers crisis vols | before mainnet (README M2) |
 
 ## Reproduce
 

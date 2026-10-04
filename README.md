@@ -112,8 +112,17 @@ The progress log will be added before submission.
 
 The prize pays 25% on signing, 25% after a 1-month check-in, and 50% after a mainnet launch plus an agreed KPI.
 - **M1 (check-in):** the real Monte Carlo teacher and distilled weights with a published fidelity report; the Desk live on testnet; invariant and fuzz suites; an external review of the core.
-- **M2 (mainnet launch):** core, pricer and Desk on Robinhood Chain mainnet (chain 4663) with real feeds and conservative caps. KPI candidates: USDG notional issued, number of series, and integrations calling the pricer.
+- **M2 (mainnet launch):** core, pricer and Desk on Robinhood Chain mainnet (chain 4663) with real feeds and conservative caps, and a vol feed: each listing's vol read from the listed options market and written by a keeper (below). KPI candidates: USDG notional issued, number of series, and integrations calling the pricer.
 - **M3:** a collateral valuation oracle for NOTE/WRITER, built with the lessons of the Pendle PT-reUSD cascade; a mint-and-sell Router; a second payoff type.
+
+**Why the vol feed comes before mainnet.** Sellers of crash protection are plentiful when markets
+are quiet and scarce in a crash, exactly when everyone wants protection. Insurance markets clear
+that by price: premiums rise after a catastrophe, and the higher price brings capital back. The
+Desk can do the same only if its vol follows the options market within a day. Today the curator
+sets each listing's vol by hand (`listSeries`); a vol that lags a crash sells cover too cheaply
+when demand peaks, and the LPs pay the difference. Protection already sold is not at risk (each
+series holds its maximum payout in escrow); new protection is. The feed's requirements are in
+[docs/options-calibration.md](docs/options-calibration.md#who-writes-the-vol).
 
 ## For developers
 
