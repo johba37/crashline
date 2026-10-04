@@ -107,9 +107,11 @@ export function usePositions(test: boolean, market: MarketData | undefined, trad
   )
   const waiting = (p: Position) => p.closed && p.away > 0n && lags
   // Said when one was never read (the error count stays while a retry is under way), or when one
-  // too old to show a position can't be read again (a failed refresh keeps the last answer).
+  // older than the holdings can't be read again (a failed refresh keeps the last answer): what it
+  // misses may be a row held back, or one that can't be told at all, such as a collect of NOTE
+  // that came by a transfer.
   const historyFailed = [trades, redeemed].some((q) =>
-    q.data === undefined ? q.isError || q.errorUpdateCount > 0 : q.isError && stale(q.data) && held.some(waiting))
+    q.data === undefined ? q.isError || q.errorUpdateCount > 0 : q.isError && stale(q.data))
   // The path only draws the graph: a position shows before it, and without it if it can't be read.
   const notes = [...new Map(held.map((p) => [p.series.address, p.series])).values()]
   const paths = useQueries({
