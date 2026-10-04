@@ -128,6 +128,14 @@ test('the wallet’s own trade list wins over the account’s last 50, which may
   assert.deepEqual([cover.closed, cover.amount, cover.paid, cover.bought], [true, 1_000_000n, 90_500n, [1790500000]])
 })
 
+test('a collect of one side is what the event paid, even before the note’s payout is read', () => {
+  // The market was read before the note ended: its payout is still 0.
+  const running = [{ address: SERIES, maxPayoutPerNote: 1_067_500n, state: { payoutPerNote: 0n } }] as unknown as SeriesView[]
+  const redeemed = { events: [{ series: SERIES, time: 1796400000, block: 1796400000, logIndex: 0, args: { caller: owner, noteAmount: '2000000', writerAmount: '0', collateralOut: '1215000' } }] }
+  const [note] = fromAccount({ block: AT, positions: [row('0', '0', '0', '0')], trades: [trade('buy', 1790500000, owner, SERIES, '2000000', '1975200')] }, running, OWNER, redeemed)
+  assert.deepEqual(note.exits.map((e) => [e.kind, e.usdg]), [['collected', 1_215_000n]])
+})
+
 test('trades in the same second count in the chain’s order', () => {
   // Buy 1, sell 1, buy 1, sell 1, all in one second: it never held more than 1.
   const at = (kind: string, block: number, logIndex: number) => ({ ...trade(kind, 1790500000), block, logIndex })

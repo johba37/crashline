@@ -166,8 +166,8 @@ const endedEarly = series({ n: 12, stock: TSLA, initial: 24_310_000_000n, done: 
 /**
  * What a wallet could hold, one of each kind: cover that is waiting, cover that is switched on,
  * a NOTE that is earning, and cover on a note that ended early and waits to be collected. And
- * what it held before: cover sold back to the Desk a week ago, and the NOTE of the note that ended
- * early, collected.
+ * what it held before: cover sold back to the Desk a week ago, the NOTE of the note that ended
+ * early, collected, and a NOTE that left the wallet without either (sent to another wallet).
  */
 export const fixturePositions: Position[] = [
   { series: note(1), side: 'cover', amount: 1_000n * USDG_UNIT, paid: 74n * USDG_UNIT, path: path(note(1), now, TSLA.spot), bought: [note(1).terms.strikeTime + 3 * DAY], exits: [], closed: false, away: 0n },
@@ -181,5 +181,9 @@ export const fixturePositions: Position[] = [
   {
     series: endedEarly, side: 'note', amount: 1_000n * USDG_UNIT, paid: 991n * USDG_UNIT, path: path(endedEarly, now - 3 * WEEK, 24_780_000_000n), bought: [endedEarly.terms.strikeTime + DAY],
     exits: [{ time: now - 2 * WEEK, kind: 'collected', amount: 1_000n * USDG_UNIT, usdg: 1_000n * endedEarly.state.payoutPerNote }], closed: true, away: 0n,
+  },
+  {
+    series: note(2), side: 'note', amount: 500n * USDG_UNIT, paid: 497n * USDG_UNIT, path: path(note(2), now, TSLA.spot), bought: [note(2).terms.strikeTime + 2 * DAY],
+    exits: [], closed: true, away: 500n * USDG_UNIT,
   },
 ]

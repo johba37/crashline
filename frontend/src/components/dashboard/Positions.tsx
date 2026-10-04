@@ -207,13 +207,14 @@ function Row({ p, now, trade, active, open, updating, onAct, onReload }: {
 
   return (
     <li>
-      <details ref={details} open={open} aria-busy={shimmer || undefined} className={`panel panel-sheer group rounded-lg ${shimmer ? 'position-shimmer' : ''}`}>
+      {/* A wait that ran out opens the row: its reload is inside. */}
+      <details ref={details} open={open || !!updating?.stalled} aria-busy={shimmer || undefined} className={`panel panel-sheer group rounded-lg ${shimmer ? 'position-shimmer' : ''}`}>
         <summary className="flex cursor-pointer list-none items-center gap-4 rounded-lg p-5 [&::-webkit-details-marker]:hidden">
           <TickerBadge symbol={s.symbol} />
           <span className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-6 gap-y-3">
             <span className="flex flex-col gap-1">
               <span className="type-heading text-ink">
-                {r.cover ? `Cover for ${usdg(amount, 0)} USDG of ${s.symbol}` : `${usdg(amount, 0)} USDG earning on ${s.symbol}`}
+                {r.cover ? `Cover for ${usdg(amount, 0)} USDG of ${s.symbol}` : `${usdg(amount, 0)} USDG ${r.closed ? 'NOTE' : 'earning'} on ${s.symbol}`}
               </span>
               <span className="flex flex-wrap items-center gap-x-3 gap-y-1 type-label text-ink-muted">
                 <StatusChip status={r.status} />
@@ -223,7 +224,8 @@ function Row({ p, now, trade, active, open, updating, onAct, onReload }: {
             <span className="flex flex-col sm:items-end">
               <span className="type-label text-ink-muted">{r.figureLabel}</span>
               <span className={`type-data ${!r.closed && r.ended && r.money ? 'text-go' : 'text-ink'}`}>{r.figure}</span>
-              <span className="type-label text-ink-muted">You paid {usdg(p.paid)} USDG</span>
+              {/* What came in other than by a buy here cost nothing on record: no "You paid 0.00". */}
+              {!(r.closed && p.bought.length === 0) && <span className="type-label text-ink-muted">You paid {usdg(p.paid)} USDG</span>}
             </span>
           </span>
           <CaretDown size={20} weight="bold" aria-hidden="true" className="shrink-0 text-ink-muted transition-transform duration-240 group-open:rotate-180" />
@@ -231,7 +233,7 @@ function Row({ p, now, trade, active, open, updating, onAct, onReload }: {
 
         <div className="flex flex-col gap-5 border-t border-line p-5">
           <p className="type-body text-ink">{r.story}</p>
-          <PositionGraph s={s} side={side} path={p.path} marks={marks} now={now} />
+          <PositionGraph s={s} side={side} path={p.path} marks={marks} closed={r.closed} now={now} />
           {!r.closed && !r.ended && !bid.ok && !updating && (
             <Notice status={refusalStatus(bid.refusal, s)}>
               {wait && <p className="type-body text-ink">{r.cover ? 'Your cover stays valid' : 'Your NOTE keeps earning'} in the meantime. Only selling it back has to wait.</p>}
@@ -275,16 +277,15 @@ function Row({ p, now, trade, active, open, updating, onAct, onReload }: {
 function History({ count, children }: { count: number; children: ReactNode }) {
   return (
     <details className="group/history mt-8">
-      {/* Set like the page's title, not as a card: a part of the page that its title opens and closes. */}
-      <summary className="flex cursor-pointer list-none items-start justify-between gap-3 [&::-webkit-details-marker]:hidden">
-        <span className="flex flex-col gap-2">
-          <h2 className="flex items-center gap-3 type-title text-ink">
-            <ClockCounterClockwise size={28} weight="bold" aria-hidden="true" className="shrink-0 text-ink-muted" />
-            History
-          </h2>
-          <span className="type-body-lg text-ink-muted">{count === 1 ? '1 position you no longer hold' : `${count} positions you no longer hold`}</span>
-        </span>
-        <CaretDown size={24} weight="bold" aria-hidden="true" className="mt-1.5 shrink-0 text-ink-muted transition-transform duration-240 group-open/history:rotate-180" />
+      {/* Set like the page's title, not as a card: a part of the page that its title opens and closes. The
+          heading is the summary's own child, as HTML has it, with the caret beside it and the count below. */}
+      <summary className="grid cursor-pointer list-none grid-cols-[1fr_auto] gap-x-3 gap-y-2 [&::-webkit-details-marker]:hidden">
+        <h2 className="flex items-center gap-3 type-title text-ink">
+          <ClockCounterClockwise size={28} weight="bold" aria-hidden="true" className="shrink-0 text-ink-muted" />
+          History
+        </h2>
+        <CaretDown size={24} weight="bold" aria-hidden="true" className="row-span-2 mt-1.5 shrink-0 text-ink-muted transition-transform duration-240 group-open/history:rotate-180" />
+        <span className="type-body-lg text-ink-muted">{count === 1 ? '1 position you no longer hold' : `${count} positions you no longer hold`}</span>
       </summary>
       <ul className="mt-6 flex flex-col gap-4">{children}</ul>
     </details>
@@ -335,9 +336,14 @@ export default function Positions({
   const held = positions.filter((p) => !p.closed)
   // Newest way out first.
   const before = positions.filter((p) => p.closed).sort((a, b) => (b.exits.at(-1)?.time ?? 0) - (a.exits.at(-1)?.time ?? 0))
-  // A position that was sold or collected in full leaves the list for History, and its row's "Done" with it: say it here.
+  // A position that was sold or collected in full leaves the list for History, and its row's "Done" with it: say it here,
+  // and where it is: under History once that has it, else on its way there.
   const closed = active !== null && trade.state.step === 'done' && !held.some((p) => key(p) === active) && (
-    <Notice status={{ ...confirmed, message: 'The USDG is in your wallet. This position is now under History, at the bottom of your list.' }} />
+    <Notice
+      status={{ ...confirmed, message: before.some((p) => key(p) === active)
+        ? 'The USDG is in your wallet. This position is now under History, at the bottom of your list.'
+        : 'The USDG is in your wallet. This position moves to History, at the bottom of your list, once the list has caught up.' }}
+    />
   )
   const row = (p: Position) => (
     <Row

@@ -57,8 +57,10 @@ export function usePositions(test: boolean, market: MarketData | undefined, trad
   const [gaveUp, setGaveUp] = useState<bigint | null>(null)
   const stalled = traded !== null && gaveUp === traded.block
   // Each answer is re-read quickly until it has the last trade's block.
-  const refetchInterval = ({ state }: { state: { data?: unknown } }) =>
-    traded !== null && !stalled && state.data !== undefined && !reflects(state.data, traded.block) ? CATCH_UP_MS : REFETCH_MS
+  // An answer that can't be read waits for the next regular read, not the quick ones.
+  type Read = { state: { data?: unknown; status: string } }
+  const refetchInterval = ({ state }: Read) =>
+    state.status !== 'error' && traded !== null && !stalled && state.data !== undefined && !reflects(state.data, traded.block) ? CATCH_UP_MS : REFETCH_MS
   const account = useQuery({
     queryKey: ['account', API_URL, address],
     enabled: live && address !== undefined,
@@ -66,12 +68,16 @@ export function usePositions(test: boolean, market: MarketData | undefined, trad
     refetchInterval,
     retry: 1,
   })
+  // While the trades or the collects are older than the holdings, a sale or collect the holdings
+  // already show may be missing from them: they are read again quickly until they aren't.
+  const stale = (data: unknown) => data !== undefined && account.data !== undefined && older(data, account.data)
+  const historyInterval = (read: Read) => (read.state.status !== 'error' && stale(read.state.data) ? CATCH_UP_MS : refetchInterval(read))
   // All the wallet's trades, not only the account's last 50: when it got in and out, and what that cost.
   const trades = useQuery({
     queryKey: ['trades', API_URL, address],
     enabled: live && address !== undefined,
     queryFn: ({ signal }) => getAll((path) => get(path, signal), `/trades?account=${address}`, 'trades'),
-    refetchInterval,
+    refetchInterval: historyInterval,
     retry: 1,
   })
   // What the wallet collected from notes that ended: a closed position's way out (the backend's events).
@@ -79,15 +85,12 @@ export function usePositions(test: boolean, market: MarketData | undefined, trad
     queryKey: ['redeemed', API_URL, address],
     enabled: live && address !== undefined,
     queryFn: ({ signal }) => getAll((path) => get(path, signal), `/events?account=${address}&name=Redeemed`, 'events'),
-    refetchInterval,
+    refetchInterval: historyInterval,
     retry: 1,
   })
   // A position no longer held is told by its trades and collects: without both it would read as
   // given away for nothing, so History waits for them.
   const history = trades.data !== undefined && redeemed.data !== undefined
-  // While either is older than the holdings, a sale or collect the holdings already show may be
-  // missing from it: a position that seems to have left without one waits for the next answer.
-  const stale = (data: unknown) => data !== undefined && account.data !== undefined && older(data, account.data)
   const lags = stale(trades.data) || stale(redeemed.data)
   // Behind until every answer has the trade's block: a collect shows only in the last one. One that
   // can't be read is left out, or the wait would never end: History says so instead.
@@ -105,7 +108,11 @@ export function usePositions(test: boolean, market: MarketData | undefined, trad
     () => (live && address && account.data && market ? fromAccount(account.data, [...market.series, ...market.delisted], address, redeemed.data, trades.data) : []),
     [account.data, address, live, market, redeemed.data, trades.data],
   )
-  const waiting = (p: Position) => p.closed && p.away > 0n && lags
+  // Meanwhile a position that has just left the holdings waits before it joins History. One already
+  // shown there stays: a refresh's three answers come in one by one.
+  const [shown, setShown] = useState<string[]>([])
+  const id = (p: Position) => `${address}-${p.series.address}-${p.side}`
+  const waiting = (p: Position) => p.closed && lags && !shown.includes(id(p))
   // Said when one was never read (the error count stays while a retry is under way), or when one
   // older than the holdings can't be read again (a failed refresh keeps the last answer): what it
   // misses may be a row held back, or one that can't be told at all, such as a collect of NOTE
@@ -122,6 +129,11 @@ export function usePositions(test: boolean, market: MarketData | undefined, trad
     })),
   })
 
+  const listed = history ? held.filter((p) => !p.closed || !waiting(p)) : held.filter((p) => !p.closed)
+  // Kept as the list is drawn (React's way to remember what a render showed).
+  const ids = listed.filter((p) => p.closed).map(id)
+  if (ids.join() !== shown.join()) setShown(ids)
+
   const reload = () => {
     setGaveUp(null)
     void account.refetch()
@@ -133,13 +145,14 @@ export function usePositions(test: boolean, market: MarketData | undefined, trad
   // before, and leaves (or changes, after selling part of it).
   const bought = behind && (traded.kind === 'buy' || traded.kind === 'buyCover')
   return {
-    positions: held.filter((p) => !p.closed || (history && !waiting(p))).map((p) => ({ ...p, path: paths[notes.indexOf(p.series)]?.data ?? [] })),
+    positions: listed.map((p) => ({ ...p, path: paths[notes.indexOf(p.series)]?.data ?? [] })),
     pending: bought ? { series: traded.series, side: traded.kind === 'buy' ? 'note' : 'cover', stalled } : null,
     updating: behind && !bought ? { series: traded.series, side: traded.kind === 'sell' || traded.kind === 'collect' ? 'note' : 'cover', stalled } : null,
     supported: live,
     needsWallet: live && address === undefined,
-    // The list waits for all three first answers, so a wallet with only History never reads as empty.
-    isLoading: account.isLoading || trades.isLoading || redeemed.isLoading,
+    // The list waits for all three first answers, so a wallet with only History never reads as empty;
+    // not for a retry of one that failed (it reads as loading again), or the list would blink.
+    isLoading: account.isLoading || [trades, redeemed].some((q) => q.isLoading && q.errorUpdateCount === 0),
     error: account.error,
     historyFailed,
     reload,

@@ -16,7 +16,7 @@ type Account = {
 type Trades = { trades?: Account['trades'] }
 
 /** GET /events?account={address}&name=Redeemed: what the wallet collected from notes that ended. */
-type Redeemed = { events?: (OnChain & { series: string; time: number; args: { caller: string; noteAmount: string; writerAmount: string } })[] }
+type Redeemed = { events?: (OnChain & { series: string; time: number; args: { caller: string; noteAmount: string; writerAmount: string; collateralOut: string } })[] }
 
 /** The chain's order: by block, then by place in the block. */
 const chainOrder = (x: OnChain, y: OnChain) => x.block - y.block || x.logIndex - y.logIndex
@@ -55,8 +55,11 @@ export function fromAccount(json: unknown, series: SeriesView[], owner: string, 
           .map((t) => ({ at: t, exit: { time: t.time, kind: 'sold' as const, amount: BigInt(t.amount), usdg: BigInt(t.usdg) } })),
         ...collects.filter((e) => same(e.series, address)).flatMap((e) => {
           const amount = BigInt(cover ? e.args.writerAmount : e.args.noteAmount)
+          // A collect of one side paid what the event says; of both, each side at the note's payout for it.
+          const both = BigInt(e.args.noteAmount) > 0n && BigInt(e.args.writerAmount) > 0n
           const each = cover ? s.maxPayoutPerNote - s.state.payoutPerNote : s.state.payoutPerNote
-          return amount > 0n ? [{ at: e, exit: { time: e.time, kind: 'collected' as const, amount, usdg: (amount * each) / UNIT } }] : []
+          const usdg = both ? (amount * each) / UNIT : BigInt(e.args.collateralOut)
+          return amount > 0n ? [{ at: e, exit: { time: e.time, kind: 'collected' as const, amount, usdg } }] : []
         }),
       ].sort((x, y) => chainOrder(x.at, y.at))
       const exits = outs.map((o) => o.exit)
